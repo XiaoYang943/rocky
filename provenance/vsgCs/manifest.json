@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 2,
+  "upstreamCommit": "72176fdfb35acb8462c5760c1b432d72f19c767a",
+  "patches": [
+    {
+      "path": "004-modules.patch",
+      "sha256": "fd727150103500bfafef108cf3caa5619a09d37b9b88c3d58bc05b91b644739f",
+      "layout": "final-paths",
+      "base": "fixed upstream archive"
+    }
+  ]
+}

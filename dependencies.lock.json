@@ -1,0 +1,122 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "name": "vulkan-headers",
+      "repo": "KhronosGroup/Vulkan-Headers",
+      "commit": "2cd90f9d20df57eac214c148f3aed885372ddcfe",
+      "url": "https://codeload.github.com/KhronosGroup/Vulkan-Headers/zip/2cd90f9d20df57eac214c148f3aed885372ddcfe",
+      "directory": "Vulkan-Headers-2cd90f9d20df57eac214c148f3aed885372ddcfe",
+      "archiveSha256": "004547a27896a80eef9d9a172e0a99f528fcee4301c899097143a1a14e9a77fd"
+    },
+    {
+      "name": "vulkan-loader",
+      "repo": "KhronosGroup/Vulkan-Loader",
+      "commit": "da8d2caad9341ca8c5a7c3deba217d7da50a7c24",
+      "url": "https://codeload.github.com/KhronosGroup/Vulkan-Loader/zip/da8d2caad9341ca8c5a7c3deba217d7da50a7c24",
+      "directory": "Vulkan-Loader-da8d2caad9341ca8c5a7c3deba217d7da50a7c24",
+      "archiveSha256": "151dbbfcf37b83da6d6132366e9328c7cb7eb1c112d46558e38be1538f3cbda8"
+    },
+    {
+      "name": "glslang",
+      "repo": "KhronosGroup/glslang",
+      "commit": "8a85691a0740d390761a1008b4696f57facd02c4",
+      "url": "https://codeload.github.com/KhronosGroup/glslang/zip/8a85691a0740d390761a1008b4696f57facd02c4",
+      "directory": "glslang-8a85691a0740d390761a1008b4696f57facd02c4",
+      "archiveSha256": "094c76e00860630fa68a5b0c4e6383acf2acd4833fb826ffa9ef12787140cd00"
+    },
+    {
+      "name": "glm",
+      "repo": "g-truc/glm",
+      "commit": "0af55ccecd98d4e5a8d1fad7de25ba429d60e863",
+      "url": "https://codeload.github.com/g-truc/glm/zip/0af55ccecd98d4e5a8d1fad7de25ba429d60e863",
+      "directory": "glm-0af55ccecd98d4e5a8d1fad7de25ba429d60e863",
+      "archiveSha256": "d53f8d8a3fd3f63a5da21c64701985ed933a93064620bb1a22dcb37ddb3795d1"
+    },
+    {
+      "name": "entt",
+      "repo": "skypjack/entt",
+      "commit": "d4014c74dc3793aba95ae354d6e23a026c2796db",
+      "url": "https://codeload.github.com/skypjack/entt/zip/d4014c74dc3793aba95ae354d6e23a026c2796db",
+      "directory": "entt-d4014c74dc3793aba95ae354d6e23a026c2796db",
+      "archiveSha256": "dbdf1a444eaffc29072765e40ac6e0e0cf79337014d5423cfe7ac64a757e8cef"
+    },
+    {
+      "name": "spdlog",
+      "repo": "gabime/spdlog",
+      "commit": "6fa36017cfd5731d617e1a934f0e5ea9c4445b13",
+      "url": "https://codeload.github.com/gabime/spdlog/zip/6fa36017cfd5731d617e1a934f0e5ea9c4445b13",
+      "directory": "spdlog-6fa36017cfd5731d617e1a934f0e5ea9c4445b13",
+      "archiveSha256": "4531c14d34a29ad69f16524f37ef1350d411353bebe59765e100e84cd802946b"
+    },
+    {
+      "name": "imgui",
+      "repo": "ocornut/imgui",
+      "commit": "6d910d5487d11ca567b61c7824b0c78c569d62f0",
+      "url": "https://codeload.github.com/ocornut/imgui/zip/6d910d5487d11ca567b61c7824b0c78c569d62f0",
+      "directory": "imgui-6d910d5487d11ca567b61c7824b0c78c569d62f0",
+      "archiveSha256": "138804e5d53207e8ce7ba9f8baf7ba31417b7b4b0549696d7ec913daf38d16c1"
+    },
+    {
+      "name": "assimp",
+      "repo": "assimp/assimp",
+      "commit": "c35200e38ea8f058812b83de2ef32c6093b0ece2",
+      "url": "https://codeload.github.com/assimp/assimp/zip/c35200e38ea8f058812b83de2ef32c6093b0ece2",
+      "directory": "assimp-c35200e38ea8f058812b83de2ef32c6093b0ece2",
+      "archiveSha256": "4bbe4a59cf910805defac210780702990856f2bb5bc03cc6cbea3da0118a31b7"
+    },
+    {
+      "name": "vsg",
+      "repo": "vsg-dev/VulkanSceneGraph",
+      "commit": "e4718bf078a26930e0b6f5932d2537b689fa3969",
+      "url": "https://codeload.github.com/vsg-dev/VulkanSceneGraph/zip/e4718bf078a26930e0b6f5932d2537b689fa3969",
+      "directory": "VulkanSceneGraph-e4718bf078a26930e0b6f5932d2537b689fa3969",
+      "archiveSha256": "92cc0ac5397376383a567922520a9e0d560acffbf0ed0c286f52012a8bc89261"
+    },
+    {
+      "name": "vsgXchange",
+      "repo": "vsg-dev/vsgXchange",
+      "commit": "bdc241ad1d6813ebc2a1777d35885a39e143297b",
+      "url": "https://codeload.github.com/vsg-dev/vsgXchange/zip/bdc241ad1d6813ebc2a1777d35885a39e143297b",
+      "directory": "vsgXchange-bdc241ad1d6813ebc2a1777d35885a39e143297b",
+      "archiveSha256": "addd7c5ab859b54a5144b5f40bd5c1a1d614df806aa43b4cd5a2f80dae8ae3d6"
+    },
+    {
+      "name": "rocky",
+      "repo": "pelicanmapping/rocky",
+      "commit": "a4d8b141ec478e8440526928b344c6eb93810631",
+      "url": "https://codeload.github.com/pelicanmapping/rocky/zip/a4d8b141ec478e8440526928b344c6eb93810631",
+      "directory": "rocky-a4d8b141ec478e8440526928b344c6eb93810631",
+      "archiveSha256": "e68ad90921ae238308e34d37efb87c97d8bd6a11081814eccca7af094b0e24d1"
+    },
+    {
+      "name": "gdal-mvt",
+      "repo": "OSGeo/gdal",
+      "commit": "ad23f3eddc646081f719852b349f68654a1d06d3",
+      "url": "https://codeload.github.com/OSGeo/gdal/zip/ad23f3eddc646081f719852b349f68654a1d06d3",
+      "directory": "gdal-ad23f3eddc646081f719852b349f68654a1d06d3",
+      "archiveSha256": "e7e018f608b02a83553038fb287fb2c2a7a35a566c227a89d5603f237b129452"
+    },
+    {
+      "name": "vsgCs",
+      "commit": "72176fdfb35acb8462c5760c1b432d72f19c767a",
+      "directory": "vsgCs-72176fdfb35acb8462c5760c1b432d72f19c767a",
+      "url": "https://codeload.github.com/timoore/vsgCs/zip/72176fdfb35acb8462c5760c1b432d72f19c767a",
+      "archiveSha256": "ee2a1524d3a103ed9d410f7062fea1e05582067ec521fb2a5794d2dd46d2aca0"
+    },
+    {
+      "name": "cesium-native",
+      "commit": "56840e6ce2c8d0ff50a46f8c09ddae52c29d5e6f",
+      "directory": "cesium-native-56840e6ce2c8d0ff50a46f8c09ddae52c29d5e6f",
+      "url": "https://codeload.github.com/CesiumGS/cesium-native/zip/56840e6ce2c8d0ff50a46f8c09ddae52c29d5e6f",
+      "archiveSha256": "4f79a98cc2427b1625bd4f4e0e59148919cefa0df5dfd3649ad0a83981301132"
+    },
+    {
+      "name": "vcpkg",
+      "commit": "afc0a2e01ae104a2474216a2df0e8d78516fd5af",
+      "directory": "vcpkg-afc0a2e01ae104a2474216a2df0e8d78516fd5af",
+      "url": "https://codeload.github.com/microsoft/vcpkg/zip/afc0a2e01ae104a2474216a2df0e8d78516fd5af",
+      "archiveSha256": "d16120fb0192ee12337ce05ce069f97e51af79c0bcbc33af910a1883d43ce7ac"
+    }
+  ]
+}

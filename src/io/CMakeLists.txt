@@ -1,0 +1,32 @@
+# Preserve the validated Reader/Writer feature set.
+set(VSGXCHANGE_VERSION_MAJOR 0)
+set(VSGXCHANGE_VERSION_MINOR 2)
+set(VSGXCHANGE_VERSION_PATCH 0)
+set(VSGXCHANGE_SOVERSION 4)
+set(BUILD_SHARED_LIBS ON)
+set(vsgXchange_OSG OFF)
+set(vsgXchange_GDAL ON)
+set(vsgXchange_CURL ON)
+set(vsgXchange_assimp ON)
+set(vsgXchange_meshoptimizer OFF)
+set(vsgXchange_ktx OFF)
+set(vsgXchange_freetype OFF)
+set(vsgXchange_openexr OFF)
+set(EXTRA_DEFINES)
+set(EXTRA_INCLUDES)
+set(EXTRA_LIBRARIES)
+set(SOURCES all/Version.cpp all/all.cpp cpp/cpp.cpp stbi/stbi.cpp dds/dds.cpp images/images.cpp bin/bin.cpp)
+foreach(READER gltf 3DTiles freetype assimp ktx gdal curl openexr)
+    include(${READER}/build_vars.cmake)
+endforeach()
+configure_file(all/Version.h.in "${GEOSTUDIO_GENERATED_INCLUDE}/geostudio/native/io/Version.h")
+add_library(geostudio-io SHARED ${SOURCES})
+set_target_properties(geostudio-io PROPERTIES EXPORT_NAME IO DEFINE_SYMBOL GEOSTUDIO_IO_EXPORTS SOVERSION 4)
+target_compile_definitions(geostudio-io PRIVATE ${EXTRA_DEFINES} INTERFACE VSGXCHANGE_SHARED_LIBRARY)
+target_include_directories(geostudio-io PUBLIC
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${GEOSTUDIO_GENERATED_INCLUDE}>
+    $<INSTALL_INTERFACE:include>
+    PRIVATE ${EXTRA_INCLUDES})
+target_link_libraries(geostudio-io PUBLIC vsg::vsg PRIVATE ${EXTRA_LIBRARIES})
+install(TARGETS geostudio-io EXPORT GeoStudioNativeTargets RUNTIME DESTINATION bin LIBRARY DESTINATION lib ARCHIVE DESTINATION lib)

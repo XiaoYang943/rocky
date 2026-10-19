@@ -1,0 +1,169 @@
+/**
+ * rocky c++
+ * Copyright 2026 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+#include <geostudio/native/globe/vsg/NodePager.h>
+#include <geostudio/native/globe/ElevationSampler.h>
+#include "helpers.h"
+
+using namespace geostudio::native;
+
+auto Demo_NodePager = [](Application& app)
+{
+    static const Color colors[4] = { StockColor::Red, StockColor::Green, StockColor::Blue, StockColor::Yellow };
+
+    static vsg::ref_ptr<NodePager> pager;
+    static Profile profile("global-geodetic");
+    static ElevationSampler clamper;
+
+    if (!pager)
+    {
+        // set up the elevation clamper:
+        clamper.layer = app.mapNode->map->layer<ElevationLayer>();
+
+        // set up the pager, which needs to know both the tiling profile it will use
+        // and the profile of the map.
+        pager = NodePager::create(profile, app.mapNode->srs());
+
+        // tiles will start to appear at this level of detail:
+        pager->minLevel = 1;
+
+        // tiles will max out at the level of detail:
+        pager->maxLevel = 16;
+
+        // whether to replace each LOD with the higher one as you zoom in (versus accumulating them)
+        pager->refinePolicy = NodePager::RefinePolicy::Replace;
+
+        // a function that will calculate the bounding sphere for each tile.
+        auto calculateTileBound = [&](const TileKey& key, const IOOptions& io)
+            {
+                auto ex = key.extent().transform(app.mapNode->srs());
+                auto bs = ex.createWorldBoundingSphere(0, 0);
+
+                if (clamper.ok() && key.level > 1)
+                {
+                    auto resolutionX = clamper.layer->resolution(key.level).first;
+                    if (auto p = clamper.clamp(ex.centroid(), resolutionX, io))
+                    {
+                        auto n = glm::normalize(bs.center);
+                        bs.center += n * p.value().transform(ex.srs().geodeticSRS()).z;
+                        bs = Sphere(bs.center, bs.radius * 1.01);
+                    }
+                }
+
+                return bs;
+            };
+
+        // we'll use it to control tile paging:
+        pager->calculateBound = calculateTileBound;
+
+        // The function that will create the payload for each TileKey:
+        pager->createPayload = [&app, calculateTileBound](const TileKey& key, const IOOptions& io)
+            {
+                // Make a simple topocentric-aligned bounding box representing our clamped tile.
+                // Let's use VSG's builder utility to make it easy.
+                vsg::Builder builder;
+
+                auto bs = calculateTileBound(key, io);  
+                auto r = bs.radius / sqrt(2);
+                vsg::box box(vsg::vec3(-r, -r, -r), vsg::vec3(r, r, r));
+
+                vsg::GeometryInfo gi(box);
+                gi.color = to_vsg(StockColor::Cyan);
+                gi.transform = to_vsg(key.profile.srs().ellipsoid().topocentricToGeocentricMatrix(bs.center));
+
+                vsg::StateInfo si;
+                si.lighting = false;
+                si.wireframe = true;
+
+                // add a label:
+                auto enode = EntityNode::create(app.registry);
+                app.registry.write([&](entt::registry& reg)
+                    {
+                        auto e = enode->entities.emplace_back(reg.create());
+                        auto& label = reg.emplace<Label>(e, key.str());
+                        auto& xform = reg.emplace<Transform>(e);
+                        xform.position = GeoPoint(app.mapNode->srs(), bs.center);
+                    });
+
+                auto group = vsg::Group::create();
+                group->addChild(builder.createBox(gi, si));
+                group->addChild(enode);                    
+
+                return NodePager::Payload::create(group);
+            };
+
+        // Always initialize a NodePager before using it:
+        pager->initialize(app.vsgcontext);
+
+        app.scene->addChild(pager);
+
+        app.vsgcontext->requestFrame();
+    }
+
+    if (ImGuiLTable::Begin("NodePager"))
+    {
+        static std::vector<std::string> pn = { "global-geodetic", "spherical-mercator" }; // , "qsc+x", "qsc+z", "qsc-z"
+        int profileIndex = 0;
+        for (int i = 0; i < pn.size(); i++)
+            if (pn[i] == profile.wellKnownName())
+                profileIndex = i;
+
+        if (ImGuiLTable::BeginCombo("Profile", pn[profileIndex].c_str()))
+        {
+            for (int i = 0; i < pn.size(); ++i)
+            {
+                if (ImGui::RadioButton(pn[i].c_str(), profileIndex == i))
+                {
+                    profileIndex = i;
+                    profile = Profile(pn[i]);                    
+                    app.vsgcontext->onNextUpdate([&](...)
+                        {
+                            remove(pager, app.scene->children);
+                            pager = nullptr;
+                        });
+
+                    app.vsgcontext->requestFrame();
+                }
+            }
+            ImGuiLTable::EndCombo();
+        }
+
+        ImGuiLTable::Text("Tiles", "%u", pager->tiles());
+
+        bool accumulate = pager->refinePolicy == NodePager::RefinePolicy::Accumulate;
+        if (ImGuiLTable::Checkbox("Accumulate", &accumulate))
+        {
+            pager->refinePolicy = accumulate ? NodePager::RefinePolicy::Accumulate : NodePager::RefinePolicy::Replace;
+            app.vsgcontext->requestFrame();
+        }
+
+        if (ImGuiLTable::SliderFloat("Pixel Error", &pager->pixelError, 64.0f, 1024.0f, "%.0f px"))
+        {
+            app.vsgcontext->requestFrame();
+        }
+
+        if (ImGuiLTable::Button("Reload"))
+        {
+            pager->initialize(app.vsgcontext);
+            app.vsgcontext->requestFrame();
+        }
+
+        ImGuiLTable::End();
+
+        auto keys = pager->tileKeys();
+        if (!keys.empty())
+        {
+            std::sort(keys.begin(), keys.end());
+            int count = 0;
+            for (auto& key : keys)
+            {   
+                ImGui::TextUnformatted(key.str().c_str());
+                if (++count % 6 > 0) ImGui::SameLine();
+            }
+            ImGui::TextUnformatted(" ");
+        }
+    }
+};

@@ -1,0 +1,92 @@
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -51,7 +51,11 @@
+ 
+ set(VSGIMGUI_MIN_VERSION 0.3.0)
+ 
+-find_package(vsgImGui ${VSGIMGUI_MIN_VERSION} REQUIRED)
++option(VSGCS_WITH_IMGUI "Build ImGui texture helpers" ON)
++option(VSGCS_BUILD_APPLICATIONS "Build standalone applications" ON)
++if(VSGCS_WITH_IMGUI)
++  find_package(vsgImGui ${VSGIMGUI_MIN_VERSION} REQUIRED)
++endif()
+ 
+ if(VSGCS_CESIUM_NATIVE_DIRECTORY)
+   add_subdirectory(${VSGCS_CESIUM_NATIVE_DIRECTORY} cesium-native)
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -1,6 +1,11 @@
+ add_subdirectory(vsgCs)
+-add_subdirectory(CsApp)
+-add_subdirectory(applications)
++if(VSGCS_BUILD_APPLICATIONS)
++  if(NOT VSGCS_WITH_IMGUI)
++    message(FATAL_ERROR "Standalone applications require VSGCS_WITH_IMGUI")
++  endif()
++  add_subdirectory(CsApp)
++  add_subdirectory(applications)
++endif()
+ 
+ install(EXPORT vsgCsTargets
+   FILE vsgCsTargets.cmake
+--- a/src/vsgCs/CMakeLists.txt
++++ b/src/vsgCs/CMakeLists.txt
+@@ -106,7 +106,11 @@
+ endif()
+ 
+ target_link_libraries(${LIB_NAME} PUBLIC
+-  vsg::vsg vsgImGui::vsgImGui Cesium3DTilesSelection CesiumRasterOverlays CesiumGltfContent CesiumGltfReader CesiumGltf CesiumCurl Microsoft.GSL::GSL)
++  vsg::vsg Cesium3DTilesSelection CesiumRasterOverlays CesiumGltfContent CesiumGltfReader CesiumGltf CesiumCurl Microsoft.GSL::GSL)
++if(VSGCS_WITH_IMGUI)
++  target_link_libraries(${LIB_NAME} PUBLIC vsgImGui::vsgImGui)
++  target_compile_definitions(${LIB_NAME} PUBLIC VSGCS_WITH_IMGUI)
++endif()
+ if(CESIUM_SPDLOG_HEADER_ONLY)
+   target_link_libraries(${LIB_NAME} PUBLIC spdlog::spdlog_header_only)
+ else()
+--- a/src/vsgCs/runtimeSupport.h
++++ b/src/vsgCs/runtimeSupport.h
+@@ -27,7 +27,9 @@
+ #include <glm/gtc/type_ptr.hpp>
+ 
+ #include <vsg/all.h>
++#ifdef VSGCS_WITH_IMGUI
+ #include <vsgImGui/Texture.h>
++#endif
+ 
+ #include <Cesium3DTilesSelection/Tile.h>
+ #include <CesiumUtility/IntrusivePointer.h>
+@@ -221,6 +223,7 @@
+     CesiumAsync::Future<ReadRemoteImageResult> VSGCS_EXPORT
+     readRemoteImage(const std::string& url, bool compile = true);
+ 
++#ifdef VSGCS_WITH_IMGUI
+     struct ReadImGuiTextureResult
+     {
+         vsg::ref_ptr<vsgImGui::Texture> texture;
+@@ -232,6 +235,7 @@
+      */
+     CesiumAsync::Future<ReadImGuiTextureResult> VSGCS_EXPORT
+     readRemoteTexture(const std::string& url, bool compile = true);
++#endif
+ 
+     /**
+      * @brief Creates a vsg::ref_ptr to a subclass using dynamic_cast from another ref_ptr.
+--- a/src/vsgCs/runtimeSupport.cpp
++++ b/src/vsgCs/runtimeSupport.cpp
+@@ -277,6 +277,7 @@
+                 });
+     }
+ 
++#ifdef VSGCS_WITH_IMGUI
+     CesiumAsync::Future<ReadImGuiTextureResult> readRemoteTexture(const std::string &url, bool compile)
+     {
+         return readRemoteImage(url, false)
+@@ -304,6 +305,7 @@
+             });
+     }
+ 
++#endif
+ } // namespace vsgCs
+ 
+ namespace

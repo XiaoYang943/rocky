@@ -1,0 +1,31 @@
+diff --git a/.gitignore b/.gitignore
+index b660706..9a6bed8 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -1,4 +1,9 @@
+ build/vcpkg
+ build/x64-windows
+ build/install/
+-imgui.ini
+\ No newline at end of file
++imgui.ini
++# GeoStudio SDK generated state
++.deps/
++.build/
++out/
++.docs-tmp/
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 903d944..685b666 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,3 +1,10 @@
++# GeoStudio SDK entry. The nested Rocky build retains its upstream project context.
++if(NOT GEOSTUDIO_BUILDING_ROCKY)
++    cmake_minimum_required(VERSION 3.22)
++    include(cmake/GeoStudioNative.cmake)
++    return()
++endif()
++
+ cmake_minimum_required(VERSION 3.21)
+ 
+ # Dependency selection must precede project(): the vcpkg toolchain installs the

@@ -1,0 +1,6 @@
+if(NOT TARGET PROJ::proj)
+  add_library(PROJ::proj SHARED IMPORTED)
+  set_target_properties(PROJ::proj PROPERTIES IMPORTED_IMPLIB "${NG_GDAL_SDK}/lib/proj.lib" IMPORTED_LOCATION "${NG_GDAL_SDK}/bin/proj_9.dll" INTERFACE_INCLUDE_DIRECTORIES "${NG_GDAL_SDK}/include")
+endif()
+set(PROJ_FOUND TRUE)
+set(PROJ_VERSION 9.6.2)

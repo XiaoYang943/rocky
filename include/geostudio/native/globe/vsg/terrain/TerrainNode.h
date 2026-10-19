@@ -1,0 +1,171 @@
+/**
+ * rocky c++
+ * Copyright 2023 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+
+#include <geostudio/native/globe/vsg/VSGContext.h>
+#include <geostudio/native/globe/vsg/terrain/TerrainSettings.h>
+#include <geostudio/native/globe/vsg/terrain/TerrainTileHost.h>
+#include <geostudio/native/globe/vsg/terrain/TerrainState.h>
+#include <geostudio/native/globe/vsg/terrain/TerrainTilePager.h>
+#include <geostudio/native/globe/Result.h>
+#include <geostudio/native/globe/Profile.h>
+#include <geostudio/native/globe/Layer.h>
+
+namespace geostudio::native
+{
+    class IOOptions;
+    class Map;
+    class TerrainTileFactory;
+    class GeoPoint;
+    class TerrainNode;
+
+    //! Represents the result of a terrain intersection query.
+    struct TerrainIntersection
+    {
+        GeoPoint point;
+        glm::vec3 normal;
+    };
+
+    /**
+    * Node that renders a terrain (or part of one) in a specific tiling profile.
+    */
+    class ROCKY_EXPORT TerrainProfileNode : public vsg::Inherit<vsg::Group, TerrainProfileNode>,
+        public TerrainTileHost
+    {
+    public:
+        TerrainProfileNode(const Profile& profile, TerrainNode& terrain, VSGContext vsgcontext);
+
+        virtual ~TerrainProfileNode();
+
+        //! Terrain housing this profile node
+        TerrainNode& terrain;
+
+        //! Tiling profile of this node
+        Profile profile;
+
+        //! Rebuilds the profile node contents from scratch.
+        void reset(VSGContext context);
+
+        //! Runs periodically to update the terrain tiles if neceessary.
+        bool update(VSGContext context);
+
+        //! Access to the engine for stats
+        const TerrainTileFactory& tileFactory() const {
+            return *_tileFactory.get();
+        }
+
+    public: //! TerrainTileHost interface
+
+        void ping(TerrainTileNode*, const TerrainTileNode*, vsg::RecordTraversal&) override;
+
+        const TerrainSettings& settings() const override;
+
+        TerrainActivity& activity() override;
+
+        TerrainTilePager& tiles() override {
+            return _tiles;
+        }
+
+    private:
+
+        //! Tracks and updates state for terrain tiles
+        TerrainTilePager _tiles;
+
+        std::shared_ptr<TerrainTileFactory> _tileFactory;
+
+        Result<> createRootTiles(VSGContext);
+    };
+
+
+    /**
+     * Root node of the terrain geometry
+     */
+    class ROCKY_EXPORT TerrainNode : public vsg::Inherit<vsg::Switch, TerrainNode>,
+        public TerrainSettings,
+        public TerrainActivity
+    {
+    public:
+        
+        //! Intersect a point with the loaded terrain geometry.
+        //! On a globe, the query follows a radial line toward the center of the planet.
+        Result<TerrainIntersection> intersect(const GeoPoint& input) const;
+
+        //! Intersect loaded terrain along geodetic vertical on a globe, or constant XY on a projected map.
+        //! Searches downward from +1,000,000 to -1,000,000 altitude (meters on a globe, map units otherwise),
+        //! independently of input altitude. Returns failure for invalid coordinates or no intersection.
+        //! Call while the terrain scene graph is not being modified.
+        Result<TerrainIntersection> intersectVertical(const GeoPoint& input) const;
+
+        //! Bounds the finest resident terrain tiles covering a footprint in a caller's local Z coordinates.
+        //! Uses elevation-aware tile boxes (including skirts), without fetching data. Fails if coverage is
+        //! incomplete or spans multiple terrain profiles. Call only while the terrain scene is not changing.
+        Result<glm::dvec2> localHeightRange(const GeoExtent& footprint, const glm::dmat4& worldToLocal) const;
+
+    public:
+        //! Construct a new terrain node
+        TerrainNode(VSGContext);
+
+        virtual ~TerrainNode();
+
+        //! Map to render, and profile to render it in
+        Result<> setMap(
+            std::shared_ptr<Map> map,
+            const Profile& tilingProfile,
+            const SRS& renderingSRS,
+            VSGContext cx);
+
+        //! Clear out the terrain and rebuild it from the map model
+        void reset(VSGContext context);
+
+        //! Rebuild the terrain pipeline after startup rendering configuration changes.
+        void rebuildRenderPipeline(VSGContext context);
+
+        //! Updates the terrain periodically at a safe time.
+        //! @return true if any updates were applied
+        bool update(VSGContext context);
+
+        //! Map containing data model for the terrain
+        std::shared_ptr<const Map> map;
+
+        //! Tiling profile used to subdivide the terrain
+        Profile profile;
+
+        //! Spatial reference system of the rendered terrain
+        SRS renderingSRS;
+
+        //! Creates Vulkan state for rendering terrain tiles.
+        std::shared_ptr<TerrainState> state;
+
+        //! Reflects any startup errors that occur
+        Status status;
+
+        //! Deserialize from JSON
+        Result<> from_json(const std::string& JSON, const IOOptions& io);
+
+        //! Serialize to JSON
+        std::string to_json() const;
+
+        //! Get some stats from the terrain engine(s)
+        struct Stats {
+            size_t numResidentTiles = 0;
+            size_t geometryPoolSize = 0;
+        };
+        Stats stats() const;
+
+    private:
+
+        vsg::ref_ptr<vsg::StateGroup> _profileNodes;
+        Result<> createProfiles(VSGContext);
+        CallbackSubs _callbacks;
+        std::vector<Layer::Ptr> _terrainLayers;
+        std::shared_ptr<SharedRenderData> _sharedRenderData;
+        Revision _sharedDataRevision = 0;
+        friend class TerrainState;
+    };
+}
+
+EVSG_type_name(geostudio::native::TerrainProfileNode)
+EVSG_type_name(geostudio::native::TerrainNode)

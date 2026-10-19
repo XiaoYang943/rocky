@@ -1,0 +1,137 @@
+/**
+ * rocky c++
+ * Copyright 2023-2024 Pelican Mapping, Chris Djali
+ * MIT License
+ */
+#include "geostudio/native/globe/AzureImageLayer.h"
+#ifdef ROCKY_HAS_AZURE
+
+#include "geostudio/native/globe/Context.h"
+#include "geostudio/native/globe/json.h"
+
+using namespace geostudio::native;
+using namespace geostudio::native::detail;
+using namespace geostudio::native::Azure;
+
+#undef LC
+#define LC "[Azure] "
+
+ROCKY_ADD_OBJECT_FACTORY(AzureImage,
+    [](std::string_view JSON, const IOOptions& io) {
+        return AzureImageLayer::create(JSON, io); })
+
+AzureImageLayer::AzureImageLayer() :
+    super()
+{
+    construct({}, {});
+}
+
+AzureImageLayer::AzureImageLayer(std::string_view JSON, const IOOptions& io) :
+    super(JSON, io)
+{
+    construct(JSON, io);
+}
+
+void
+AzureImageLayer::construct(std::string_view JSON, const IOOptions& io)
+{
+    setLayerTypeName("AzureImage");
+
+    const auto j = parse_json(JSON);
+    get_to(j, "subscriptionKey", subscriptionKey);
+    get_to(j, "tilesetId", tilesetId);
+    get_to(j, "mapTileApiUrl", mapTileApiUrl);
+
+    // environment variable key overrides a key set in code
+    auto key = getEnvVar("AZURE_KEY");
+    if (key.has_value())
+    {
+        Log()->info(LC "Loading subscription key from an environment variable");
+        subscriptionKey.clear();
+        subscriptionKey.set_default(key.value());
+    }
+}
+
+std::string
+AzureImageLayer::to_json() const
+{
+    auto j = parse_json(super::to_json());
+    set(j, "subscriptionKey", subscriptionKey);
+    set(j, "tilesetId", tilesetId);
+    set(j, "mapTileApiUrl", mapTileApiUrl);
+    return j.dump();
+}
+
+Result<>
+AzureImageLayer::openImplementation(const IOOptions& io)
+{
+    auto parent = super::openImplementation(io);
+    if (parent.failed())
+        return parent;
+
+    profile = Profile("spherical-mercator");
+    setDataExtents({ profile.extent() });
+
+    // copy this so we can add headers
+    _uriContext = mapTileApiUrl->context();
+    _uriContext.headers.emplace_back("subscription-key", subscriptionKey.value());
+
+    // test fetch to make sure the API key is valid
+    TileKey test(1, 0, 0, profile);
+    auto result = createTileImplementation(test, io);
+    if (result.failed())
+    {
+        Log()->warn(LC "Failed to fetch test tile: {}", result.error().message);
+    }
+
+
+    ROCKY_TODO("When disk cache is implemented, disable it here (or come up with a mechanism to ensure it only lasts six months/the period specified in the response header) to comply with ToS.");
+
+    ROCKY_TODO("update attribution - it's a separate API call and depends on the visible region and zoom level, or can be queried for individual tiles, or there's an API to get a big JSON object with strings for each region of the world all at once");
+
+    return ResultVoidOK;
+}
+
+void
+AzureImageLayer::closeImplementation()
+{
+    super::closeImplementation();
+}
+
+Result<GeoImage>
+AzureImageLayer::createTileImplementation(const TileKey& key, const IOOptions& io) const
+{
+    auto zoom = key.level;
+    auto x = key.x;
+    auto y = key.y;
+
+    std::stringstream query;
+    query << "?api-version=" << apiVersion.value();
+    query << "&tilesetId=" << tilesetId.value();
+    query << "&zoom=" << zoom << "&x=" << x << "&y=" << y;
+    query << "&tileSize=" << tileSize.value();
+
+    // note: _uriContext holds our authentication headers
+    URI imageURI(mapTileApiUrl->full() + query.str(), _uriContext);
+
+    auto fetch = imageURI.read(io);
+    if (fetch.failed())
+    {
+        return fetch.error();
+    }
+
+    std::istringstream stream(fetch->content.data);
+    auto image_rr = io.services().readImageFromStream(stream, fetch->content.type, io);
+
+    if (image_rr.failed())
+        return image_rr.error();
+
+    auto image = image_rr.value();
+
+    if (image)
+        return GeoImage(image, key.extent());
+    else
+        return Failure_ResourceUnavailable;
+}
+
+#endif // ROCKY_HAS_AZURE

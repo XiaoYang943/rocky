@@ -1,0 +1,169 @@
+/**
+ * rocky c++
+ * Copyright 2025 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+#include "helpers.h"
+using namespace geostudio::native;
+
+
+auto Demo_Widget = [](Application& app)
+{
+#ifdef ROCKY_HAS_IMGUI
+        
+    static entt::entity entity = entt::null;
+    static bool move_widget_on_map_click = false;
+    static CallbackSub sub;
+
+    if (entity == entt::null)
+    {
+        auto handler = app.viewer->getObject<GeoMouseHandler>("demo.mouse");
+
+        sub = handler->onLeftClick([&](const TerrainIntersection& isect, const View& view)
+            {
+                if (move_widget_on_map_click)
+                {
+                    app.registry.read([&](entt::registry& r)
+                        {
+                            auto& transform = r.get<Transform>(entity);
+                            auto old = transform.position.transform(SRS::WGS84);
+                            auto pos = isect.point.transform(SRS::WGS84);
+                            pos.z = old.z;
+                            transform.position = pos;
+                            transform.dirty(r);
+                        });
+                }
+            });
+
+
+        auto [lock, registry] = app.registry.write();
+
+        entity = registry.create();
+
+        auto& widget = registry.emplace<Widget>(entity);
+
+        widget.render = [&](WidgetInstance& i)
+            {
+                static float some_float = 0;
+                static int some_int = 0;
+                static bool fixed_window_open = false;
+
+                ImGui::SetCurrentContext(i.context);
+
+                i.windowFlags &= ~ImGuiWindowFlags_NoInputs;
+                i.windowFlags &= ~ImGuiWindowFlags_NoBringToFrontOnFocus;
+
+                ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 7.0f);
+                ImGui::SetNextWindowBgAlpha(1.0f);
+
+                ImGui::SetNextWindowPos(ImVec2{ i.position.x, i.position.y }, ImGuiCond_Always, ImVec2{ 0.5f, 0.5f });
+
+                ImGui::Begin(i.uid.c_str(), nullptr, i.windowFlags);
+                {
+                    // respond to intersections and highlighting
+                    i.checkFocus();
+                    i.drawHighlight();
+
+                    ImGui::TextUnformatted("I am a widget.");
+                    ImGui::SliderFloat("Slider", &some_float, 0.0f, 1.0f);
+                    ImGui::Checkbox("Show me a fixed-position window", &fixed_window_open);
+                }
+                
+                ImGui::End();
+
+                ImGui::PopStyleVar();
+
+                if (fixed_window_open)
+                {
+                    ImGui::SetNextWindowPos(ImVec2(ImGui::GetMainViewport()->Size.x - 400, ImGui::GetMainViewport()->Size.y - 200));
+
+                    if (ImGui::Begin("Fixed-position window"))
+                    {
+                        Transform& transform = i.registry.get<Transform>(i.entity);
+                        auto p = transform.position.transform(SRS::WGS84);
+
+                        ImGui::TextUnformatted("Widgets can be placed at absolute coordinates too.");
+                        ImGui::Separator();
+                        if (ImGuiLTable::Begin("pos_table")) {
+                            ImGuiLTable::Text("Latitude:", "%.3f", p.y);
+                            ImGuiLTable::Text("Longitude:", "%.3f", p.x);
+                            ImGuiLTable::Text("Altitude:", "%.1f", p.z);
+                            ImGuiLTable::End();
+                        }
+                        ImGui::Checkbox("Move widget on map click", &move_widget_on_map_click);
+                        ImGui::Separator();
+                        if (ImGui::Button("Whatever")) {
+                            fixed_window_open = false;
+                            move_widget_on_map_click = false;
+                        }
+                    }
+                    ImGui::End();
+                }
+            };
+
+        // Attach a transform to place and move the label:
+        auto& transform = registry.emplace<Transform>(entity);
+        transform.position = GeoPoint(SRS::WGS84, -25.0, 25.0, 2'500'000.0);
+        transform.topocentric = true;
+
+        // Drop line from the widget to the ground, for fun.
+        auto& droplineStyle = registry.emplace<LineStyle>(entity);
+        droplineStyle.color = Color(0.1f, 0.1f, 0.1f, 1.0f);
+        droplineStyle.width = 2;
+
+        auto& droplineGeom = registry.emplace<LineGeometry>(entity);
+        droplineGeom.points = { { 0,0,0 }, { 0, 0, -2'500'000.0 } };
+
+        registry.emplace<Line>(entity, droplineGeom, droplineStyle);
+
+        // TESTING:
+        {
+            auto border = registry.create();
+            auto& w = registry.emplace<Widget>(border);
+            w.render = [&](WidgetInstance& i)
+                {
+                    if (i.view.viewID > 0)
+                    {
+                        const float thickness = 4.0f;
+
+                        ImGui::GetForegroundDrawList(ImGui::GetMainViewport())->AddRect(
+                            ImVec2{ (float)i.view.viewport.xmin, (float)i.view.viewport.ymin },
+                            ImVec2{ (float)i.view.viewport.xmax, (float)i.view.viewport.ymax },
+                            StockColor::Yellow.as(Color::Format::ABGR),
+                            0.0f,
+                            0,
+                            thickness);
+                    }
+                };
+        }
+
+        app.vsgcontext->requestFrame();
+    }
+
+    if (ImGuiLTable::Begin("widget_demo"))
+    {
+        auto [lock, reg] = app.registry.read();
+
+        auto& v = reg.get<Visibility>(entity).visible[0];
+        if (ImGuiLTable::Checkbox("Show", &v))
+        {
+            setVisible(reg, entity, v);
+        }
+
+        auto& transform = reg.get<Transform>(entity);
+
+        if (ImGuiLTable::SliderDouble("Latitude", &transform.position.y, -85.0, 85.0, "%.1lf"))
+            transform.dirty(reg);
+
+        if (ImGuiLTable::SliderDouble("Longitude", &transform.position.x, -180.0, 180.0, "%.1lf"))
+            transform.dirty(reg);
+
+        if (ImGuiLTable::SliderDouble("Altitude", &transform.position.z, 0.0, 2'500'000.0, "%.1lf"))
+            transform.dirty(reg);
+
+        ImGuiLTable::End();
+    }
+
+#endif
+};

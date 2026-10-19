@@ -1,0 +1,41 @@
+/**
+ * rocky c++
+ * Copyright 2025 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+#include <geostudio/native/globe/vsg/Common.h>
+
+namespace geostudio::native
+{
+    namespace detail
+    {
+        //! Synchronizes reused offscreen attachments and graphics sampling on
+        //! the same queue. Sampling may address any texel, not just the pixel's
+        //! framebuffer region. The returned dependencies require no GPU objects.
+        ROCKY_EXPORT vsg::RenderPass::Dependencies makeRTTDependencies(bool color, bool depth);
+    }
+
+    /**
+    * Utilities for render-to-texture.
+    */
+    class ROCKY_EXPORT RTT
+    {
+    public:
+        //! Create a rendergraph that renders to a texture. Insert this render graph
+        //!   under a CommandGraph to activate it.
+        //! @param context VSG context to use
+        //! @param extent Extents of the render surface
+        //! @param colorImageInfo If not null, RTT will generate a color texture in this object
+        //! @param depthImageInfo If not null, RTT will generate a depth texture in this object.
+        //!   Note, you still need a depth texture even if you only want color but still need
+        //!   the render to use depth testing!
+        static vsg::ref_ptr<vsg::RenderGraph> createOffScreenRenderGraph(
+            vsg::Context& context,
+            const VkExtent2D& extent,
+            vsg::ref_ptr<vsg::ImageInfo> colorImageInfo,
+            vsg::ref_ptr<vsg::ImageInfo> depthImageInfo,
+            const vsg::vec4& clearColor = vsg::vec4(1.0f, 0.3f, 0.4f, 1.0f),
+            vsg::ref_ptr<vsg::RenderPass> compatibleRenderPass = {});
+    };
+}

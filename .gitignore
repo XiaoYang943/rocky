@@ -2,3 +2,12 @@ build/vcpkg
 build/x64-windows
 build/install/
 imgui.ini
+# GeoStudio SDK generated state
+.deps/
+.build/
+out/
+.docs-tmp/
+
+# The Reader implementation directory is source, not a binary output.
+!src/io/bin/
+!src/io/bin/*.cpp

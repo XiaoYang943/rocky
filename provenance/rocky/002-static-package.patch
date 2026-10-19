@@ -1,0 +1,23 @@
+diff --git a/src/rocky/rocky-config.cmake.in b/src/rocky/rocky-config.cmake.in
+index ca6b2cf..de68a6d 100644
+--- a/src/rocky/rocky-config.cmake.in
++++ b/src/rocky/rocky-config.cmake.in
+@@ -29,11 +29,17 @@ if(NOT @ROCKY_BUILD_SHARED_LIBS@)
+         find_dependency(vsgXchange CONFIG)
+     endif()
+     if(@ROCKY_HAS_GDAL@)
+-        find_dependency(GDAL CONFIG)
++        find_dependency(GDAL)
+     endif()
+     if(@ROCKY_HAS_JSON@)
+         find_dependency(nlohmann_json CONFIG)
+     endif()
++    if(@ROCKY_HAS_CURL@)
++        find_dependency(CURL CONFIG)
++    endif()
++    if(@ROCKY_HAS_IMGUI@)
++        find_dependency(imgui CONFIG)
++    endif()
+     if(@ROCKY_HAS_SLUGHORN@)
+         find_dependency(slughorn 0.0.2 CONFIG)
+     endif()

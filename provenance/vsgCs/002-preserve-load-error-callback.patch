@@ -1,0 +1,11 @@
+--- a/src/vsgCs/TilesetNode.cpp
++++ b/src/vsgCs/TilesetNode.cpp
+@@ -85,7 +85,7 @@
+     options.mainThreadLoadingTimeLimit = 5.0;
+     options.tileCacheUnloadTimeLimit = 5.0;
+     options.contentOptions.enableWaterMask = false;
+-    options.loadErrorCallback =
++    if (!options.loadErrorCallback) options.loadErrorCallback =
+         [](const Cesium3DTilesSelection::TilesetLoadFailureDetails& details)
+         {
+             if (details.statusCode != 200)

@@ -1,0 +1,95 @@
+/**
+ * rocky c++
+ * Copyright 2026 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+#include <geostudio/native/globe/Common.h>
+#include <geostudio/native/globe/IOTypes.h>
+#include <memory>
+#include <functional>
+#include <unordered_map>
+#include <set>
+#include <cstdint>
+
+namespace geostudio::native
+{
+    class ROCKY_EXPORT ContextImpl
+    {
+    public:
+        //! Copy constructor
+        ContextImpl(const ContextImpl& rhs) = delete;
+        ContextImpl(ContextImpl&&) noexcept = delete;
+
+        // destructor
+        virtual ~ContextImpl();
+
+        //! Whether this context intialized OK
+        Status status;
+
+        //! Default IO options
+        IOOptions io;
+
+    public: // Object factory functions
+
+        //! Object creation function that lets you create objects based on their name.
+        //! Typical use is for deserializing polymorphic objects from JSON, like
+        //! map layers.
+        using ObjectFactory = std::function<
+            std::shared_ptr<Object>(const std::string& JSON, const IOOptions& io)>;
+
+        //! Create an object based on a name and a JSON-serialized configuration
+        template<class T>
+        static std::shared_ptr<T> createObject(const std::string& name, const std::string& JSON, const IOOptions& io) {
+            return std::dynamic_pointer_cast<T>(createObjectImpl(name, JSON, io));
+        }
+
+        //! Global object factory map
+        //! Use the ROCKY_ADD_OBJECT_FACTORY macro for bootstrap-time registration
+        static std::unordered_map<std::string, ObjectFactory>& objectFactories();
+
+        //! Informational
+        static std::set<std::string>& about();
+
+    protected:
+        //! Construct a new application context.
+        ContextImpl();
+
+    private:
+        static std::shared_ptr<Object> createObjectImpl(const std::string& name, const std::string& JSON, const IOOptions& io);
+
+        friend class ContextFactory;
+    };
+
+    using Context = ContextImpl*;
+
+    class ContextSingleton
+    {
+    public:
+        ContextSingleton() = default;
+        ContextSingleton(ContextImpl* ptr) : _unique(ptr) {}
+        inline Context get() { return _unique.get(); }
+        inline const Context get() const { return _unique.get(); }
+    private:
+        std::unique_ptr<ContextImpl> _unique;
+    };
+
+    class ContextFactory
+    {
+    public:
+        template<typename... Args>
+        static ContextSingleton create(Args&&... args) {
+            return ContextSingleton(new ContextImpl(std::forward<Args>(args)...));
+        }
+    };
+}
+
+
+
+// macro to install an object factory at startup time from a .cpp file.
+#define ROCKY_ADD_OBJECT_FACTORY(NAME, FUNC) \
+        struct __ROCKY_OBJECTFACTORY_##NAME##_INSTALLER { \
+            __ROCKY_OBJECTFACTORY_##NAME##_INSTALLER () { \
+                geostudio::native::ContextImpl::objectFactories()[geostudio::native::detail::toLower(#NAME)] = FUNC; \
+        } }; \
+        __ROCKY_OBJECTFACTORY_##NAME##_INSTALLER __rocky_objectFactory_##NAME ;

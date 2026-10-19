@@ -1,0 +1,380 @@
+[
+  {
+    "upstreamPath": ".clang-format",
+    "upstreamSha256": "d958548957f7f865ee8f5334e93f2c57d14f323fce50c163122fdb7f766b8be9",
+    "path": "provenance/vsgXchange/upstream/.clang-format",
+    "sha256": "d958548957f7f865ee8f5334e93f2c57d14f323fce50c163122fdb7f766b8be9"
+  },
+  {
+    "upstreamPath": ".gitignore",
+    "upstreamSha256": "f15caae5bdb5008cc0a70c3d1cbc03383794908503d0730291d42bab91c8f677",
+    "path": "provenance/vsgXchange/upstream/.gitignore",
+    "sha256": "f15caae5bdb5008cc0a70c3d1cbc03383794908503d0730291d42bab91c8f677"
+  },
+  {
+    "upstreamPath": "CMakeLists.txt",
+    "upstreamSha256": "1aa78af88706a6d122d5d20667ce010fad78cb02eb8e3269da5d941f6c9b98a4",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "LICENSE.md",
+    "upstreamSha256": "2c69ec8d553dad77631dfb74cbfaf765d0c4e0a67ca635b1b4c09b30fff5a802",
+    "path": "provenance/vsgXchange/upstream/LICENSE.md",
+    "sha256": "2c69ec8d553dad77631dfb74cbfaf765d0c4e0a67ca635b1b4c09b30fff5a802"
+  },
+  {
+    "upstreamPath": "README.md",
+    "upstreamSha256": "14df9440758c09acb73cd583b33113138697443549893ca25380afb626e6b813",
+    "path": "provenance/vsgXchange/upstream/README.md",
+    "sha256": "14df9440758c09acb73cd583b33113138697443549893ca25380afb626e6b813"
+  },
+  {
+    "upstreamPath": "applications/vsgconv/CMakeLists.txt",
+    "upstreamSha256": "d04e7c219d5199bc56aa80dd444fc26afbfcce6b82c9ce0c23b608ed7598a1c3",
+    "path": "tools/io/vsgconv/CMakeLists.txt",
+    "sha256": "d04e7c219d5199bc56aa80dd444fc26afbfcce6b82c9ce0c23b608ed7598a1c3"
+  },
+  {
+    "upstreamPath": "applications/vsgconv/vsgconv.cpp",
+    "upstreamSha256": "d104ff57423a49cabc5f16907df58b7682935d1eedc95615abc129953c9ea6de",
+    "path": "tools/io/vsgconv/vsgconv.cpp",
+    "sha256": "7c285320044b646db597f36707b930887198af7664743c9ed17b448450add9e4"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/3DTiles.h",
+    "upstreamSha256": "fe78eb9e98b7b64ce6bd8a9b24fad684a9a55dcbeb9a8c516e00b23ce8ea74f3",
+    "path": "include/geostudio/native/io/3DTiles.h",
+    "sha256": "7d1bbe315ed416e4d0f9f3da5c28f912e3fb1973e527a79889f5fa80bc7e2c2d"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/Export.h",
+    "upstreamSha256": "a0d4358c56a7eb89468a0cd3a177f66da182d6ab68334a892f6151738baac54e",
+    "path": "include/geostudio/native/io/Export.h",
+    "sha256": "f829cdea55f787fb9f86d384e3127524d52c360e80b8f832e673be9547b9980a"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/all.h",
+    "upstreamSha256": "b5447b52a6148412b9e4dcbcf66dc0be857d09fcf3810e3728f1ba67878ad6f3",
+    "path": "include/geostudio/native/io/all.h",
+    "sha256": "f920adb8987d3dc879668d1012732a23bb3af85beb1ca358c87066fc378a5800"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/assimp.h",
+    "upstreamSha256": "10ee5d0e82d0841cdee0b7848fa725961bd49a43a3921e81aa2041dcfa9b03f0",
+    "path": "include/geostudio/native/io/assimp.h",
+    "sha256": "3e27b5acd59a2823f356324d5e3586d4e55537cc94ddb95696040a281934f544"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/bin.h",
+    "upstreamSha256": "ff311cba57b5d208825f2744e8a58adeb5b32d31046cce3a4bd6a31c41a4f02d",
+    "path": "include/geostudio/native/io/bin.h",
+    "sha256": "33977436f965b81bdf6d6ee5cb7b43061801eac968c6efcf3d5aa0a67e31cea0"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/cpp.h",
+    "upstreamSha256": "b01949c3155f09603bfee107e0fc846b8ad3d0f52c84565c5bde92138401ad98",
+    "path": "include/geostudio/native/io/cpp.h",
+    "sha256": "7e2797cb047fc32d109db012db1c601862316c30b026db7ab5bb81cdd7c909be"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/curl.h",
+    "upstreamSha256": "91bcb767652fc4ce7f1e042d1b8acf61c2d6bfb8c0fdea101a6013ee02cdc5ca",
+    "path": "include/geostudio/native/io/curl.h",
+    "sha256": "3cf0b2b6fba2afba1000e51bf0a0959c0fe0bc13fe4317316a6603d7911919cf"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/freetype.h",
+    "upstreamSha256": "d8c44ae40bbea67c2ea1471e707c88bbb58ac27b53f4b84e1f594c12245b2a6b",
+    "path": "include/geostudio/native/io/freetype.h",
+    "sha256": "43b76a5e348a69d9ee80b3e3822eb1bb2f15ad47ec69d845946525a94b2035cd"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/gdal.h",
+    "upstreamSha256": "86154bc40bae57b0c1a825a8fb1993949c9eb2cc790128c7798e26003220a20b",
+    "path": "include/geostudio/native/io/gdal.h",
+    "sha256": "8e64993467f4b36f8393e14ea8cb4d59ee535e090a8b4a59c8cf9ba2223f5966"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/gltf.h",
+    "upstreamSha256": "b8e6b4e75844997f39fc58ea604226737006e8d68cd0611d473c516ef32de2dc",
+    "path": "include/geostudio/native/io/gltf.h",
+    "sha256": "5ae8a9f6fac99c3897798298a46362b3d258d66037b6906ceaedd4040ac8dbcc"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/images.h",
+    "upstreamSha256": "d01c2069d949b9b335d2fcdf914ac9463fa380bceaa741777871bdf6e797715a",
+    "path": "include/geostudio/native/io/images.h",
+    "sha256": "5044dfc1083c38ff2421671bf7455c9078b2fab76f72576bb612ffd04a81f164"
+  },
+  {
+    "upstreamPath": "include/vsgXchange/models.h",
+    "upstreamSha256": "1e86fad004c8d73736bde94440e89904107d40ddd48422a58cb446cf90603ae0",
+    "path": "include/geostudio/native/io/models.h",
+    "sha256": "d92c1da3dd10331619a47ef09b5a2b0d21bfc9b4cb4db77c7f2615abe6abadcd"
+  },
+  {
+    "upstreamPath": "src/3DTiles/3DTiles.cpp",
+    "upstreamSha256": "4b9f60db54b6102440ce987d8c64cab283fa3228ae01c2d8d47938fa9d207ebe",
+    "path": "src/io/3DTiles/3DTiles.cpp",
+    "sha256": "3a4de0f691f0a1a6b052092f3ecbe5e253753e6cfe21060173d7fe6fcc8c2750"
+  },
+  {
+    "upstreamPath": "src/3DTiles/Builder.cpp",
+    "upstreamSha256": "e009c4e12363c7e12f87afb039a09d03384d89ad60a2b9d59a7a8344ed12c791",
+    "path": "src/io/3DTiles/Builder.cpp",
+    "sha256": "b3a23d1ee645a97cc6a8b21397b46bb9ba6a80221b9d8bc1897993c73492ac92"
+  },
+  {
+    "upstreamPath": "src/3DTiles/b3dm.cpp",
+    "upstreamSha256": "c32ab4b9823eba4504d7d648b379f0fe708817df8192f780155305c7a61759a3",
+    "path": "src/io/3DTiles/b3dm.cpp",
+    "sha256": "d7abd5caf79b904790241f955b7ffdad1a4f3c8aa96dde8bac05bf45ff312378"
+  },
+  {
+    "upstreamPath": "src/3DTiles/build_vars.cmake",
+    "upstreamSha256": "7e569797449d1e27b1b15272c34202d0b5a3a9b6e27a44b97f8ffd7362de08ce",
+    "path": "src/io/3DTiles/build_vars.cmake",
+    "sha256": "7e569797449d1e27b1b15272c34202d0b5a3a9b6e27a44b97f8ffd7362de08ce"
+  },
+  {
+    "upstreamPath": "src/3DTiles/cmpt.cpp",
+    "upstreamSha256": "9b1c7e2fe959f165bb91a40e5c7e3a80fa3d5abe04eeefcd343dfe95f63b49c5",
+    "path": "src/io/3DTiles/cmpt.cpp",
+    "sha256": "8384a4edf920965ea35b28ea81b588b5582af6fcf7a71dece69ed8b50b6dbe79"
+  },
+  {
+    "upstreamPath": "src/3DTiles/i3dm.cpp",
+    "upstreamSha256": "bf6da7091eab4cdae2e36fcb58e62d03bc83b023782bd6e2bc894b19866ff4dc",
+    "path": "src/io/3DTiles/i3dm.cpp",
+    "sha256": "2c440ffb35c2d220321ac8d88fe306b12b720612ad8019e206754b4556a1186f"
+  },
+  {
+    "upstreamPath": "src/CMakeLists.txt",
+    "upstreamSha256": "3c19a68ef592ee9a9b27fd1d24068fbd6b58f0a266f4dd5b720fd33b24a3180a",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "src/all/Version.cpp",
+    "upstreamSha256": "dbd8d908c161fe1c776dcb068c3463d6028c6d6aae5ed3aafb20c0f3ef06a8ce",
+    "path": "src/io/all/Version.cpp",
+    "sha256": "f34e7776dbdf9c4076f5e9257f363486e6be37f29bccf14efe85684445883c7f"
+  },
+  {
+    "upstreamPath": "src/all/Version.h.in",
+    "upstreamSha256": "60ca77bd52a670f5ac939b0b390d9e0c467833309480301dcdf8117ca3c1668a",
+    "path": "src/io/all/Version.h.in",
+    "sha256": "b1ba6f09f16bee69a7f51f7af088628615974c3b8290a53684e434320554b82f"
+  },
+  {
+    "upstreamPath": "src/all/all.cpp",
+    "upstreamSha256": "5c3b777584c8799cc1ea4c70e66149caf64c02cbf7ca4a74e6d562e4bb601ff6",
+    "path": "src/io/all/all.cpp",
+    "sha256": "f96843be72770b42eaf04873104580169a16dc33c9f94d39452e95eefb9a08a8"
+  },
+  {
+    "upstreamPath": "src/assimp/Builder.cpp",
+    "upstreamSha256": "5d41633e2d3a33391f9403f73303309156f24f6d252198156ef0085683b9ede1",
+    "path": "src/io/assimp/Builder.cpp",
+    "sha256": "7c32f3619179fe9d1f8ce973f001a36786d72e43aad51647d8efc54d1da2ea64"
+  },
+  {
+    "upstreamPath": "src/assimp/assimp.cpp",
+    "upstreamSha256": "24265521088676036449bd05c4815bd7b5381e3d57dcf4af9b2b64ba77a94f32",
+    "path": "src/io/assimp/assimp.cpp",
+    "sha256": "f0c89760dfbad88bcfa19db6c8feafb5a77e296bebe936fb930dac9027ab08ae"
+  },
+  {
+    "upstreamPath": "src/assimp/assimp_fallback.cpp",
+    "upstreamSha256": "b657d1966c78116d86babc6ec95c964ec7f8df28e3cf70e49625ac10aa1e752c",
+    "path": "src/io/assimp/assimp_fallback.cpp",
+    "sha256": "2c0b2a0a3e6745d23ed8d148c6464b3246ead77aa53de3a0973d78747ce39c28"
+  },
+  {
+    "upstreamPath": "src/assimp/build_vars.cmake",
+    "upstreamSha256": "701a62ed5ca5eeaff6edeb22b372e421472771015e98fa03820a76794fa1f0b0",
+    "path": "src/io/assimp/build_vars.cmake",
+    "sha256": "701a62ed5ca5eeaff6edeb22b372e421472771015e98fa03820a76794fa1f0b0"
+  },
+  {
+    "upstreamPath": "src/bin/bin.cpp",
+    "upstreamSha256": "4a849c70396a73e450b46acbea32bb9e6acd42c7b681248552f07bce148fa3d0",
+    "path": "src/io/bin/bin.cpp",
+    "sha256": "ca8757158db4a78437e26c31ac7d79170948e628dcebc256e65fadedb7c58dac"
+  },
+  {
+    "upstreamPath": "src/cpp/cpp.cpp",
+    "upstreamSha256": "fbe18d84bbbfcaae996695907d7177adef11f7d8bd72acf92daccdc00db656e1",
+    "path": "src/io/cpp/cpp.cpp",
+    "sha256": "af8794d329730a4291765d355c04d2bab5dc3c34416b10f23dbdda4d57f44eca"
+  },
+  {
+    "upstreamPath": "src/curl/build_vars.cmake",
+    "upstreamSha256": "cd89094bd99cb8e8dffa8c52e105e93c0b514f33ff994c48d4d76a90b7368983",
+    "path": "src/io/curl/build_vars.cmake",
+    "sha256": "cd89094bd99cb8e8dffa8c52e105e93c0b514f33ff994c48d4d76a90b7368983"
+  },
+  {
+    "upstreamPath": "src/curl/curl.cpp",
+    "upstreamSha256": "26f9e2b0be19c9c32512ad550aec90184cc6eb88fe40f757bb34083da7478dda",
+    "path": "src/io/curl/curl.cpp",
+    "sha256": "30eba27b21163f79b9826230c45e4fcdc5faad593f9163828c10492ed1ea5120"
+  },
+  {
+    "upstreamPath": "src/curl/curl_fallback.cpp",
+    "upstreamSha256": "2c3325588bf960bfe73f4576dc87751e028f55054e77a754e516765af9774359",
+    "path": "src/io/curl/curl_fallback.cpp",
+    "sha256": "6870817e2781f674e26016c5c5c5c9154b377e6e219f4b70d2e4947821ed0db8"
+  },
+  {
+    "upstreamPath": "src/dds/dds.cpp",
+    "upstreamSha256": "cf29bc2ff19b81333a81b8c678fc80614bd028216c1a26b929263acf61bab473",
+    "path": "src/io/dds/dds.cpp",
+    "sha256": "68df046e27f2d44cfd779244af1aef47212ec93cc2e9c7022bb03a745cb03e08"
+  },
+  {
+    "upstreamPath": "src/dds/tinyddsloader.h",
+    "upstreamSha256": "0dd59c61cdda20dbc2b80944f7f8659aef1b1194b32488ad80062546bc9b48e5",
+    "path": "src/io/dds/tinyddsloader.h",
+    "sha256": "0dd59c61cdda20dbc2b80944f7f8659aef1b1194b32488ad80062546bc9b48e5"
+  },
+  {
+    "upstreamPath": "src/freetype/build_vars.cmake",
+    "upstreamSha256": "d7544fd8d818e68a6a361d9c8b8560d69dd5baf1dfaa5936ddd849b385caf16a",
+    "path": "src/io/freetype/build_vars.cmake",
+    "sha256": "d7544fd8d818e68a6a361d9c8b8560d69dd5baf1dfaa5936ddd849b385caf16a"
+  },
+  {
+    "upstreamPath": "src/freetype/freetype.cpp",
+    "upstreamSha256": "35b7b207dba159d3993ea67acefea1d03866731a359ced6b1ec13f080ef5e732",
+    "path": "src/io/freetype/freetype.cpp",
+    "sha256": "5f127389963189c41f2d3b906582848a2318152d8163f97d46d05dc7a83a0678"
+  },
+  {
+    "upstreamPath": "src/freetype/freetype_fallback.cpp",
+    "upstreamSha256": "6126d9fadd741f530389273d42d352751e106e81f9431db626be351bcb000c76",
+    "path": "src/io/freetype/freetype_fallback.cpp",
+    "sha256": "0b0f0bebdc76eb7d51bd9e5308d29182f2f61ca48336572c31b2a64cf4aaa9a8"
+  },
+  {
+    "upstreamPath": "src/gdal/GDAL.cpp",
+    "upstreamSha256": "a1c9410c7c05251c3889a788235f9ab867653d5ed1463fd8eb261bad3a9a84e3",
+    "path": "src/io/gdal/GDAL.cpp",
+    "sha256": "c2d325139bbd15db3e2142e2a4eef70fe590842905a1c4e6b96d6dfb259d228a"
+  },
+  {
+    "upstreamPath": "src/gdal/GDAL_fallback.cpp",
+    "upstreamSha256": "f069c79b30f82517cb63e22c0d4b620b5d27af22a340e6a3128e0e40a135b69a",
+    "path": "src/io/gdal/GDAL_fallback.cpp",
+    "sha256": "8ef21a4a74990516ab83b49cb155f7638f959bacec03a834bcc6e6fbb7a62935"
+  },
+  {
+    "upstreamPath": "src/gdal/build_vars.cmake",
+    "upstreamSha256": "8c0bdc3bbf0f05cad7dcf91d3754f2a8d13e40a89197aa1a70a2f8564c31d448",
+    "path": "src/io/gdal/build_vars.cmake",
+    "sha256": "8c0bdc3bbf0f05cad7dcf91d3754f2a8d13e40a89197aa1a70a2f8564c31d448"
+  },
+  {
+    "upstreamPath": "src/gdal/gdal_utils.cpp",
+    "upstreamSha256": "bc64040a85263f66e236d5be9163a5088906552752b377358133efb8cf4ebc6f",
+    "path": "src/io/gdal/gdal_utils.cpp",
+    "sha256": "7552396e7630a17b36fd76f9ebf8a79da3392acd46e78dd4cd7d06346a7543c4"
+  },
+  {
+    "upstreamPath": "src/gdal/meta_utils.cpp",
+    "upstreamSha256": "2fc11514589efff2f338f216ce545273651e922251a9b048e46ad6650f2e777a",
+    "path": "src/io/gdal/meta_utils.cpp",
+    "sha256": "3218615d628e7c161e769877844bed52738f110a5f085c1c3d41b7d2ccbe2224"
+  },
+  {
+    "upstreamPath": "src/gltf/Builder.cpp",
+    "upstreamSha256": "fd8f2f895c19227b13aec6406b63a557548648209b26fd102200a9616133aaf5",
+    "path": "src/io/gltf/Builder.cpp",
+    "sha256": "035e59b30d7f76ac82fa6d5f278528e638d0c63540e1e6d065fc74a738d3a33a"
+  },
+  {
+    "upstreamPath": "src/gltf/build_vars.cmake",
+    "upstreamSha256": "73a8087539ae4eeb2a65e20cf9d362e7c50b43a87cf04d2a8020359ef8f401c8",
+    "path": "src/io/gltf/build_vars.cmake",
+    "sha256": "73a8087539ae4eeb2a65e20cf9d362e7c50b43a87cf04d2a8020359ef8f401c8"
+  },
+  {
+    "upstreamPath": "src/gltf/gltf.cpp",
+    "upstreamSha256": "1e09e1fd0c80df6abd728ef0919bea2daddd8bc293ca54fcdf0210ca8073d431",
+    "path": "src/io/gltf/gltf.cpp",
+    "sha256": "b89a2741ad4c31b1801b8e5e33e9f8a6e0a6bf9816417c7bcf78ad91f9f959a1"
+  },
+  {
+    "upstreamPath": "src/images/images.cpp",
+    "upstreamSha256": "127baaedcd1e4c48b797f823d96c23f382a325a1457ecd01904cb5fd967ffcd0",
+    "path": "src/io/images/images.cpp",
+    "sha256": "c744e967d988807f25e3f41f4be5fb906d4ae3e4071b0bcfdf371604a383e8f8"
+  },
+  {
+    "upstreamPath": "src/ktx/build_vars.cmake",
+    "upstreamSha256": "7e8fdb3af2eca8817f31044454ae5fe7c7ed14aabf220e88b128daef4c8b512f",
+    "path": "src/io/ktx/build_vars.cmake",
+    "sha256": "7e8fdb3af2eca8817f31044454ae5fe7c7ed14aabf220e88b128daef4c8b512f"
+  },
+  {
+    "upstreamPath": "src/ktx/ktx.cpp",
+    "upstreamSha256": "22997e17a1a26dc0083113a0547bd7657b6c5da781813edc1686352e2375db25",
+    "path": "src/io/ktx/ktx.cpp",
+    "sha256": "11266cd52efb2ac799667df28eb3d3f285bfa8a4bdc146e1edcd853e19d12808"
+  },
+  {
+    "upstreamPath": "src/ktx/ktx_fallback.cpp",
+    "upstreamSha256": "03501e18a3af3922513b25b0753d5dd884394c9f3f23e96c0c346847defcdc2d",
+    "path": "src/io/ktx/ktx_fallback.cpp",
+    "sha256": "3e47cacdcf6fd05106f35d32f6808e5d05dcaeaf649d970e753ec0c52b81bc32"
+  },
+  {
+    "upstreamPath": "src/models/models.cpp",
+    "upstreamSha256": "c764c7cac8fcad092d6b05c4d9393cc9967df6720d2101f3603f2f0a5513e02f",
+    "path": "src/io/models/models.cpp",
+    "sha256": "8cc65a5e81d4b7c35d92d741f672702c176658d15cca591aec7a7649ac9c664e"
+  },
+  {
+    "upstreamPath": "src/openexr/build_vars.cmake",
+    "upstreamSha256": "871ae3429f5ef498d29175c91e31c726c149e5dfa4a06a8c8ccc520e3035fbd4",
+    "path": "src/io/openexr/build_vars.cmake",
+    "sha256": "871ae3429f5ef498d29175c91e31c726c149e5dfa4a06a8c8ccc520e3035fbd4"
+  },
+  {
+    "upstreamPath": "src/openexr/openexr.cpp",
+    "upstreamSha256": "af962a8845c93f38c68c55c1d33e2edd4616960c423b97b83f20c493451f6d18",
+    "path": "src/io/openexr/openexr.cpp",
+    "sha256": "94ae0abde123d8558776801bcac5775fab54169c9cdd7b3a6d937b590bdc37b8"
+  },
+  {
+    "upstreamPath": "src/openexr/openexr_fallback.cpp",
+    "upstreamSha256": "c818b959354641e973d50dd9f02c08aa4c5463595434aff02077d348c8394d2a",
+    "path": "src/io/openexr/openexr_fallback.cpp",
+    "sha256": "87276211369fd72878a11b3ad70a24fbe5a3e9a9ee73a2c9bbad4028ff582f3d"
+  },
+  {
+    "upstreamPath": "src/stbi/stb_image.h",
+    "upstreamSha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3",
+    "path": "src/io/stbi/stb_image.h",
+    "sha256": "594c2fe35d49488b4382dbfaec8f98366defca819d916ac95becf3e75f4200b3"
+  },
+  {
+    "upstreamPath": "src/stbi/stb_image_write.h",
+    "upstreamSha256": "fe31f93135df4ce3fa3107b744c73f13939c104aa378932018f69124c5114b50",
+    "path": "src/io/stbi/stb_image_write.h",
+    "sha256": "fe31f93135df4ce3fa3107b744c73f13939c104aa378932018f69124c5114b50"
+  },
+  {
+    "upstreamPath": "src/stbi/stbi.cpp",
+    "upstreamSha256": "0d5f47610485a067ba960e2b8638ea7de85eca7317999e8046cce27b9b75430a",
+    "path": "src/io/stbi/stbi.cpp",
+    "sha256": "8c4b35fb4c3feb7081b7d2270f5a089e9aabc4c834e7d0fee64b17444e6faf1f"
+  },
+  {
+    "upstreamPath": "src/vsgXchangeConfig.cmake.in",
+    "upstreamSha256": "4faf4fc34301dcbc18545399e2ff9cc41926796e6b23ad3d94ec48e61fc8bb9e",
+    "path": null,
+    "sha256": null
+  }
+]

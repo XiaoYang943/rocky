@@ -1,0 +1,2528 @@
+[
+  {
+    "upstreamPath": ".github/workflows/ci-linux-minimal.yml",
+    "upstreamSha256": "68497da348e79ee30039ff12ea74c85d274ace6af0dbce0db5d9102843aedc77",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": ".github/workflows/ci-windows-minimal.yml",
+    "upstreamSha256": "6586e937040d953d92520fe1f27ebc8d3991c3488f44beb857e6cba2da3a57f3",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": ".gitignore",
+    "upstreamSha256": "a758580e718545ef99e4ca4d59daa99e4620755f69e6d3c1ff709d338ce553cf",
+    "path": ".gitignore",
+    "sha256": "cab063cbbdaf485970ec49a41e204cc443d3d92a4e8f83d055be85c6a87f19fa"
+  },
+  {
+    "upstreamPath": "AGENTS.md",
+    "upstreamSha256": "f08eb45747201cbfcb9312205de8777bdd2738a947806dbf8ff397e79be17034",
+    "path": "AGENTS.md",
+    "sha256": "dd3c3bd909801160929693fbe5ba97f1b84bd8128b3be10fbac266449f9ae4ab"
+  },
+  {
+    "upstreamPath": "CMakeLists.txt",
+    "upstreamSha256": "7a774a393642a5cfd72f60dce5b58b6872749a63fe47d9f8f36cb4359cd2cbe0",
+    "path": "CMakeLists.txt",
+    "sha256": "0e8b4a180a53ec1d4e45ca7e3a2d71af9d6ee55ea109a3c9112b2fff2696a16f"
+  },
+  {
+    "upstreamPath": "LICENSE.txt",
+    "upstreamSha256": "5315791d64b06143650f19828487e77717bc36f03a7ddedea2462e1ed6f4ee9f",
+    "path": "LICENSE.txt",
+    "sha256": "3fd8ad1d2b4be57a8f52f8b065601bfd35712a8d4cf0ccccc782ba6312a6df4f"
+  },
+  {
+    "upstreamPath": "README.md",
+    "upstreamSha256": "fd0b0bcfad4d4f22e637472f23537d26e400f68372357235120a57decb8bfc42",
+    "path": "README.md",
+    "sha256": "a3de80918d0c9b9c38c1e8c6478463017122c34aa7763e414d2a3030b95b78a1"
+  },
+  {
+    "upstreamPath": "bootstrap-vcpkg.bat",
+    "upstreamSha256": "45298e3b08f64eecf06bf3bd12a9f95996bce61dd3f18d5e0cfabc0a8ff5cbdb",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "bootstrap-vcpkg.sh",
+    "upstreamSha256": "5ecfc52122841a49e94dd0fc50a95a18beeb721a94d2aa5e4f18d7a91a5570e3",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "build/build.bat",
+    "upstreamSha256": "85be3299bb91b771fd577caca2560751ee29ed022e2f77d3fcda6b0f771bfc3e",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "build/configure.bat",
+    "upstreamSha256": "870579300c28d858c8cc24c48a047463c8ebff0bdc5139431ac6273df2b35c64",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "build/rocky_shell.bat",
+    "upstreamSha256": "4840d9c1d835833bae33dc88358647040cb4b5c8c849038f0c66971f1f376fa3",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "cmake/FindImGui.cmake",
+    "upstreamSha256": "7ff366eb91f20fa47580255be4a486ccd4ef677723c20e38e702ed5b463d8404",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "cmake/FindSlughorn.cmake",
+    "upstreamSha256": "ed908f51eecd6db3724e297e6e96d66a93a36a9f84ccf73594ef96f53602657e",
+    "path": "cmake/FindSlughorn.cmake",
+    "sha256": "13101b6580b1709a485c3b75d2e9e7100f4140ba268196dd4d3f54883832de85"
+  },
+  {
+    "upstreamPath": "cmake/ResolveSlughorn.cmake",
+    "upstreamSha256": "ac325f066c8be5c7bac014a8c5b21fad5a71a5a0299cdaa05cc5f004992698df",
+    "path": "cmake/ResolveSlughorn.cmake",
+    "sha256": "f39a887292240177ddb34a3459cb801f3a8945f8ef3ed25001268530b15f6516"
+  },
+  {
+    "upstreamPath": "cmake/install-export-files.cmake",
+    "upstreamSha256": "56b2b7cbf7600c2f134a34822d66c57ef89d9e2b3c17722b858c43d1955674b0",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "cmake/licenses/slughorn-LICENSE",
+    "upstreamSha256": "8d8e1665bd549df31954417b77ba613710a7bdbf7cef9eaf13caa7a526507a65",
+    "path": "cmake/licenses/slughorn-LICENSE",
+    "sha256": "123c7ae44fd637cb8445a1de16271dd21797ff3ec0367a7256014366d63420dc"
+  },
+  {
+    "upstreamPath": "cmake/uninstall.cmake",
+    "upstreamSha256": "f8a74877f3c7b137987a919019fe308f603f09cb0bfc0487b0722c2f95419dad",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "data/arcgis.map.json",
+    "upstreamSha256": "8e880a70c607189394aedd119167ae45ad9e09def4010e27504dbf3124d4dfce",
+    "path": "examples/globe/data/arcgis.map.json",
+    "sha256": "b621f1cd7dbf1343f7f31c82411371427aa7bf2d55de091992fa0a2cc043ec9a"
+  },
+  {
+    "upstreamPath": "data/bing.map.json",
+    "upstreamSha256": "59f117e11abe078b7e7e3adbee83e51eb08466b3cedb95c78f3864374bd6681a",
+    "path": "examples/globe/data/bing.map.json",
+    "sha256": "8b604b1c6de9426914dab8b719605999c56a936565de421e058738ed5e4e930f"
+  },
+  {
+    "upstreamPath": "data/composite.map.json",
+    "upstreamSha256": "e53362cd77c1e8208127101f27f41e5b5765f695e185e8a8e25b0d3c7180f3d6",
+    "path": "examples/globe/data/composite.map.json",
+    "sha256": "9d47ef6adc9bb5a124cefeade6c442e985b7def452432782854269d0abbe4bc4"
+  },
+  {
+    "upstreamPath": "data/crop.map.json",
+    "upstreamSha256": "873c57923d7b9f7121fb557a69381eec0ded0faa7f4031e6991100171bc8ae4b",
+    "path": "examples/globe/data/crop.map.json",
+    "sha256": "eedb18ee36dbd7f1ebb34ff88beccd1202d99d79dda03edd6baa83c85909ddcb"
+  },
+  {
+    "upstreamPath": "data/fonts/times.vsgb",
+    "upstreamSha256": "30f11a57ee9179f686b931f41f88090aa287ea2edb49f2364d2f7327fa0a6fc1",
+    "path": "resources/globe/data/times.vsgb",
+    "sha256": "30f11a57ee9179f686b931f41f88090aa287ea2edb49f2364d2f7327fa0a6fc1"
+  },
+  {
+    "upstreamPath": "data/geotiff.map.json",
+    "upstreamSha256": "16cfe0a82b1ec973db8838a77b8400167c97d0b5eed1e89e14cfc2025e645bbd",
+    "path": "examples/globe/data/geotiff.map.json",
+    "sha256": "233c80e1d20dd568b480a4754966a3e5e2a2c90b1aa4d34afda23ba1bda9a45a"
+  },
+  {
+    "upstreamPath": "data/imagery/boston-inset-utm.tif",
+    "upstreamSha256": "409575e500d302a840270d2ca30c3d5874e7052c3d00f7bd236ee40c0467ad5b",
+    "path": "examples/globe/data/imagery/boston-inset-utm.tif",
+    "sha256": "409575e500d302a840270d2ca30c3d5874e7052c3d00f7bd236ee40c0467ad5b"
+  },
+  {
+    "upstreamPath": "data/imagery/world.tif",
+    "upstreamSha256": "51302f5262bec17da62173063991fefb80e2515ed99eda9ef9378454a29e4d2e",
+    "path": "examples/globe/data/imagery/world.tif",
+    "sha256": "51302f5262bec17da62173063991fefb80e2515ed99eda9ef9378454a29e4d2e"
+  },
+  {
+    "upstreamPath": "data/models/duck.gltf",
+    "upstreamSha256": "98009069c87b165df92dbc8213d7c2b4f296074097ad2ec4efddf3dbc50cdcb0",
+    "path": "examples/globe/data/models/duck.gltf",
+    "sha256": "329175b826a0ca8140346ae9559bbbeb3db7b31029f331b5e0c4a38bd94d3293"
+  },
+  {
+    "upstreamPath": "data/openmaptiles.map.json",
+    "upstreamSha256": "8dba2db80fd52e2336005ae327bcec7cc991f74e6e4e6d6028d9ca079f784bad",
+    "path": "examples/globe/data/openmaptiles.map.json",
+    "sha256": "9991016d0a8b5bcc2d35f16e65f23d03f67deac20409428a30b7d36e1583adf8"
+  },
+  {
+    "upstreamPath": "data/openstreetmap.map.json",
+    "upstreamSha256": "2715ab216b9db9b040f0dd723cbbbc46cc63113bc902513a2e8fbc4b9c69d1ff",
+    "path": "examples/globe/data/openstreetmap.map.json",
+    "sha256": "91d854f93132a672acba777b22d0185ce63cc05b51dfcde8c74c8fc0a6d2a0a5"
+  },
+  {
+    "upstreamPath": "data/openstreetmap_slippy.map.json",
+    "upstreamSha256": "90be9676c71e91c4007c946f91887e13a428bb889284d670f1cfb2c7906696b5",
+    "path": "examples/globe/data/openstreetmap_slippy.map.json",
+    "sha256": "50199256603fc5a4993435028bbe853ae4bee1184957d158ffcfa51eec261667"
+  },
+  {
+    "upstreamPath": "data/qsc.map.json",
+    "upstreamSha256": "5798d51e44b712e119351ad40522c249e0879a4dd7eb28babf3f829d7c53e59a",
+    "path": "examples/globe/data/qsc.map.json",
+    "sha256": "87df989c8cdc833fc793cb0087feaced6521096efd79348d66bda44aacab8bee"
+  },
+  {
+    "upstreamPath": "data/readymap.map.json",
+    "upstreamSha256": "389550a130dcdddf3c98dc1f5d259ad62b8b0e3646fc41cf734d55e00d47299f",
+    "path": "examples/globe/data/readymap.map.json",
+    "sha256": "59517a0ab03896d5429b9aee0a0d299e5cc9703816196fdaa0c2bd7e819c0767"
+  },
+  {
+    "upstreamPath": "data/wmts.map.json",
+    "upstreamSha256": "b73069bdd386a648fb646ceb9a6ffe67ad82b29f855da59f6eef7944f76ba2fb",
+    "path": "examples/globe/data/wmts.map.json",
+    "sha256": "9bd98a39277ee6af4c854a2d52d828a604f207411e52b90a607e2e926da17729"
+  },
+  {
+    "upstreamPath": "docs/design/vector-overlay-picking.md",
+    "upstreamSha256": "de3bf63449bb13dfe3c773eb13df6fc00f0e1caa8bf3f2f48c57045d64828812",
+    "path": "docs/design/vector-overlay-picking.md",
+    "sha256": "de3bf63449bb13dfe3c773eb13df6fc00f0e1caa8bf3f2f48c57045d64828812"
+  },
+  {
+    "upstreamPath": "docs/slughorn.md",
+    "upstreamSha256": "83413895c148a529295c7685854caa8a65810562ef1b2d4e975a8f73728d9a53",
+    "path": "docs/slughorn.md",
+    "sha256": "c0852c8a913148aea2607a62d494474956b147e96dbb1d919f8a026a4744e42f"
+  },
+  {
+    "upstreamPath": "src/CMakeLists.txt",
+    "upstreamSha256": "f1b611f1fba56de03035851aff7ae31208cd34b493084786b7a22cdcf321fdb8",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "src/apps/CMakeLists.txt",
+    "upstreamSha256": "0bc147907659f9ab48533f2d12ec3897b5290405b9d9f63f123bedad43a88dd9",
+    "path": "examples/globe/CMakeLists.txt",
+    "sha256": "ec5b4c03e38fef654670875805f7e6982316f22ea3266465cd5b6eadaca85d4e"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/CMakeLists.txt",
+    "upstreamSha256": "d23d320500eb216862a473572d306c37795d60fdd97630dba6939e8dfef21eaf",
+    "path": "examples/globe/rocky_demo/CMakeLists.txt",
+    "sha256": "b765bb34586625d57a0badb42e4c30b1f7dbe2706194454e3cd838040e3c3f5f"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Camera.h",
+    "upstreamSha256": "d6d94a59822446bdff7d948117282ee2089b5d2b9c14c4873a9e08d4bd19cb5d",
+    "path": "examples/globe/rocky_demo/Demo_Camera.h",
+    "sha256": "b960aea439c3b1e72bf3ecdb328aff1888498ceed2708d295656d07a3aa4c163"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Clamping.h",
+    "upstreamSha256": "c62a3b0c9aad81810e69d2cd184220128e52d462ea8855c6c048e0f4497e41fc",
+    "path": "examples/globe/rocky_demo/Demo_Clamping.h",
+    "sha256": "42631d32384e334482b1f83527cfc271c9c9f0bbcc74359f11c396634a8b5a21"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Decal.h",
+    "upstreamSha256": "ac44f06a6663f03b7cc579f167cdd823dd16d833be8a94445b92489693399c66",
+    "path": "examples/globe/rocky_demo/Demo_Decal.h",
+    "sha256": "3da82f078891411313bfdda9bbb189fb1d6442e92a081033223840b487a69979"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Decluttering.h",
+    "upstreamSha256": "1762237f765a9c84ca9bd42b63143eeaf31f62cb7d497f8a25cda479ffd8c5e4",
+    "path": "examples/globe/rocky_demo/Demo_Decluttering.h",
+    "sha256": "a391e789ace723c6870a8538b0df75fc9ad63baec2742ca78aeed29c146a61a1"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_DrawComponent.h",
+    "upstreamSha256": "36478919a2da1fee4c4d51419fefe1da697fb1a6db4dbcd06056108167d6f64d",
+    "path": "examples/globe/rocky_demo/Demo_DrawComponent.h",
+    "sha256": "ae6b6413d257817a7779a01006fba0ed53e743a6c07c2d78b134119128fed902"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_ElevationSampler.h",
+    "upstreamSha256": "8dabcd1b9b5325232bb65492f6242a4eab8ee894f96a5f632efe5c007a2879c4",
+    "path": "examples/globe/rocky_demo/Demo_ElevationSampler.h",
+    "sha256": "85a6e0baf9361cdb2a2691d94a0c4519d0c6db2e4e9e7816219c86bdb1514dac"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_EntityCollectionLayer.h",
+    "upstreamSha256": "4356b85d2973b04439817a8203c239732d33042b849b2310f30bce35f582ee7d",
+    "path": "examples/globe/rocky_demo/Demo_EntityCollectionLayer.h",
+    "sha256": "3e44750f2af3e86e18b617667651bf70ac1bdc71260690eec83a07b873a39096"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Environment.h",
+    "upstreamSha256": "658b33fdc6f1536a603e2ba24673e2fd876fd98063490c7f8ea2c15804e15948",
+    "path": "examples/globe/rocky_demo/Demo_Environment.h",
+    "sha256": "c6d20ed8a1ebe9efbc3896423682ce5f4f01ae3a2817021f104dfdeaab514931"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_FeatureBuilder.h",
+    "upstreamSha256": "43eb0e15a2caf25b376faaf4ad0d905aeeec9744e32ea2b690bd89bc064cce0b",
+    "path": "examples/globe/rocky_demo/Demo_FeatureBuilder.h",
+    "sha256": "8bc8869ef9cd2af00d46eb382104976d94117021eb5ea72a492c7ad99b582692"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_FrustumGrid.h",
+    "upstreamSha256": "02b0e78e9510295b31623201abbcf4776bccc5d57ecf2c96e57b17335d42078a",
+    "path": "examples/globe/rocky_demo/Demo_FrustumGrid.h",
+    "sha256": "57517ebb1e3941ba50263964a76f0f35ec923a27b46483ec65ad0458b5a0b5fb"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_GeoTransform.h",
+    "upstreamSha256": "63d38d6be26bfc1a3f0c76b43f12bf53424e524d3447540325b193974ecac79b",
+    "path": "examples/globe/rocky_demo/Demo_GeoTransform.h",
+    "sha256": "98392fedb33fc8eb180ecd72f0e903db51f7445b544736016f9918e6bd759289"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Geocoder.h",
+    "upstreamSha256": "c4114884fbbae1e0cb7d5539e2965eb0389b82bfea3b09bc5800e017c01642b8",
+    "path": "examples/globe/rocky_demo/Demo_Geocoder.h",
+    "sha256": "8f7344fc94ca2747dff30a5ed82f763372530e8e137d6c2abe9a4d68257bdbcf"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Icon.h",
+    "upstreamSha256": "dd826f99583b5e58440e6658edb27b22b9c6c8221de422baade3e7ed9ea98774",
+    "path": "examples/globe/rocky_demo/Demo_Icon.h",
+    "sha256": "faa48cb5cbfb139fee4a5380bd2108d0f2152876e5bc73cb2c2227a83d658ae8"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Label.h",
+    "upstreamSha256": "319b603c3ba3324a58a07ed1bfa9a4a5c61dd47da9827088dc35c9625135da70",
+    "path": "examples/globe/rocky_demo/Demo_Label.h",
+    "sha256": "a503e5506302b55fdaa3ed3b835450df1ad4b831dec03354a36bbc31bb4cc365"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_LabelFeatures.h",
+    "upstreamSha256": "cc0d6a53b390adbf8f5702e651428cda8cd5c4f5bac08ac072ff452c6cb1e38f",
+    "path": "examples/globe/rocky_demo/Demo_LabelFeatures.h",
+    "sha256": "580cddd486cb93b0f37e2061295e2008d990f7af3e2b12ef9d54fde81cc5dd51"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Line.h",
+    "upstreamSha256": "276dfffdcbd9306c334b2aa50d479b1b6a88d3bb78c0cd569955fddd2ac0c88f",
+    "path": "examples/globe/rocky_demo/Demo_Line.h",
+    "sha256": "f9f4c3500368eff0fad59e7abcc0c0ea4d3e4e0fdcf4c16a8e96480adfdb4ad9"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_LineFeatures.h",
+    "upstreamSha256": "30fb1bea8cca09aad37fc228c6ec706650ef73c84381dfabbce990e6140ec775",
+    "path": "examples/globe/rocky_demo/Demo_LineFeatures.h",
+    "sha256": "f5d6be22593678d32d0b435b9e848c01ff0aad26a91c7da78c75df60642b09df"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_MVTFeatures.h",
+    "upstreamSha256": "6d091c6b752092bdfe161eb8733a6b92fa4fc75975047045e053f299737d9c25",
+    "path": "examples/globe/rocky_demo/Demo_MVTFeatures.h",
+    "sha256": "d41bea46793aaac9dde6bd3caadc4ffe2532773672614f0c8640a740f278ce0f"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Map.h",
+    "upstreamSha256": "33e7a1e1389c1e2747dec5ef99dab88057b86b4ea3d19bea245f2730f8a1e4f1",
+    "path": "examples/globe/rocky_demo/Demo_Map.h",
+    "sha256": "cb8f3165d0c29f1ca242e487402478efa6a85c90248752d3f9fc6c7176fb4cb9"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Mesh.h",
+    "upstreamSha256": "a06c8ab350e72da3278aa8f506ce03bdc01e781033150a65e0463d11b47de0c4",
+    "path": "examples/globe/rocky_demo/Demo_Mesh.h",
+    "sha256": "99617040c9384573abb8a6b38073c58abe9f45be19264b6e91772e74a07cf24e"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Model.h",
+    "upstreamSha256": "e92ce5053d1ff663e3db3f922a27c2c82b697dda71e0920c37dc9f1baf8ab6f6",
+    "path": "examples/globe/rocky_demo/Demo_Model.h",
+    "sha256": "dc8b90702aa8110934e56e41434bce13ad8dee5e58671b02fce98d47e3d07082"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_NodePager.h",
+    "upstreamSha256": "17365ace86d089ac4415dc2dc6cd064f93b325e8c51ef4f0fc33602d53b2f879",
+    "path": "examples/globe/rocky_demo/Demo_NodePager.h",
+    "sha256": "7d8501b7928f07b6b447f11b30a50f5bc266b8f49196a64af7c5092c6ff55df8"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_OrderedRendering.h",
+    "upstreamSha256": "6186f277db2eea581c59a07c28ab60d6843e76093f4422bb00d6527ed5952960",
+    "path": "examples/globe/rocky_demo/Demo_OrderedRendering.h",
+    "sha256": "2b57567c772a8700d31e43b7653be6b30fcfee82b26d26ca8a66a2674af93348"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Overlay.h",
+    "upstreamSha256": "582c0ad34bb882e697dfe0f1838ea008caf89dbe01f4cc33d3de0fdb6a75175d",
+    "path": "examples/globe/rocky_demo/Demo_Overlay.h",
+    "sha256": "ef0097fa045851c4d052c5cc7669d167c727dec807c9657e6e75d13aeeb004eb"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Picking.h",
+    "upstreamSha256": "386c74caf9bd05e930d15f47a802fa25b2175effae46b7f128b41278a36edf43",
+    "path": "examples/globe/rocky_demo/Demo_Picking.h",
+    "sha256": "581cf13980cfe8c62cacc95dc3c0a74b38bec8a7ec22198aa9a05addb9e79d6b"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Point.h",
+    "upstreamSha256": "16d4d35d00fd20d0655ca4d7fa7d82b2041a2fb6ac692fd5620443f95f1bad35",
+    "path": "examples/globe/rocky_demo/Demo_Point.h",
+    "sha256": "d7c54984cd70caa0f3279fa0bf176b5236ec1877663e7acf65b1346c470d3c36"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Polygon.h",
+    "upstreamSha256": "294714bcc92e367e8f67887c1023b84ad9be2d9c25fc38f56fc8f997f1924a63",
+    "path": "examples/globe/rocky_demo/Demo_Polygon.h",
+    "sha256": "abbcdec81319bf97ca2db2a6d90062ee686beaf550f18319e5b55f21ab64ce38"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_PolygonFeatures.h",
+    "upstreamSha256": "651a2e03a0a3de7c0542b795cd0407ba298e1b873a98b736dd7e1745accc9b97",
+    "path": "examples/globe/rocky_demo/Demo_PolygonFeatures.h",
+    "sha256": "7161e714f0bfa52265d100bbbb2755b02e9d79d244d3b3b9da79ef117795e8a1"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_RTT.h",
+    "upstreamSha256": "db8d83489566fc07e1031475007653e0f79968ef25c12844103469b02d11098a",
+    "path": "examples/globe/rocky_demo/Demo_RTT.h",
+    "sha256": "2264d70e4ae4932f1012e0ce37b36ac9dc283fd06d37ca7fa1d36eb8204de751"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Registry.h",
+    "upstreamSha256": "f551849187b48b010a1eed1a58de5e27b295b7d3382e3ae4929585a77c7a95c1",
+    "path": "examples/globe/rocky_demo/Demo_Registry.h",
+    "sha256": "adafba6b979ffd55256c6a90db812798a183febd15c461622b82532c39e198b8"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_SceneGraphInspector.h",
+    "upstreamSha256": "fafb69c4a763686cf9c0a2af5f235190d6c1fe9cf03473866e90aa7eca41bf2d",
+    "path": "examples/globe/rocky_demo/Demo_SceneGraphInspector.h",
+    "sha256": "3165643d3f21e34089a25e68a40fcd103966f05fde5ef4c339321fc6566c27fd"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Screenshot.h",
+    "upstreamSha256": "7c7ee31518b6114517925a5fe4a69a418d1e2eaaacda9ec2d753d5e7912e6e18",
+    "path": "examples/globe/rocky_demo/Demo_Screenshot.h",
+    "sha256": "ba872beed4ec381712057326ee57d552a657f508e4e7b469cbff0e2235abc226"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Serialization.h",
+    "upstreamSha256": "ba7e9bcfe4a3e160ef6d8565352fa34e871eded802037b6bff4430433b96643a",
+    "path": "examples/globe/rocky_demo/Demo_Serialization.h",
+    "sha256": "9ef48f5044ac231729f7a8cc3e979244e203ca5f409fe21bf5803386e8f695fe"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Simulation.h",
+    "upstreamSha256": "6c8d87a1361c64181eed709cdcb67edd99a894b7adee7830429136468c13fa4a",
+    "path": "examples/globe/rocky_demo/Demo_Simulation.h",
+    "sha256": "6c2ab160d074b076fb0f9af99c82721ea6742ffc0fdbf04a260ab78a6ba04489"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_SlugOverlay.h",
+    "upstreamSha256": "5ebd29ca9bee6f16c26df5967dabf8e575316eeea499a3c0df1fccb327882ada",
+    "path": "examples/globe/rocky_demo/Demo_SlugOverlay.h",
+    "sha256": "b949b68d9c14a7fc05ab74afd1d5b5ffc55b2ff406079182786143bc4f25ed7a"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Stats.h",
+    "upstreamSha256": "8b1f034b4db04aad614b5f6e0fb8808c7045bba91fe2bd5acc68243dfb1252ed",
+    "path": "examples/globe/rocky_demo/Demo_Stats.h",
+    "sha256": "db5745482c621a6a1f0e04ec3888c789fcf2e3b946d534366778da0dc0780088"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Synchro.h",
+    "upstreamSha256": "ce6e3ae10fa674c9ed1628606173c9336d99cedb5686bcdc2edb8c63d94f05cc",
+    "path": "examples/globe/rocky_demo/Demo_Synchro.h",
+    "sha256": "c0715ea7ea61f89537f5207e45117ed28c932c937fdb385d0c9b43449dad89bd"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Terrain.h",
+    "upstreamSha256": "d09f5596fe36411712aa5d534bcbbff7d292fa9886f64cbd5a7fd7d19508804b",
+    "path": "examples/globe/rocky_demo/Demo_Terrain.h",
+    "sha256": "1f427063c578aa1e157fbd2150849dc5b905a30098787689b019e46104de4e2f"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_TrackHistory.h",
+    "upstreamSha256": "95f33525a0413eb2ae2387d6f3c1b71c6cde8710b07a8cc4b821c88a8d702d06",
+    "path": "examples/globe/rocky_demo/Demo_TrackHistory.h",
+    "sha256": "b3711e44b0deeabb8b7d22e69936b3f6722702c025e56ecceee6de9aedd63ef0"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Views.h",
+    "upstreamSha256": "b5768c4e239300fafac98ea705ef1ae782b475ad15a3e59a1c68f44739aec7bb",
+    "path": "examples/globe/rocky_demo/Demo_Views.h",
+    "sha256": "06cda99dc83829de50ce0f40cd668742d8c4b28cfd7e64376deeb3b0c8496cb4"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_Widget.h",
+    "upstreamSha256": "15e520f020468f5e9dbabf0e0f877b338a7f54faa85101a34de69395753f9af2",
+    "path": "examples/globe/rocky_demo/Demo_Widget.h",
+    "sha256": "36b0cc3a68475db90aba8113814e243ba6293068aa0e9754d81a69b81cb05c7f"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/Demo_WindowHUD.h",
+    "upstreamSha256": "8f8185e4a274bd6941ee1d27700d6d286b04819e1988dbd194fb544fb9744125",
+    "path": "examples/globe/rocky_demo/Demo_WindowHUD.h",
+    "sha256": "5ca2d4815f44166d0205470d63c4d255a824ca3151f3dad49368d59516735102"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/WindowImGuiHUD.cpp",
+    "upstreamSha256": "a79064d2e1527c0e465f1f1e83e92d1a1ecc866d5aa090c49db17db3e2fcdf09",
+    "path": "examples/globe/rocky_demo/WindowImGuiHUD.cpp",
+    "sha256": "9db50a28c8a7d4489100818076a2cbbf7c45debc4ad42e758df8ba46c2f77142"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/WindowImGuiHUD.h",
+    "upstreamSha256": "bf405d60871cf053c028fc85d9193346f995289429d56c9a4c51ced9804f711d",
+    "path": "examples/globe/rocky_demo/WindowImGuiHUD.h",
+    "sha256": "21f85b43bfe302504b7092c8c931d91867755daa1c31f81480a941726abbf474"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/helpers.h",
+    "upstreamSha256": "68b73335282fe2afbfe7f76d1434158729df80013512c34829399f1904326907",
+    "path": "examples/globe/rocky_demo/helpers.h",
+    "sha256": "408e2a03dce0c4a3d2c4af9e59929a400777b05da1f35c38824555e4d286bef4"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo/rocky_demo.cpp",
+    "upstreamSha256": "19fba4ca6fa536d885d6dba35d57de855c2c9c78e666b0493f059997393df046",
+    "path": "examples/globe/rocky_demo/rocky_demo.cpp",
+    "sha256": "f09453991ecdf55ce9512b379d03a7c00e199c16d2229f01d566d1efb3acd3d0"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo_qt/CMakeLists.txt",
+    "upstreamSha256": "aab64f960c182919f9c21aa48e949dca2222d7ad9dfbec5450ecffb7b3492ea8",
+    "path": "examples/globe/rocky_demo_qt/CMakeLists.txt",
+    "sha256": "4489a6818ef6ebef472411565dc1e67d87f8c185a52631213d81fe5e93267db0"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_demo_qt/rocky_demo_qt.cpp",
+    "upstreamSha256": "b9aea203fd5dd1840f65c33a7fe46747f05f10896e1156a57f124c5d99b99216",
+    "path": "examples/globe/rocky_demo_qt/rocky_demo_qt.cpp",
+    "sha256": "a4a1f847e48206252833145978af6ff60fc47b8d81a8139994e77c53cf26958a"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_sandbox/CMakeLists.txt",
+    "upstreamSha256": "4a1eafe8c49a3f2fd7f7b266f9eb73ed99914dc0aaecd8a45d02424fe5c30813",
+    "path": "examples/globe/rocky_sandbox/CMakeLists.txt",
+    "sha256": "adbf86201cb738b5a091fbe1951321470c869e21237c8d564187959606c36a9d"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_sandbox/deferred.fsq.frag",
+    "upstreamSha256": "df0b1f64cfbdccabb391e2557b4a70df10bedbaeb8da5974e902890b95d9d05f",
+    "path": "examples/globe/rocky_sandbox/deferred.fsq.frag",
+    "sha256": "dbe512d0300b24f6af6f4b8d5a236aa8aabd8ec262bab7bc7ef8be2ec7cd26a3"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_sandbox/deferred.fsq.vert",
+    "upstreamSha256": "362aaa03e2e31c4c0da3ec5ed0ced5e2233ac5deb4e706d8b7e351d1bf2cab48",
+    "path": "examples/globe/rocky_sandbox/deferred.fsq.vert",
+    "sha256": "6d37371a452a63404aa11db235c669c72cbe927318351dfe2c1218ec19ddbc68"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_sandbox/deferred.standard.frag",
+    "upstreamSha256": "e23bcd15c43eac98aa1c2c4da3d99a136941de7647e727dfaa2dc15041ed2418",
+    "path": "examples/globe/rocky_sandbox/deferred.standard.frag",
+    "sha256": "274b1634e9d084bfa339186adbb46762b1a2f14ba51f8c31a40fe66b4efcd701"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_sandbox/deferred.standard.vert",
+    "upstreamSha256": "ada11f6895f6ac66eaa006fdc667d7488b9bd6824fd630ebbd9d6021bb3be874",
+    "path": "examples/globe/rocky_sandbox/deferred.standard.vert",
+    "sha256": "785631871ee32dff4d24fbf95ecdb73e58f03373ed74a0d2635d4197ec84c8b1"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_sandbox/rocky_sandbox.cpp",
+    "upstreamSha256": "4db00bc740ebb243d3d45f1a4674e14acddf8da01be753807c0791b17f455375",
+    "path": "examples/globe/rocky_sandbox/rocky_sandbox.cpp",
+    "sha256": "1c20d1f91fae43d1097d94ef55b548acec1e1b446c6cf032d50184d45e6243f4"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_simple/CMakeLists.txt",
+    "upstreamSha256": "9780e75049f21d3a696b9c75a330633972fc7d9061991e7e77d814a363f57363",
+    "path": "examples/globe/rocky_simple/CMakeLists.txt",
+    "sha256": "4908c219b6ce2398208494b1b16d635570256521b0983e7732f4b4b8d624c62a"
+  },
+  {
+    "upstreamPath": "src/apps/rocky_simple/rocky_simple.cpp",
+    "upstreamSha256": "2bc546aaec9e33e8622e5ca8c8bc18b425ba95fcb342f43bc03825ff52dec228",
+    "path": "examples/globe/rocky_simple/rocky_simple.cpp",
+    "sha256": "79cc20cbdc556573b63fbc2b7617547fecc8d145c144d8d6d0781b3f5c7774f5"
+  },
+  {
+    "upstreamPath": "src/rocky/Azure.cpp",
+    "upstreamSha256": "e66f402b0273b8414008fcd49a6b95f6298472a519d9a8ad552c53cddeda7747",
+    "path": "src/globe/Azure.cpp",
+    "sha256": "eebd45b839b2b318a2c57bcbf716f3b47e95e0e98b2edb0484d5d7df0c079c9f"
+  },
+  {
+    "upstreamPath": "src/rocky/Azure.h",
+    "upstreamSha256": "47dd88f5b410fb7de73a29bd16972c097ed31bdb8d56b56d30a2cd51bab7e576",
+    "path": "include/geostudio/native/globe/Azure.h",
+    "sha256": "f28a609680aa8dcc85ea6f6a2086533ed2d18618f883464c68a92a71a74c0a30"
+  },
+  {
+    "upstreamPath": "src/rocky/AzureImageLayer.cpp",
+    "upstreamSha256": "d1a98f71b840085c2b8fa9e8d3d601820a2b88cc363c25e1796230c24842442f",
+    "path": "src/globe/AzureImageLayer.cpp",
+    "sha256": "da040da4587fdc668edc7b708c6f74f4fedca4fb1910d7069fe330a92877916b"
+  },
+  {
+    "upstreamPath": "src/rocky/AzureImageLayer.h",
+    "upstreamSha256": "b52f226a24ceb0b790cd455f7b1215acc9059d0f38f5d0f30da603e68ac5abdd",
+    "path": "include/geostudio/native/globe/AzureImageLayer.h",
+    "sha256": "9206731475b1deedb5d4b0050e8dc8c8979fb60a9f376ae6a769cd2dd6325402"
+  },
+  {
+    "upstreamPath": "src/rocky/Bing.h",
+    "upstreamSha256": "41c6926529bba71fa8003c46ab5306c3faf9fb289c9b41ecf6326d5727eb7b63",
+    "path": "include/geostudio/native/globe/Bing.h",
+    "sha256": "93ec76ac3fd8a9433fd71018a54f2aa8a1bf80cf10b93ef0f5321ad1e6801405"
+  },
+  {
+    "upstreamPath": "src/rocky/BingElevationLayer.cpp",
+    "upstreamSha256": "12f69d7e3eb50f9b132dd3566e67291bf44846e27e9c45404e1c2ff9017317a0",
+    "path": "src/globe/BingElevationLayer.cpp",
+    "sha256": "ae6f69dead1ee4bbbf31b007fcf2c96ae096e6142910ff71fdcd1790a8ec56b2"
+  },
+  {
+    "upstreamPath": "src/rocky/BingElevationLayer.h",
+    "upstreamSha256": "c0e6e4b9eb2005c064e7f908ea649a5a05a64975d2aced3c706cf5e74d519476",
+    "path": "include/geostudio/native/globe/BingElevationLayer.h",
+    "sha256": "ce8eb87b6ce68dbaf4cd5e0517ac38ff7feb54787d5b3f4d35cf4876e28957ba"
+  },
+  {
+    "upstreamPath": "src/rocky/BingImageLayer.cpp",
+    "upstreamSha256": "7b71158537848fb334e89816fa65fd8874c40d75a656dfc3f86a1c1f0180ae5d",
+    "path": "src/globe/BingImageLayer.cpp",
+    "sha256": "0db6954d9072746ff079dd04c09e02c7a6d346b49cdeb986efac5c6f2cb063d3"
+  },
+  {
+    "upstreamPath": "src/rocky/BingImageLayer.h",
+    "upstreamSha256": "fd021d42ba55e9006eab3401310e6a875815425b73b5aae5f6705c250e6d7d30",
+    "path": "include/geostudio/native/globe/BingImageLayer.h",
+    "sha256": "5504ecd863e8bcabea74d382c99dd73bd3902120fcc0160f1012485d30858155"
+  },
+  {
+    "upstreamPath": "src/rocky/CMakeLists.txt",
+    "upstreamSha256": "ea29472463948b117bbb9071b19bdf77f8fd044704e261484800adc5c5d399d0",
+    "path": "src/globe/CMakeLists.txt",
+    "sha256": "0f009e904dde6eb1a446958d1bae80f0e37cb41c978cff371368f673b9e53f0e"
+  },
+  {
+    "upstreamPath": "src/rocky/Cache.h",
+    "upstreamSha256": "2cd612c957f28cb4de9dee0da1d07b43009ea05148cbb01f956b92b29f1345fc",
+    "path": "include/geostudio/native/globe/Cache.h",
+    "sha256": "f00fd152d28278159e8d19e860b8e2525673b2ad777c16c7e135cbfe11f8b5e1"
+  },
+  {
+    "upstreamPath": "src/rocky/Callbacks.h",
+    "upstreamSha256": "1052d96429abafb5e0c5a2fe98d23db2c9738284fb1746deb55a7d352b5e4267",
+    "path": "include/geostudio/native/globe/Callbacks.h",
+    "sha256": "89cdd9570e8dde93b0f3230429301a482f059301cb18bb32d7191c2499a94b9d"
+  },
+  {
+    "upstreamPath": "src/rocky/Color.cpp",
+    "upstreamSha256": "4d7591b0dbee953395c7fcceea434b6bb4856a3f355987a6b9154e6c63a944a6",
+    "path": "src/globe/Color.cpp",
+    "sha256": "440c72cd8a0c2c95462d09e79bd0afad3c4e49611fdef4f1bf42414f9969e382"
+  },
+  {
+    "upstreamPath": "src/rocky/Color.h",
+    "upstreamSha256": "212720573dd5afeb8e667e03c3797100de3973c4ce7955f770bbad32e8ab77e2",
+    "path": "include/geostudio/native/globe/Color.h",
+    "sha256": "f902be39ad577af80adb5c800770efc2fd2b360d9e4b4611063e213562f71d47"
+  },
+  {
+    "upstreamPath": "src/rocky/Common.h",
+    "upstreamSha256": "dc3a0a17c57dee01a3657e0436006bd789d2d1ab29c23613e803f8cd0d893053",
+    "path": "include/geostudio/native/globe/Common.h",
+    "sha256": "3514cbc36f6c0bff329bd8c2e243a6ba8c9c666aafde93dcc6c0a71141b6456a"
+  },
+  {
+    "upstreamPath": "src/rocky/Context.cpp",
+    "upstreamSha256": "845c4921b3eb5e9892a4a57e0a0d04f1b5ba67f30fffffbe3b1e163511b69c4b",
+    "path": "src/globe/Context.cpp",
+    "sha256": "438b63f192fb7487d8d79f5c36cfdfdeff6371d293b3c2bf87ed3b7128f6abdd"
+  },
+  {
+    "upstreamPath": "src/rocky/Context.h",
+    "upstreamSha256": "2caf34fe71306bb912da4c1c8c5b1d80e0d9aa09c3a5eac467fca2cc05dceac7",
+    "path": "include/geostudio/native/globe/Context.h",
+    "sha256": "6bc3fff11963e09da88083766dcbda975bf60f26b625513832a9cf3e68e1866f"
+  },
+  {
+    "upstreamPath": "src/rocky/DateTime.cpp",
+    "upstreamSha256": "9c042bc27026da5aab4cce1a79523848ccdfd7e10b394d53a8c67c08673208a2",
+    "path": "src/globe/DateTime.cpp",
+    "sha256": "97d0c568c3bfcaf60689721ac1c8c76fbe1ee6976ff79658bc448d50de67785a"
+  },
+  {
+    "upstreamPath": "src/rocky/DateTime.h",
+    "upstreamSha256": "502e2cd3d1c90108eb8d5c069a47ef0a3953463c41a5386d38f708195be2f009",
+    "path": "include/geostudio/native/globe/DateTime.h",
+    "sha256": "61a8df48c9b5d2c67a52830e2c94e8c149c353b0164a1c4e87044827be90c18c"
+  },
+  {
+    "upstreamPath": "src/rocky/ECS.h",
+    "upstreamSha256": "1b85bbd1f14a4972fb758aedfc8930511f58e8eac8f719a29e21c829ce0cc54c",
+    "path": "include/geostudio/native/globe/ECS.h",
+    "sha256": "3b679038fb017d8af471d16a589abbc87a20e871f387378220496f131aff90aa"
+  },
+  {
+    "upstreamPath": "src/rocky/ElevationLayer.cpp",
+    "upstreamSha256": "7f5cc4dd8ee2703656d55b36e1f56938b764591cdf562c6d0208aa0f167cc92d",
+    "path": "src/globe/ElevationLayer.cpp",
+    "sha256": "b79d41dab3f3272db32a1e2b3dafa5fc619f14ecf850f9c63ffe6b3c8194ba6a"
+  },
+  {
+    "upstreamPath": "src/rocky/ElevationLayer.h",
+    "upstreamSha256": "d209d4c984fd8bc7699f42039c7459863547c117ce504eb106bd92c5b8f5cfc2",
+    "path": "include/geostudio/native/globe/ElevationLayer.h",
+    "sha256": "a3913b2b6744a39a37850687283de1cf6bb582ed7bdbddf3474b89ece1b28903"
+  },
+  {
+    "upstreamPath": "src/rocky/ElevationSampler.cpp",
+    "upstreamSha256": "1fc866875bb9e9f9cac1011669161ee3e6ff04ab3b992b7a3b6d4241564727a3",
+    "path": "src/globe/ElevationSampler.cpp",
+    "sha256": "68a45a40ba23f3ab660e579081f2a2ed57ca3d6fe1e841b42bedc27356fa08ce"
+  },
+  {
+    "upstreamPath": "src/rocky/ElevationSampler.h",
+    "upstreamSha256": "b1ccb26c50fd4f90704eeee36ea4596cd4526254e98be9d400209635d51591ef",
+    "path": "include/geostudio/native/globe/ElevationSampler.h",
+    "sha256": "24ecbb6b847e2dd305571d8f7bd09c738923d5d3c3fe23b5996a71b541c89a4f"
+  },
+  {
+    "upstreamPath": "src/rocky/Ellipsoid.cpp",
+    "upstreamSha256": "34d06c4027cae7465b2644edba91c4392ba9a24fc52cb789fa1996a0bfe80e64",
+    "path": "src/globe/Ellipsoid.cpp",
+    "sha256": "fc14cea2668797eeeeaff5decdc3e913102fc922d6cf0dd81de4f93a72bfcfcc"
+  },
+  {
+    "upstreamPath": "src/rocky/Ellipsoid.h",
+    "upstreamSha256": "65e64183adc324f2c1ff573138f9c991f79b3d4c9b12eb215419727a1966b1a9",
+    "path": "include/geostudio/native/globe/Ellipsoid.h",
+    "sha256": "fde1c0090fa85fdf254a8da170b547c767665a80833ddb322c822a8a3ba661fd"
+  },
+  {
+    "upstreamPath": "src/rocky/Ephemeris.cpp",
+    "upstreamSha256": "4aebc59777575ccb4ee971c303624ac6275d0bdc3b3175fdf98c793b3348ff72",
+    "path": "src/globe/Ephemeris.cpp",
+    "sha256": "ec6075823d7f2b48b0f81a48a88c839ccc233733226ed11445356c03883c2bf9"
+  },
+  {
+    "upstreamPath": "src/rocky/Ephemeris.h",
+    "upstreamSha256": "31a9c8334405a4072f3d61177f80cacbed5e1b418f21da80be398541da56b587",
+    "path": "include/geostudio/native/globe/Ephemeris.h",
+    "sha256": "5a02640aa0325bf8f22ef9f1f54cf1c2c794c3ea3d8b7bd4e4a69e1dce587219"
+  },
+  {
+    "upstreamPath": "src/rocky/Feature.cpp",
+    "upstreamSha256": "a4a7c76a37f41475e1dd37e4b758721a679cb9397f3aa16b5abaa89dff9aeda4",
+    "path": "src/globe/Feature.cpp",
+    "sha256": "21e034a83292f52b7e2381b173014062d4042e5546c5cadb5001214c3b291e3b"
+  },
+  {
+    "upstreamPath": "src/rocky/Feature.h",
+    "upstreamSha256": "f7d5ae8dd811ac3aa02dd0069128d5334f54ecfd213513be805f9a06d3361d21",
+    "path": "include/geostudio/native/globe/Feature.h",
+    "sha256": "0989d6e4cf8bbf28868df314844cd405553c7e8fa1ed3d59e1a8ccb1126e8540"
+  },
+  {
+    "upstreamPath": "src/rocky/GDAL.cpp",
+    "upstreamSha256": "c8da98365f00116e07071c2c306ec579d4fcae4825592c9a13f047dc94ac6dae",
+    "path": "src/globe/GDAL.cpp",
+    "sha256": "ad764ec36b92a03b66525c9971981225e6deaa8c7d6039329c12929184a7ea8e"
+  },
+  {
+    "upstreamPath": "src/rocky/GDAL.h",
+    "upstreamSha256": "99df0d04cb46806fdd43aec55fdf2818717da1b25344d042c6f0be88097eb3f8",
+    "path": "include/geostudio/native/globe/GDAL.h",
+    "sha256": "654dd227e8fd2279355b8effe137de93725099948b56d0d7e9c2edbdfc729322"
+  },
+  {
+    "upstreamPath": "src/rocky/GDALElevationLayer.cpp",
+    "upstreamSha256": "250430aa2eab829d19b41debae7141742bca174bbe225baaf617b5ed74d0694b",
+    "path": "src/globe/GDALElevationLayer.cpp",
+    "sha256": "72e3af558e798733aef2becfed5de6a0f6513062bd045c96bc580b2a279ea071"
+  },
+  {
+    "upstreamPath": "src/rocky/GDALElevationLayer.h",
+    "upstreamSha256": "cd6474d177b87f14a77e962d1cbdf6fef9b5cbabdc75800281bb32b4f6f160f8",
+    "path": "include/geostudio/native/globe/GDALElevationLayer.h",
+    "sha256": "24a4143e01646812ea34158732717d4e7821dbb7fac480ce111ce1ca2834f430"
+  },
+  {
+    "upstreamPath": "src/rocky/GDALFeatureSource.cpp",
+    "upstreamSha256": "04017edc38dde72dcdbf6405e605516ea785aa9468c284406689b1e827dba5e2",
+    "path": "src/globe/GDALFeatureSource.cpp",
+    "sha256": "fd10da64d9e7abc86bee92f1b87d19b6dde6d36b72a35b481f24e4531b229907"
+  },
+  {
+    "upstreamPath": "src/rocky/GDALFeatureSource.h",
+    "upstreamSha256": "492ae9700b2ca3f09c2da83e79145906a790d3b8679b0f4bbefb44c217d40ff3",
+    "path": "include/geostudio/native/globe/GDALFeatureSource.h",
+    "sha256": "2155d62d47cdc0f17eb3b900316eebb9c2c21cf847882c7e722cc9abe486806b"
+  },
+  {
+    "upstreamPath": "src/rocky/GDALImageLayer.cpp",
+    "upstreamSha256": "c76adb9ba64b3cc5b4a6891085caae84957efa4c91832168b0737fec2e190306",
+    "path": "src/globe/GDALImageLayer.cpp",
+    "sha256": "e781b0cbca1d15ba0e810ce89a5911c900f34e9a312d5d17303eb1a9214270d1"
+  },
+  {
+    "upstreamPath": "src/rocky/GDALImageLayer.h",
+    "upstreamSha256": "c285526e098f9080fa21a3dd489b479deeb2bc0ebedda6caa9c7a7e31b1e84bd",
+    "path": "include/geostudio/native/globe/GDALImageLayer.h",
+    "sha256": "01025ab52de306108450b450297c8919297f97e6fa29f1a6d6fe98739bb8cdf2"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoCircle.cpp",
+    "upstreamSha256": "c38a47310359d6a2d30c855f87bbcd48e5ae7596387b1655c02ff330e2bd0019",
+    "path": "src/globe/GeoCircle.cpp",
+    "sha256": "c98e7155928342d75fbe5acde53e39217ff21721d99ceb35e968d233727d4354"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoCircle.h",
+    "upstreamSha256": "d0b31e420ca74a863d77f5163cabaeee9bbd7680a81d41d440800176c9aafb27",
+    "path": "include/geostudio/native/globe/GeoCircle.h",
+    "sha256": "0634a0f4cff4fb9ee3aec8edc5becef3d321e62ce16c5cd5d690d95ccc435bcf"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoExtent.cpp",
+    "upstreamSha256": "a2129865145e4ac70870503bf5632c6e3ca2fcb0d4939cf1d7057f69c236f48e",
+    "path": "src/globe/GeoExtent.cpp",
+    "sha256": "614e6e8efc3a736434cd5fe42c13d9e3a98b26170569874c746a9105d267bcf8"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoExtent.h",
+    "upstreamSha256": "c6e9102777c9dd1a7406cc51525cda80e2862387af16ae66b8b73b4de6ab816d",
+    "path": "include/geostudio/native/globe/GeoExtent.h",
+    "sha256": "641afe108f234f323a3d23e8802a6c1a4ef6fb9a698afaab5c291c46882d16ae"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoImage.cpp",
+    "upstreamSha256": "1cd4b1300854d23190c61d765e7d04efc39a645ef0e7afbbcd0422d7f22b2d0f",
+    "path": "src/globe/GeoImage.cpp",
+    "sha256": "896034bbf3c674e6ba30ed4d751eeaa04f226b9e4c28c56bc1578dc5c31ed959"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoImage.h",
+    "upstreamSha256": "bb7b669475584436f7f86df064c584f0d7e7d1375ee3d1a77face061a5369ac2",
+    "path": "include/geostudio/native/globe/GeoImage.h",
+    "sha256": "bfdc9fdaec03c3036165c7988ec4a3a12c4290841eaacbc3b5653addc3071759"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoPoint.cpp",
+    "upstreamSha256": "b0cf5ee6b71de03987ae09cea4827df96dd442372c4ef36d80f6b9f91a7ab040",
+    "path": "src/globe/GeoPoint.cpp",
+    "sha256": "fc76587ac2bf6be08521d0e6d196e34e8142166eed69f3ed4e0bdad61d12e650"
+  },
+  {
+    "upstreamPath": "src/rocky/GeoPoint.h",
+    "upstreamSha256": "548a06e0ae16b73ab1874dc6e5183e15b97e1f4f07020b9572a18cc6ee6016ef",
+    "path": "include/geostudio/native/globe/GeoPoint.h",
+    "sha256": "cb4838fde1aca7c1dfc68aab9d4a901a34a4eeb57f9ba71d7f1ea3ad68270817"
+  },
+  {
+    "upstreamPath": "src/rocky/Geocoder.cpp",
+    "upstreamSha256": "65e101590037eb8e06839ec2b96a8f376aa1528f4dd6e9477ebf67de5bc09dab",
+    "path": "src/globe/Geocoder.cpp",
+    "sha256": "110f830d3498713db56ca9af2fc0b3e52790639222769b2f1ab3851d61da8ac9"
+  },
+  {
+    "upstreamPath": "src/rocky/Geocoder.h",
+    "upstreamSha256": "4b303120e8b85d60342f161fbcb1644a5fa56ad6e5d2dbc1c5f62ec86738772d",
+    "path": "include/geostudio/native/globe/Geocoder.h",
+    "sha256": "e143ddb67c84e21b03a747a0c9a35c05d3835921da6296946b47c1f185c6ee2a"
+  },
+  {
+    "upstreamPath": "src/rocky/Heightfield.h",
+    "upstreamSha256": "eaf5dc20b98e520b9441fc005c01e950c68d87422d3094b14cfb2983db611587",
+    "path": "include/geostudio/native/globe/Heightfield.h",
+    "sha256": "f97ff3b1e09eda239f20448004a345fa6296ed06e943569c958dc9590b314fb4"
+  },
+  {
+    "upstreamPath": "src/rocky/Horizon.cpp",
+    "upstreamSha256": "5c784ddc9d01040e9652ca4267607df9473d32adcc057c81abcd0be132e566ec",
+    "path": "src/globe/Horizon.cpp",
+    "sha256": "47b4d2f6a806a65caf72d3d28883b312392bb645492b6902511931e6adf152f3"
+  },
+  {
+    "upstreamPath": "src/rocky/Horizon.h",
+    "upstreamSha256": "94895109127fbee8f5f9680833b23ec333c30627459ee8c8350c72715925abd1",
+    "path": "include/geostudio/native/globe/Horizon.h",
+    "sha256": "f18424493bf3e24d7358b574e06d4c37400cfe79fb7d1d26b38ae504ccf6a932"
+  },
+  {
+    "upstreamPath": "src/rocky/IOTypes.cpp",
+    "upstreamSha256": "41062e45a53f2a1731da3732a80a24e33543016203295fe093f0cf35fca06830",
+    "path": "src/globe/IOTypes.cpp",
+    "sha256": "3145c48e58944d79aa1391b7270daac0b035a5ffcd15dfd2950259707b3e8f92"
+  },
+  {
+    "upstreamPath": "src/rocky/IOTypes.h",
+    "upstreamSha256": "c1d7ebb135683ead52affbf23d88ceded16e1ace7fe122217909ffb4716ce91e",
+    "path": "include/geostudio/native/globe/IOTypes.h",
+    "sha256": "c842b9f64ace9181fee00e70fe7b1d4f5b9a4613b1a642223f90b0707e276d4c"
+  },
+  {
+    "upstreamPath": "src/rocky/Image.cpp",
+    "upstreamSha256": "b0a865a34653a19ce5d062cff87785b1f7fca9146ed0f0b24e14992be7659aea",
+    "path": "src/globe/Image.cpp",
+    "sha256": "71fc415865c36edf9e89279f0a17ca9b7716e90a54aea44972f050fe6ad78599"
+  },
+  {
+    "upstreamPath": "src/rocky/Image.h",
+    "upstreamSha256": "56290acf1ad5770e54f3c039c9f3cb61ed08e7740eaf152fdb32668feaf48b44",
+    "path": "include/geostudio/native/globe/Image.h",
+    "sha256": "7b8831395cc0c015b255ae68291388efa1d82f07a97fc7d6d9bafe136f921373"
+  },
+  {
+    "upstreamPath": "src/rocky/ImageLayer.cpp",
+    "upstreamSha256": "a91b3c128f6cb9cf6faa83339cfeacd2d2407fd1a160f25755a9f6c7dcc553e8",
+    "path": "src/globe/ImageLayer.cpp",
+    "sha256": "12253ca3b461ea88b0826c42af516d89ce806b350dd07f460f5ad5764d2a92a7"
+  },
+  {
+    "upstreamPath": "src/rocky/ImageLayer.h",
+    "upstreamSha256": "f455ddb121765fad4da93c5bed91d2a03f312cee8f58d7288f9a99251fa3f01d",
+    "path": "include/geostudio/native/globe/ImageLayer.h",
+    "sha256": "ff4c79724193f421cd1d1bc45ecc6caf48731aedea15335ff59a389e4d9e20bc"
+  },
+  {
+    "upstreamPath": "src/rocky/Layer.cpp",
+    "upstreamSha256": "eb26163e8b4e2fedf441ccb69728551668ed196c3cc6c7810951daa5e3c2701c",
+    "path": "src/globe/Layer.cpp",
+    "sha256": "f96a84df2eff7e4dd26091a427312537a1159a782f43d74f4401ad123bdd2d7f"
+  },
+  {
+    "upstreamPath": "src/rocky/Layer.h",
+    "upstreamSha256": "f19965326da6f67576330628c03001e444c2c20a81f735ce7722f75bd465e324",
+    "path": "include/geostudio/native/globe/Layer.h",
+    "sha256": "9f53661d68620e7e3864da80bfc943ddbe04c907fad259d84d8a934301db2345"
+  },
+  {
+    "upstreamPath": "src/rocky/Log.cpp",
+    "upstreamSha256": "032a79e70948465db8aad6018e64971fb10ec9cf7daa85c47c46b442ace879ea",
+    "path": "src/globe/Log.cpp",
+    "sha256": "b4db7ed7a05054b9049219f5094ee325b16e3ad01ba33984b7b22496221bf29a"
+  },
+  {
+    "upstreamPath": "src/rocky/Log.h",
+    "upstreamSha256": "c7caa3fdbd66e804e3da5f84d20624632b099c52ac1fbd91fa9d990e7bfbde3f",
+    "path": "include/geostudio/native/globe/Log.h",
+    "sha256": "0cb1612a6fe8087952797a799da12500bb934ad2f1003f09830a9bc9eee7705a"
+  },
+  {
+    "upstreamPath": "src/rocky/MBTiles.cpp",
+    "upstreamSha256": "5e31c3d5e7a618ee17b497ccf410874c0cfaf968338e62774244e37181126150",
+    "path": "src/globe/MBTiles.cpp",
+    "sha256": "3d651df3fc7e32717db4d2e7d176a02636ad9e506d5028b47d43cb3c534bced8"
+  },
+  {
+    "upstreamPath": "src/rocky/MBTiles.h",
+    "upstreamSha256": "8277bf7292160df421ce8b01ea6b57b3daff9eed994d2b92b8ccfb5d77517669",
+    "path": "include/geostudio/native/globe/MBTiles.h",
+    "sha256": "ea61cb26cfd9b1716b36854601fd3b08ae60251f27661b4921d57cb73de793e3"
+  },
+  {
+    "upstreamPath": "src/rocky/MBTilesElevationLayer.cpp",
+    "upstreamSha256": "fef64d369a3116123c3012d63fbd96db16d76550666c31f65b8df7dee4b262d0",
+    "path": "src/globe/MBTilesElevationLayer.cpp",
+    "sha256": "2eea05970c6f645cacc8f9202debccebc10cd9b168f7b16f1b579525d390f332"
+  },
+  {
+    "upstreamPath": "src/rocky/MBTilesElevationLayer.h",
+    "upstreamSha256": "dd697fcea36ff08fe8d31c1c474dd90d646abdd3af5208e231dc5352d098cc2f",
+    "path": "include/geostudio/native/globe/MBTilesElevationLayer.h",
+    "sha256": "4ab535200af1c899ae9bda1096816d9fb2bf0ac7196c6b4ce501c8a3a645b74c"
+  },
+  {
+    "upstreamPath": "src/rocky/MBTilesImageLayer.cpp",
+    "upstreamSha256": "bb7718eb65729dc15e2a91d9e8c68b122f4a728665d80e4649d650168d55d257",
+    "path": "src/globe/MBTilesImageLayer.cpp",
+    "sha256": "fdb2bfd90fc94e9d6bfcc6f8d931f9604cfe97b853245251a94cbf3201cb545e"
+  },
+  {
+    "upstreamPath": "src/rocky/MBTilesImageLayer.h",
+    "upstreamSha256": "23423c6ab1e24f945eb2cacc235e97f360511e97f1e8e959da869d7089ff8c49",
+    "path": "include/geostudio/native/globe/MBTilesImageLayer.h",
+    "sha256": "3dfc77bbd717bb00df5a0878fe13ebe827094b2b101e35bc4d66e46a087e7532"
+  },
+  {
+    "upstreamPath": "src/rocky/Map.cpp",
+    "upstreamSha256": "0893d14040db0f180ad371f862ccc4c6e2a891945ac3a0a23a4590f2eb4c07ac",
+    "path": "src/globe/Map.cpp",
+    "sha256": "7dd16d7a0bfc8be03408edb0181bcb895ed45626ca55b392409cd471d11cb3ac"
+  },
+  {
+    "upstreamPath": "src/rocky/Map.h",
+    "upstreamSha256": "7fceef6cb69f7efcd86b29820cfa825f31a718c5681d4e3b9e2ea20843150bed",
+    "path": "include/geostudio/native/globe/Map.h",
+    "sha256": "8b4e2411117bb8d7e604582b2baa0e58f85ce55d749a5cde555af9924bc5e72c"
+  },
+  {
+    "upstreamPath": "src/rocky/Math.cpp",
+    "upstreamSha256": "c7e4e1207eab196919000d821608dce1547be1d3af9a5a35bd8779dbac70d312",
+    "path": "src/globe/Math.cpp",
+    "sha256": "b1d6ad20c33994cce284cae07cca2624a39b8584227621efd225416320f0b77d"
+  },
+  {
+    "upstreamPath": "src/rocky/Math.h",
+    "upstreamSha256": "33dbeb9d5060da717a8c0e5db23d3ccb2b68a7d60de7f96e4c0ea63373037d46",
+    "path": "include/geostudio/native/globe/Math.h",
+    "sha256": "097c624d53e23230f39c514a5b63ab6c128dbd4d0465b0154b38d4d170f4614b"
+  },
+  {
+    "upstreamPath": "src/rocky/Memory.cpp",
+    "upstreamSha256": "3a13e4a3870d2e236dbacf9f2db0769d692bca03ef684c905ca16e1c5bf94090",
+    "path": "src/globe/Memory.cpp",
+    "sha256": "1f80c279ba264b99de4b0a0ecf7c63c16a3d9c6284dc0b8f40025e194df24b9e"
+  },
+  {
+    "upstreamPath": "src/rocky/Memory.h",
+    "upstreamSha256": "64dcb68f2661571f6915c3ffcbc663b35638f75060865cd1949fedd2d1a282f7",
+    "path": "include/geostudio/native/globe/Memory.h",
+    "sha256": "c1e1a3a8501e1a0726cd127f56ac3efabef25ac8fe86e6365623e83b18ec3a6a"
+  },
+  {
+    "upstreamPath": "src/rocky/Profile.cpp",
+    "upstreamSha256": "5127127aaca8958ef6dadfd1c32b267a6f9c1bc75c354e1008b2a38b7a688165",
+    "path": "src/globe/Profile.cpp",
+    "sha256": "389fbc6bcd302c24c54e75575d63a5cdddbecd59bd8ab984f84ffa9a102922cc"
+  },
+  {
+    "upstreamPath": "src/rocky/Profile.h",
+    "upstreamSha256": "4331b634a0e0f73effe79a42f0ef09a9ca9b2b09686f953948b8fdea3d7723ed",
+    "path": "include/geostudio/native/globe/Profile.h",
+    "sha256": "56f1c0926851ff3e7165f3a40154d55a735181fbe7833ddaec11d12eca544ad3"
+  },
+  {
+    "upstreamPath": "src/rocky/Rendering.h",
+    "upstreamSha256": "b86f566ae705acfb3990f8f107f4aeb36bee81fe15309b544872c578a6ecb993",
+    "path": "include/geostudio/native/globe/Rendering.h",
+    "sha256": "1c1cfb8fd55bc9430c43da5abc481ea3b92835e7ed1f8e8886a7a54f037001e1"
+  },
+  {
+    "upstreamPath": "src/rocky/Result.h",
+    "upstreamSha256": "e6d479ed072bccf65e0aa8c4c72c6923c8fe16d64e606e02cf965400d4a0f5b7",
+    "path": "include/geostudio/native/globe/Result.h",
+    "sha256": "8adf57044b323427098d31dc8151d2e56f3d2df065ae1ec0a970017d8c7af611"
+  },
+  {
+    "upstreamPath": "src/rocky/SRS.cpp",
+    "upstreamSha256": "737a5ea08bca057b3e8d95d9bd949aed7ee722788f54dba39571d6646c756df5",
+    "path": "src/globe/SRS.cpp",
+    "sha256": "3490fc5d010a6dfb98876b4835708f6c7f660f21730d9750196e0081167bc64b"
+  },
+  {
+    "upstreamPath": "src/rocky/SRS.h",
+    "upstreamSha256": "a05328dc5acdafdbf438060fc43390cf064b70c6e2898fd3320aeb92e11dd718",
+    "path": "include/geostudio/native/globe/SRS.h",
+    "sha256": "5074d1da4967a202568b123768912b7f22974d21418a0a73be5d9511d77f48f7"
+  },
+  {
+    "upstreamPath": "src/rocky/SentryTracker.h",
+    "upstreamSha256": "eb3445625adfda79daa8bf58de0ce945937df8916b6f913f263d89a26ceb4712",
+    "path": "include/geostudio/native/globe/SentryTracker.h",
+    "sha256": "720e70ce707f2d52dc158760f1db23dd90d3ac6b617d91a1a38fbda23551eae9"
+  },
+  {
+    "upstreamPath": "src/rocky/Status.cpp",
+    "upstreamSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "path": "src/globe/Status.cpp",
+    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  },
+  {
+    "upstreamPath": "src/rocky/TMS.cpp",
+    "upstreamSha256": "091c81128bb9bf5852a5adb5383f054967b6ac8752a4a42b4c44a76f3c8d2b13",
+    "path": "src/globe/TMS.cpp",
+    "sha256": "7488a0b35ac4813505975dff673b8c07c68ca852939e03e32e1fcf2f292048d6"
+  },
+  {
+    "upstreamPath": "src/rocky/TMS.h",
+    "upstreamSha256": "e0defc4894331309ed705b553a2c3e35ebcb86ca650c0b0c6993b289dd0fd3d4",
+    "path": "include/geostudio/native/globe/TMS.h",
+    "sha256": "5564667bacae60efed00e8b830b9be98b651dfb01bc96b97cde9f637186fceee"
+  },
+  {
+    "upstreamPath": "src/rocky/TMSElevationLayer.cpp",
+    "upstreamSha256": "c6c37b3870b5dcaa9b04422a457c129e033e8d29e3c0e2409dc3b06efa8678cd",
+    "path": "src/globe/TMSElevationLayer.cpp",
+    "sha256": "8f413dfdbcc0ef1f2ce1eba54e4bfd4e5a9290cefabbeb0a59afc420d47ba020"
+  },
+  {
+    "upstreamPath": "src/rocky/TMSElevationLayer.h",
+    "upstreamSha256": "9b26fee42b567062c007111a519978ab04036f428a37b39c54984025a9a3728b",
+    "path": "include/geostudio/native/globe/TMSElevationLayer.h",
+    "sha256": "8c3acc6a3f9e983f497d0cb0c8096c425621fdca5a6bbdcd0c4fff841c39615c"
+  },
+  {
+    "upstreamPath": "src/rocky/TMSImageLayer.cpp",
+    "upstreamSha256": "b6daef6873abdc2026d0b4486f90f20a034b410868e83b66c3c09aa097101cd8",
+    "path": "src/globe/TMSImageLayer.cpp",
+    "sha256": "6fa812b569d8b73dab45e5a51e596c8124fb07b3e19710fcfb7339da27350c1b"
+  },
+  {
+    "upstreamPath": "src/rocky/TMSImageLayer.h",
+    "upstreamSha256": "99f654c5c5a519421e81a2aa6d43d0db3b10bfcb7a065d93aab8871e66a13c6d",
+    "path": "include/geostudio/native/globe/TMSImageLayer.h",
+    "sha256": "fb0b62d1de02a7c1663591afe835702fa3710d4f56fddee04f047bc2833c23f2"
+  },
+  {
+    "upstreamPath": "src/rocky/TerrainTileModel.cpp",
+    "upstreamSha256": "3acf3c5621e2c24ba722f255828cfc135f7a969cd7ae760ddbf25a997c62f914",
+    "path": "src/globe/TerrainTileModel.cpp",
+    "sha256": "f60d11ab07beb299c5b7825f8f88464535a691a4f2b7a23ff1388bf567a74e98"
+  },
+  {
+    "upstreamPath": "src/rocky/TerrainTileModel.h",
+    "upstreamSha256": "8cc96c8f7f495140dbe25e5b152c22279686e09174b1a0f91fc2f721945fbebe",
+    "path": "include/geostudio/native/globe/TerrainTileModel.h",
+    "sha256": "c56045257e5e08ebcdae451438fbd35fd117c5302e22174a5d91bf7b720765b5"
+  },
+  {
+    "upstreamPath": "src/rocky/TerrainTileModelFactory.cpp",
+    "upstreamSha256": "654535a828084e160424c06473d0481059cf0ca9153f6c06991466ff9b48cdac",
+    "path": "src/globe/TerrainTileModelFactory.cpp",
+    "sha256": "3b4ece4bc8388d0a4667044ee1cf716872692039446ac0a3437c0696015ca735"
+  },
+  {
+    "upstreamPath": "src/rocky/TerrainTileModelFactory.h",
+    "upstreamSha256": "7f7e558ec39917a887129a447a707c41ccde944bd0e3cf6fca00947ba96a3bd6",
+    "path": "include/geostudio/native/globe/TerrainTileModelFactory.h",
+    "sha256": "e8014ded4da0f9999fbe9cba91acdf12e644d7278828ac53fc05b5f9f0116d89"
+  },
+  {
+    "upstreamPath": "src/rocky/TerrainTileNode",
+    "upstreamSha256": "65ed8a5a0cdf156babb98aa77fc471b7d4ecb5ec870f37f91e6a627814af18fd",
+    "path": "src/globe/TerrainTileNode",
+    "sha256": "0c5889a87d5781bf046ecdb83d0599d5265950042fdc46034b4b27aa420ac293"
+  },
+  {
+    "upstreamPath": "src/rocky/Threading.cpp",
+    "upstreamSha256": "7a5aa37ccb9de921e8e2186d7d492b1ab370f36b08c0bf3d96672b780eab66ed",
+    "path": "src/globe/Threading.cpp",
+    "sha256": "da289f12d5c9e5b1037d25e65d3a0b030067f4f3944a7a40e86f4216a1ff4c3e"
+  },
+  {
+    "upstreamPath": "src/rocky/Threading.h",
+    "upstreamSha256": "23ecfa3387cecd7292bd778d1c6c8f91f34907d0ca02f3f8151cc32eac0dc472",
+    "path": "include/geostudio/native/globe/Threading.h",
+    "sha256": "77d8462565c22512c4ac96e943a8fd19e98067a772998885ed97c6ff1bff8463"
+  },
+  {
+    "upstreamPath": "src/rocky/TileKey.cpp",
+    "upstreamSha256": "2fb897fac4fc54319dd74062ca2f5dd999b6361a56df85281c5ebeea6bceb49d",
+    "path": "src/globe/TileKey.cpp",
+    "sha256": "0b25b3a5f4a452b6d0f8141ab891a86f47373b40f79b8b4c9d367191133646ea"
+  },
+  {
+    "upstreamPath": "src/rocky/TileKey.h",
+    "upstreamSha256": "38f3d4ec6c3ccf07ee4a49c20bd294d208a815d48328cef60da71e4c23dbd75c",
+    "path": "include/geostudio/native/globe/TileKey.h",
+    "sha256": "b6f0008c898347ee33f49ee48cc3d670beca55512b2b1c3500a3564bf118f7fd"
+  },
+  {
+    "upstreamPath": "src/rocky/TileLayer.cpp",
+    "upstreamSha256": "a3bc1e661bfa864df542732f66a82503cb81bae7b1624b20d45e59f86faabb63",
+    "path": "src/globe/TileLayer.cpp",
+    "sha256": "86f7bd9aea687adeb3d00c2f7d2fdd0bfcfb6b5e48451306044e45048d709417"
+  },
+  {
+    "upstreamPath": "src/rocky/TileLayer.h",
+    "upstreamSha256": "a6171d7f24ce9c971191f3e9605ac1cdeefd16607a5846b78c99fb61f805066e",
+    "path": "include/geostudio/native/globe/TileLayer.h",
+    "sha256": "b1df4acfa569b2885a90b636de4b866dbb1a0cb401a03c8f01be83fb992e7773"
+  },
+  {
+    "upstreamPath": "src/rocky/URI.cpp",
+    "upstreamSha256": "f564cc5be3fbe740e90226e628db2c4b547202efe729cae07d5bfe456b3e8a22",
+    "path": "src/globe/URI.cpp",
+    "sha256": "0e39d454d1762da983ead3653ae48b40543aaebd647cdf2208eed2958cd78604"
+  },
+  {
+    "upstreamPath": "src/rocky/URI.h",
+    "upstreamSha256": "82998f8ca0e1a915576ad6c5f4050ee31016bd79fa26ef54e109a7e9d583b2a7",
+    "path": "include/geostudio/native/globe/URI.h",
+    "sha256": "75ef4b1bb278f647f6badea543da5f2c406abf5ac0d9390187974f4598b7b85f"
+  },
+  {
+    "upstreamPath": "src/rocky/Units.cpp",
+    "upstreamSha256": "7dad1a943bb7b34c0a4c714f6abd5b115a92a8aa16bc7dcdfd329d8a3ee4fdbe",
+    "path": "src/globe/Units.cpp",
+    "sha256": "1bf3270c87bacf9a1450721066b2c4a8b823c0048f1b59fd5ac7f703fca94c69"
+  },
+  {
+    "upstreamPath": "src/rocky/Units.h",
+    "upstreamSha256": "bde6d71fed61c35a5c618d8dca3e7ae0a223a0245fa93e817f71a187e34859af",
+    "path": "include/geostudio/native/globe/Units.h",
+    "sha256": "4411661ce9d896f8f0ca5b1d4feb937d3478e2ebf073d85fbce78b4f2bcbda16"
+  },
+  {
+    "upstreamPath": "src/rocky/Utils.cpp",
+    "upstreamSha256": "3877397665e9b35c369f17b570a94ace3b93195853a8b737bb30b7c8d56f43be",
+    "path": "src/globe/Utils.cpp",
+    "sha256": "4428fe615903ab957f600e1e0d36319ef08901d3608445de7c35c0e37edc5259"
+  },
+  {
+    "upstreamPath": "src/rocky/Utils.h",
+    "upstreamSha256": "ff7ff7cb1fb53f759b684e01ad3f0d9929f558d35b2934fb82c42e60d94d52bf",
+    "path": "include/geostudio/native/globe/Utils.h",
+    "sha256": "bef5c16861cc060960a948720e61d92571c75c1eddb218611e24b3e6ae21b437"
+  },
+  {
+    "upstreamPath": "src/rocky/Version.h.in",
+    "upstreamSha256": "bee697fffb5733c630baa67c8dd617439c43481fe817c2e341f683282d1a0688",
+    "path": "src/globe/Version.h.in",
+    "sha256": "6606ffdfc832590bdb5513b4fd64afb5e4a486db305125b791a197caa8f36e3d"
+  },
+  {
+    "upstreamPath": "src/rocky/Viewpoint.cpp",
+    "upstreamSha256": "7fb65a5d72e42ba1c8afb71fc6672e9dcb8024e8f16625ad41911aaf455d5133",
+    "path": "src/globe/Viewpoint.cpp",
+    "sha256": "6bf0503b520a4df7cfce75b321f7a44496eaf01679d475bd8776433c98f29872"
+  },
+  {
+    "upstreamPath": "src/rocky/Viewpoint.h",
+    "upstreamSha256": "ef6794bf18eb547573e03b34b1a0e7e9a9afd0b3b22101af04e5965c4df8c737",
+    "path": "include/geostudio/native/globe/Viewpoint.h",
+    "sha256": "a72dd55bbf3f81105fca698f3880ee22f5613861cb260e745d39942408c7d34b"
+  },
+  {
+    "upstreamPath": "src/rocky/VisibleLayer.cpp",
+    "upstreamSha256": "d1fea041e50c3f0034cc0158f186263e049171324ebfb0e8e6069ba90d72d850",
+    "path": "src/globe/VisibleLayer.cpp",
+    "sha256": "6a2ae3cb5fa8c9b25e7e4f82fc860457e24cfad1c04b14fb8a108841746c2e80"
+  },
+  {
+    "upstreamPath": "src/rocky/VisibleLayer.h",
+    "upstreamSha256": "c32ffdbcb7cd700a49d25e622f2c2ea17ee877634df4a729650919007f4dfbfe",
+    "path": "include/geostudio/native/globe/VisibleLayer.h",
+    "sha256": "6e36ae3a8d4086ad5318cd2a153af315307913cb5bd4681d48d4bcf6b00f9a29"
+  },
+  {
+    "upstreamPath": "src/rocky/contrib/EarthFileImporter.cpp",
+    "upstreamSha256": "464ee77c5c49823d718efa8d1d926f493b566a597f3481e721396bf5c8c4cfb9",
+    "path": "src/globe/contrib/EarthFileImporter.cpp",
+    "sha256": "8ac14107b9c1588be96120922340de367b9f3b9f345c7e35cdddc83c061c252c"
+  },
+  {
+    "upstreamPath": "src/rocky/contrib/EarthFileImporter.h",
+    "upstreamSha256": "85a94d61986bd943b96c8176d89674af7814a224a30686ca72c2e2654cc5889c",
+    "path": "include/geostudio/native/globe/contrib/EarthFileImporter.h",
+    "sha256": "0c0eb0eae0876d13d8bfee1fb78f6ffd4fde789441063ef59d602362f41a7e2d"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Component.h",
+    "upstreamSha256": "cb230e27cd5b9109cf516744f236cff9a2cc08a4c5d9780bae50b4ca7b03004b",
+    "path": "include/geostudio/native/globe/ecs/Component.h",
+    "sha256": "d43786d3620d73d1309b62a0ad25828083ba818f59e1c6daf3d95a1b9a9c94c9"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Decal.h",
+    "upstreamSha256": "b582744ccb2668d00093e578a6e9fb25142ac72fedbebcc0a32246a090aedc68",
+    "path": "include/geostudio/native/globe/ecs/Decal.h",
+    "sha256": "4f4fcdf114148752b1fee1ffd7b0dafb49254f2d6f576b53c884734345957879"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Declutter.h",
+    "upstreamSha256": "e3fe317f53a997888cc3936276ff1965a28e46e856bdca4bf658657264545005",
+    "path": "include/geostudio/native/globe/ecs/Declutter.h",
+    "sha256": "e76153ad9e6a913c3b29e64b1a094b6c809234c351da0e5572460d18fdd5aedb"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/EntityCollectionLayer.cpp",
+    "upstreamSha256": "85f967e979cf6e9253557a3f4cc2516a85e5fe87ecda4b18e07432f913ed1141",
+    "path": "src/globe/ecs/EntityCollectionLayer.cpp",
+    "sha256": "ce4247aee80bfed590ee99e82bbbdaf6b80947135231dd7d1195d2a01ba3f0c1"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/EntityCollectionLayer.h",
+    "upstreamSha256": "e4e2d385ad6f7139b3d20ebd23f40634d74cc305b3d4ba5604d318c366e9b40c",
+    "path": "include/geostudio/native/globe/ecs/EntityCollectionLayer.h",
+    "sha256": "641a8ac6ef0b1f723bd75062c43cc5c341e7ce90ef448cb40e5067ad6050be5c"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Highlight.h",
+    "upstreamSha256": "c493dc3c62bd5f01a1c6ea313f15e239c8043ccd22192670d27bd110acf0982b",
+    "path": "include/geostudio/native/globe/ecs/Highlight.h",
+    "sha256": "1d7ad9a2bbb02f4ea41add02698ba2a1f091abafd3e20ac1ae50d2bfcce3da5d"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Label.h",
+    "upstreamSha256": "a1bca30d5b13a3b934ce932730fb0d83e02cffc3c07182d88d55e0a873c7d2b5",
+    "path": "include/geostudio/native/globe/ecs/Label.h",
+    "sha256": "ccbfa8e098c047b48858190cb1c6465dc4d990d16862b68aa90e490adf4a823e"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Line.h",
+    "upstreamSha256": "d67f46f9dc3322a1eded23bab15018f0fad4f0876838725e9a35f9a6bfc45090",
+    "path": "include/geostudio/native/globe/ecs/Line.h",
+    "sha256": "accbee8dd49e120775aafcf0916e3e99858bcabaf7223e1491a81618ad2d8759"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Mesh.h",
+    "upstreamSha256": "b7691ad2034376cf523274004769f96c4cb14ea8761ed7165be85daec1a7126c",
+    "path": "include/geostudio/native/globe/ecs/Mesh.h",
+    "sha256": "33f233a96274b239fef759d8180269465f1a9ab08592b4aa6cdcdd77680e1114"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Model.h",
+    "upstreamSha256": "5a8d19b0190fba8b851afd887ab4d52ca64406a46cd3d3234cad16389359385a",
+    "path": "include/geostudio/native/globe/ecs/Model.h",
+    "sha256": "0e58deb84daa7d04c55ed312dca3cd2f5d5ed30b1305dfe6ef6999bc51815037"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Motion.h",
+    "upstreamSha256": "3a045d56cb880a3b0351205bd81d38032b6705c8327c7333c060382bc660be66",
+    "path": "include/geostudio/native/globe/ecs/Motion.h",
+    "sha256": "07723e4cd5a900b1c1f8d3922dc4a90758e24be7b1747df4d3c19db8142b19f0"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Optics.h",
+    "upstreamSha256": "dbdbfaada516fab89999349505359f6974256c45fda6fd084bcdbb93268c1449",
+    "path": "include/geostudio/native/globe/ecs/Optics.h",
+    "sha256": "e4163bf27d0c731d8efcb29ca56bcf1d96c0eee753087f7a3a74e96388254b1a"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Overlay.h",
+    "upstreamSha256": "e15d6e117aee1242281e4c0bc5a8b4b3b18d78e833954dc19a5c48c6f7cef90d",
+    "path": "include/geostudio/native/globe/ecs/Overlay.h",
+    "sha256": "ead46420de2250f13ffbfc5fea88ffa86c4a20c9efa2cb94709213829b35d6db"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/PixelScale.h",
+    "upstreamSha256": "444e01ff04b31674e0c9bf36ec7bdceff35c54a6607b6162348faa8ce3c64db7",
+    "path": "include/geostudio/native/globe/ecs/PixelScale.h",
+    "sha256": "6fdfa38759e54d68e35da1333eb3045ee82a8cd902583a5df669b42403446931"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Point.h",
+    "upstreamSha256": "fe3ff36a72b651845eabcd621c0be0636e2331ca23f32c815183142f403b9732",
+    "path": "include/geostudio/native/globe/ecs/Point.h",
+    "sha256": "444f3f3b20c3636580ac544e9047e27d738c4856d829df53afd4c99b3a331e70"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Polygon.h",
+    "upstreamSha256": "3ecc6b945869862df97e1429fa4ce1a2812a5075c012f2f02b2720898a2d41a4",
+    "path": "include/geostudio/native/globe/ecs/Polygon.h",
+    "sha256": "f0ed54fae6fd2c0de3b5039f5bba2e05b6e9e9c34a3bf2a1038ea934f5567e8d"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/ProjectedTexture.h",
+    "upstreamSha256": "fca067cc7aa59b80a79649226596ceb56f44ccaa5a5fff453e8f92856e121563",
+    "path": "include/geostudio/native/globe/ecs/ProjectedTexture.h",
+    "sha256": "05379453c5b0041ab84ffd297837da3583ef5581b0e5cd09a65061332a1b0263"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Registry.cpp",
+    "upstreamSha256": "9958b39a26c1d8c32a433c5c4339d2c17a1804b93627de1f0cf4750a9d7f8443",
+    "path": "src/globe/ecs/Registry.cpp",
+    "sha256": "67b3d494f5b0fdb734e80daf1a7b08594c9f1d87307ec65168ed628666104868"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Registry.h",
+    "upstreamSha256": "0f57ec484d8434713c8c13e8ea267071e1bb13f21dc97d4846ec5eaaaf792896",
+    "path": "include/geostudio/native/globe/ecs/Registry.h",
+    "sha256": "c4cef0907e7b1e5d6d8ee0844a1f9e150737e92fb09281fc1d83b7603052f7f3"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/TerrainAnchor.h",
+    "upstreamSha256": "c69291623b3ca95c0c1009fb92be8455ed642051bc050bfef44b3c8aa2196195",
+    "path": "include/geostudio/native/globe/ecs/TerrainAnchor.h",
+    "sha256": "de6451087d75340d03bc3301038b51e4eedefc5725f06c8a008e945e1d0a13ec"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Texture.h",
+    "upstreamSha256": "79a2bc5023d8bdb3211dd6efedbc11d9f73a349d1db6f24a6a1c9307e70d1761",
+    "path": "include/geostudio/native/globe/ecs/Texture.h",
+    "sha256": "e3764ffddf91862fa87a0413cf6d1f12dc0161c90d65fd22bd4dc5e99ca035ec"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Transform.h",
+    "upstreamSha256": "67ce245020cc1ff745e9a5c011e83682907095a33387c3a5664669a9e740295a",
+    "path": "include/geostudio/native/globe/ecs/Transform.h",
+    "sha256": "0b548921b1289df4019033bc933fb1aac6b195e730dd0b5f41e22c0aebf1b1a7"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Visibility.h",
+    "upstreamSha256": "1371b858babc46610e0cee3365d4088fb9d24ee18c9c138141954df426242ab4",
+    "path": "include/geostudio/native/globe/ecs/Visibility.h",
+    "sha256": "bb3783fa309904085c996e54207184b15a13e7ea957943c3962d3490304616c4"
+  },
+  {
+    "upstreamPath": "src/rocky/ecs/Widget.h",
+    "upstreamSha256": "57b75b965927d43ca1cb7386ff10473c3275a14a3bbb0ca6b07a7d137b3cdf05",
+    "path": "include/geostudio/native/globe/ecs/Widget.h",
+    "sha256": "a11b984b1221f258e376f94a8eb9186df219131ffb2219d048e7bb4c0557df8c"
+  },
+  {
+    "upstreamPath": "src/rocky/json.h",
+    "upstreamSha256": "5a2be1660481275aec8c54343cb9ecc81a26df9e082dce48f88fb04b99880870",
+    "path": "include/geostudio/native/globe/json.h",
+    "sha256": "b7e986e994aa39eaf60e0cc4e8e436639e27c06db451b945fe0ea470ec3bb3d2"
+  },
+  {
+    "upstreamPath": "src/rocky/option.h",
+    "upstreamSha256": "1d653ba095f0c63649c4fa51bdd8c4fc46bbae1c4d07f630c297b32f049c73af",
+    "path": "include/geostudio/native/globe/option.h",
+    "sha256": "e3ef2650dc481a08affa4b6fd69a11ff53f5f088a1163d3a276a3e0d274b382d"
+  },
+  {
+    "upstreamPath": "src/rocky/rocky-config.cmake.in",
+    "upstreamSha256": "bda3a47e44f55f9d892c158926af2294f4ecda2ce44066eb6a6a7f1bb05e1eb9",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "src/rocky/rocky.h",
+    "upstreamSha256": "d180dd6a537e485c68f2e211afadaa8d35ece1b6452a698be43cedfc8356b310",
+    "path": "include/geostudio/native/globe/rocky.h",
+    "sha256": "cd5d37c08c63fb70bc0629c123123fba85e9813782871ef735627fbecd9ec119"
+  },
+  {
+    "upstreamPath": "src/rocky/rocky_imgui.h",
+    "upstreamSha256": "886527851df7851f0993b6d7e52a39c7546226acefa8f8d9e638fac6d6132eb8",
+    "path": "include/geostudio/native/globe/rocky_imgui.h",
+    "sha256": "b950cba857df673957596948878957c70f7c565c10c725383adc5f55d2951cdd"
+  },
+  {
+    "upstreamPath": "src/rocky/rtree.h",
+    "upstreamSha256": "c23112930c874c807882274b2764a370f34e4c0a268956e95bc658a3f57b4880",
+    "path": "include/geostudio/native/globe/rtree.h",
+    "sha256": "419d5c75c100e12487be886eb092e65126dc7f8112d99964875b9a17478075e6"
+  },
+  {
+    "upstreamPath": "src/rocky/static.cpp",
+    "upstreamSha256": "4665fb5274f2027e69721b2955090a3eb9e85705daf39c067fd4f7a83dd44817",
+    "path": "src/globe/static.cpp",
+    "sha256": "d7bc8e751e3df1e77c5f49853b6db457ca31eebe21f3fe0d3bec89752d5d1eaa"
+  },
+  {
+    "upstreamPath": "src/rocky/tinyxml/tinyxml.cpp",
+    "upstreamSha256": "929f9239deca3fd87694874fdb9a160aaba37f2a5869cc22c74fd3ef34787fe8",
+    "path": "src/globe/tinyxml/tinyxml.cpp",
+    "sha256": "c4df00efc019c9f40484f84303ac502fdfc2252763e90cdc8a8d3a3c365e1cae"
+  },
+  {
+    "upstreamPath": "src/rocky/tinyxml/tinyxml.h",
+    "upstreamSha256": "cc187bf3c1e5ffb49524abf6a0a3877e44d9917f5a2bcfe5d810e4416bc56d90",
+    "path": "include/geostudio/native/globe/tinyxml/tinyxml.h",
+    "sha256": "1730fd50887c8db6bc00ccfc85999bc954c5d6336822fd1983be9a6719b8666e"
+  },
+  {
+    "upstreamPath": "src/rocky/tinyxml/tinyxmlerror.cpp",
+    "upstreamSha256": "33677a9d5410e25c8294dd42e0caf21ca05315475c9819aa35e17f20f3f0a8b0",
+    "path": "src/globe/tinyxml/tinyxmlerror.cpp",
+    "sha256": "38d92188b825daee43535f380ea6c71a702925ed63c932f89c7429323538f8c5"
+  },
+  {
+    "upstreamPath": "src/rocky/tinyxml/tinyxmlparser.cpp",
+    "upstreamSha256": "8c567162a6f6483ed6c070465fc5ee207b9816315e9d76f9340670305aa96bb2",
+    "path": "src/globe/tinyxml/tinyxmlparser.cpp",
+    "sha256": "feaf614856eeddf648a3d60f82426c64c875764f8436e81a0cbd2b233f195705"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/Application.cpp",
+    "upstreamSha256": "a223672bab8920484626052ddcddec7d49f764af5cc2b1901831e2b1b8f1655d",
+    "path": "src/globe/vsg/Application.cpp",
+    "sha256": "ea9651e8356ae4399be0a6b75ea4360fd3a2e1bc79c97911d93bc063948d6f8f"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/Application.h",
+    "upstreamSha256": "d94c491adf76bdaff2a58c75c9d739d04f06e16291004c8ee34ee5e38069ecc2",
+    "path": "include/geostudio/native/globe/vsg/Application.h",
+    "sha256": "50294fe5a1262569bbd19f6de3402d7d97aa5102d756b1d0262f9e1ae37f7ff1"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/Common.h",
+    "upstreamSha256": "0d237bc3a5d104716ce5461067c7f459b92f331867fa1a66517b93217a99c6d0",
+    "path": "include/geostudio/native/globe/vsg/Common.h",
+    "sha256": "30d48ceff0241fdfa09c1aa2258d40f28c286635ac2953cda1f561106d76160e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/DisplayManager.cpp",
+    "upstreamSha256": "fb50d1fc0801cfc259a7edc68e603ad7eefd7a8a9575bd226373ad8440dd47ad",
+    "path": "src/globe/vsg/DisplayManager.cpp",
+    "sha256": "670abaf642e2ac7bbd14ef57a1e76b5269809b257afa7f9ce7052e9139a15e3a"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/DisplayManager.h",
+    "upstreamSha256": "7ebdbdccaddb0d7024dce854768111c110de1af8af6778067c511e96de3a2776",
+    "path": "include/geostudio/native/globe/vsg/DisplayManager.h",
+    "sha256": "ca31790fed2feea1c3594734845237b53f077d687571ef37132b38575d705eb9"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/FrustumGridSystem.cpp",
+    "upstreamSha256": "051459d00d08ba4a7b352fa7d9f6a955c55333f7a0c61bc6ff7a1a8c6bc0ac4a",
+    "path": "src/globe/vsg/FrustumGridSystem.cpp",
+    "sha256": "36f1e7cc396679bfffea8d275b113f770b6a2f84d1530708504b089997d6c27d"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/FrustumGridSystem.h",
+    "upstreamSha256": "a95afd73522de8d2773a3cc6fbc4efc041bf6b7dc9f5ea7a8b1a0293fc82fd9e",
+    "path": "include/geostudio/native/globe/vsg/FrustumGridSystem.h",
+    "sha256": "462abc05a61804c7e1176e131dff17d704ad66e7e0d7393f1c138a724793c1f0"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/FutureNode.cpp",
+    "upstreamSha256": "60b4f6b64991bb371cfda2350ca8f598e7ecb9dbefdbd2afd8e191a90d8bbedf",
+    "path": "src/globe/vsg/FutureNode.cpp",
+    "sha256": "2453ad5da314bc7725c2e440c7a4a377625685b1699bebf745bb80e764fae1a8"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/FutureNode.h",
+    "upstreamSha256": "863e4c4155c7b04b0ad06aa3ccb310c50d9aec4aa08757d2b899a49c899d9dfe",
+    "path": "include/geostudio/native/globe/vsg/FutureNode.h",
+    "sha256": "aff362979488b7f9a4c37414257c64c292ade3a3beed9aeaa381d2bc71eea39c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/GeoTransform.cpp",
+    "upstreamSha256": "1515eae74f7eae90ef3c6a4a3c8fa570a31a110b9b7279700647cfcc07ecf7a3",
+    "path": "src/globe/vsg/GeoTransform.cpp",
+    "sha256": "378109f24b9bd989997bc76f681d37004ee3d8d3ad4ca570872f6dde2ad629ad"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/GeoTransform.h",
+    "upstreamSha256": "67821580c624883b8753ecfaad3749b213d7ea7e8e279e3e0294da98c18dc96a",
+    "path": "include/geostudio/native/globe/vsg/GeoTransform.h",
+    "sha256": "8cf66d8fff35fa902e895dce2f7493642de4d6d92b01aa3ed4d4a8fd7e47525d"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/MapManipulator.cpp",
+    "upstreamSha256": "c0d77f48cc2a63829c96e02adff94b606d9fd3eb64f9718204f4d6d75d2fe6f5",
+    "path": "src/globe/vsg/MapManipulator.cpp",
+    "sha256": "a9c98efabe4fa86258042e43f930fe86501a6d6bd29adb850dedd2f5da4add21"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/MapManipulator.h",
+    "upstreamSha256": "247ec31a166266900b5485f4f74fbb24bf4bb8f2acdbfaa9aaeb3b5de9af7e15",
+    "path": "include/geostudio/native/globe/vsg/MapManipulator.h",
+    "sha256": "49ea912d954966fdbfd52e5173fcaf75d21ff6becaa175ea704fb8919a00088e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/MapNode.cpp",
+    "upstreamSha256": "c76fb4a0d1b48a963711851971a49a1ea96817bf2e1993bad8fccb7ed6251131",
+    "path": "src/globe/vsg/MapNode.cpp",
+    "sha256": "994df58bf6853b642ddb090ea3712afc769d90eb67ee5b0138cb639d919b25db"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/MapNode.h",
+    "upstreamSha256": "28c086a1086c8d90dad8f1cbb075621c6c918d4a6e6614ed55a2ce8e811ea6c6",
+    "path": "include/geostudio/native/globe/vsg/MapNode.h",
+    "sha256": "883e34193dde38fad893ad14efa5e108177df9be5cb1b8a4bb13aa5fa5c89a80"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/NodeLayer.cpp",
+    "upstreamSha256": "1d41248b47eeeb879ad202791478d7ebec41c97d94862838ad49e108e2c92246",
+    "path": "src/globe/vsg/NodeLayer.cpp",
+    "sha256": "5e3797e405c81df78651703770d9215f7d4894b021bb0d72543a9670246be3d1"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/NodeLayer.h",
+    "upstreamSha256": "25767b52da523b077775cb403da53be953c8f9cc6fd15f17ffc924d0de47d99a",
+    "path": "include/geostudio/native/globe/vsg/NodeLayer.h",
+    "sha256": "3ac38568712aca95e8d4776d953dac0e2941550ba374441186933bfe008f9a4b"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/NodePager.cpp",
+    "upstreamSha256": "3f101b169bd9537f981b6d65ac4e09fa08e799974d7c3cb003b92f254c327ecb",
+    "path": "src/globe/vsg/NodePager.cpp",
+    "sha256": "a633c55b20c098155e256f4d47ddd892eb5a758960a1f5fd23c8a7dd65d610ca"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/NodePager.h",
+    "upstreamSha256": "e4bec8a0b239cd2346a5c8b8a723d16b2ca705d8c93daa2941ca46bf32d7fb07",
+    "path": "include/geostudio/native/globe/vsg/NodePager.h",
+    "sha256": "9baa53ed219f176277718e479f3e99e7a84018896155fd8fa348672ba92493b1"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/PixelScaleTransform.h",
+    "upstreamSha256": "f21de32975bf02b2fc86ebf38d7f205cd105d932cb0b403c983de213729af81f",
+    "path": "include/geostudio/native/globe/vsg/PixelScaleTransform.h",
+    "sha256": "46916547505efbb76105100dd104c501e921748cea468d7da2fbccd8678ffe25"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/Polyfill.cpp",
+    "upstreamSha256": "b6fa7d1c15cc5e182f2eff0c90ec380fe090fda25791cfe61b511f15d7336f3c",
+    "path": "src/globe/vsg/Polyfill.cpp",
+    "sha256": "61abf75e5a85da0807029e22dac32e6d7e47ff5facf8bbb274c229db7bd1fe04"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/Polyfill.h",
+    "upstreamSha256": "61842ecbc559e015ba7826b51db2833bba83b050abe99c1833ec69542ad62132",
+    "path": "include/geostudio/native/globe/vsg/Polyfill.h",
+    "sha256": "d5e850a5f9ba6efb5208e3361e1cd4aef322564495b8d834700ee1eb98257529"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/RTT.cpp",
+    "upstreamSha256": "544236a9bd664c6129ab024126e3b739604c0b534135fad61d192a75da4a8421",
+    "path": "src/globe/vsg/RTT.cpp",
+    "sha256": "63148a688f8da420227ae58db87a6027a77b54f6a6d7b53d2edb705151d10989"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/RTT.h",
+    "upstreamSha256": "e1743bd266a98cf773ca11c0776717ac96b25d80e1f844540183edf3c5487872",
+    "path": "include/geostudio/native/globe/vsg/RTT.h",
+    "sha256": "520e290928edb47fada952497fa33b0f89f0d17d4d8e6ae11f4cc6d6f89db6b5"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ShaderDefines.h",
+    "upstreamSha256": "62f97cc45bc0fc3f23af98da406e1fc5ad22ba26767b069d5363d08ebb16b546",
+    "path": "include/geostudio/native/globe/vsg/ShaderDefines.h",
+    "sha256": "30cbd625d924f763b064e7c60ba576927401878a76ee688b8edb8c4974145fd9"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/SharedRenderData.cpp",
+    "upstreamSha256": "716ad40d5b2445709833291c4e63d0adb0f5651e5075c667601ce5cc62e4a097",
+    "path": "src/globe/vsg/SharedRenderData.cpp",
+    "sha256": "38c3a225534dd4602c61f7e616d150e5a2a978697b0fa3f7a5267ab4fe607f37"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/SharedRenderData.h",
+    "upstreamSha256": "309d1ec1b54f5dd6b6e18783eb43ea45e7cd3dad40a645218f344900ef96897d",
+    "path": "include/geostudio/native/globe/vsg/SharedRenderData.h",
+    "sha256": "4f1caf1d03d89728f7dc0d3cb7492060f29f1519b7a8f16c6d4f1199eaaa2e4c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/SkyNode.cpp",
+    "upstreamSha256": "1ad89e78e593d5643ed169895ecebf061f699c8005f95dfdbe7ad3055ca3bfd7",
+    "path": "src/globe/vsg/SkyNode.cpp",
+    "sha256": "79f0d3d9d6f94966b433a13e4f20a5ab6c0eba67a7b5ac782863cc7c94fbba54"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/SkyNode.h",
+    "upstreamSha256": "ca1d2710021c32edd5d73d466e4d0b6990b045e3d2d891782c9e7c815a645d67",
+    "path": "include/geostudio/native/globe/vsg/SkyNode.h",
+    "sha256": "03daa3c33b96e7dda0b6df9924e7dd52ec5612d74645f65f026a1aea84989771"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/VSGContext.cpp",
+    "upstreamSha256": "03056e8b1e1302ecb6bd6584b7f9b3e1e20c6028e29eec84c2dfe5ec0e85c67a",
+    "path": "src/globe/vsg/VSGContext.cpp",
+    "sha256": "ee15ccd356f2db6123a6e154ef5d74b0c108e4aa23ce24f44cee7eafb3c018cc"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/VSGContext.h",
+    "upstreamSha256": "5de5fa5d09d7bc5db93b142083ecc51c9a6ff0205e650f7d6e58252ea60a1680",
+    "path": "include/geostudio/native/globe/vsg/VSGContext.h",
+    "sha256": "6416f54a26d723638f23a43ad5818361e6372bf6c736795bbc51882a4fe7eb2c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/VSGUtils.h",
+    "upstreamSha256": "d8a974972ec1debf979a95c420b7040bad4059c2fc9d79b7654e677659e4507a",
+    "path": "include/geostudio/native/globe/vsg/VSGUtils.h",
+    "sha256": "3af9e957dcbf9a8ffde2671a385931465e3f183adc53f2086a90dd20bdf1f7b8"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ViewDependentState.cpp",
+    "upstreamSha256": "4ab3b729bcbcb303975047a4dc248fed5354cca9db2a45d4eaf0bd05e1122fcf",
+    "path": "src/globe/vsg/ViewDependentState.cpp",
+    "sha256": "e8ba7bd518a8f704843ed9b834c2fa62ef2cbd093208a8cc2945d507f832a933"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ViewDependentState.h",
+    "upstreamSha256": "b5a85a16625e30d9f193507038fef3171c89bdfc876adace3050a81ba62443c0",
+    "path": "include/geostudio/native/globe/vsg/ViewDependentState.h",
+    "sha256": "38cb317a5fd949e70f599fac8955da3d94e7fb0240a4e0326a69f6b78a84cd8e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/DecalSystem.cpp",
+    "upstreamSha256": "213d84cef81949a2a633479b27997273d2efb2893c97565d8564cf07a09a9782",
+    "path": "src/globe/vsg/ecs/DecalSystem.cpp",
+    "sha256": "11a8da0c259465d0b3aabb2d677ae53e22fbed2a9a635d050f1cf9ce71ca4ef3"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/DecalSystem.h",
+    "upstreamSha256": "2d14bfbd18cb29c70ba57f1bf4f34c616710b9e060521b7507a683e84abd1cab",
+    "path": "include/geostudio/native/globe/vsg/ecs/DecalSystem.h",
+    "sha256": "f4deb09d7ae59362855acf97b4f9fb15eb9ba7bd81bcf5baaf4f437d804355cb"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/DeclutterSystem.cpp",
+    "upstreamSha256": "530fbc9f993831959408f24c4b3b8859eaeaeb76825080ea979cc65e28c52051",
+    "path": "src/globe/vsg/ecs/DeclutterSystem.cpp",
+    "sha256": "089756500e8d17020938ba0b0b8246118f2f27fd9e18c185dbbe64540ba41cae"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/DeclutterSystem.h",
+    "upstreamSha256": "efd5468f80a1fb82a770881ee7be4e41ae40ce6c57c1f25a3bca75fb63ac0902",
+    "path": "include/geostudio/native/globe/vsg/ecs/DeclutterSystem.h",
+    "sha256": "54789a3399c35dd370ff3b4a3284872e2f8da73c7f8f6a1fe6ad92979b8361b2"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ECSIntersector.cpp",
+    "upstreamSha256": "95c8ce585f96172daaf278b245a42effda20c56609aadf3cce58a571313fea3f",
+    "path": "src/globe/vsg/ecs/ECSIntersector.cpp",
+    "sha256": "4e55a5c0f86466bcea57c589be123df7c2804ac5b0a3b7910e44bfe427cba690"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ECSIntersector.h",
+    "upstreamSha256": "795818834092ae87a15ce216cb55425df102410d1e647c32eb7d71fa814ec103",
+    "path": "include/geostudio/native/globe/vsg/ecs/ECSIntersector.h",
+    "sha256": "3910e0a1612a9b0c6147acd0ca10acec2a3522bd0f6b06ca15e632e8afc9c7dc"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ECSNode.cpp",
+    "upstreamSha256": "95a357612688c26ab0a7340de88b98a152c4097ccd80033000e7a26f65f56f3f",
+    "path": "src/globe/vsg/ecs/ECSNode.cpp",
+    "sha256": "fafc4b62422ca551ec9cf96da9888230f8b092d44ebad4274a1034db7f301074"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ECSNode.h",
+    "upstreamSha256": "4d5c8e183157cce446d4f2ed6bbb2f65ea788b6b763fc3f738bc7c06f4393ddc",
+    "path": "include/geostudio/native/globe/vsg/ecs/ECSNode.h",
+    "sha256": "cee8dc721f696c208f45275448de59c9f4f93fda5dcccb62a02ffad6257472f4"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ECSTypes.h",
+    "upstreamSha256": "aa15d7421be9c9d39c1e487bf07c8e2947da94ccdab1908744e3a3c9fbb87d46",
+    "path": "include/geostudio/native/globe/vsg/ecs/ECSTypes.h",
+    "sha256": "2520cba8f40451d79d0b5d06f5e06595715e6b5e8c729ede2da0252b4ef8e3ae"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ECSVisitors.h",
+    "upstreamSha256": "91224d1989c3f260331c04e997e3b8ce4c8e246a76d5d8a40130f4daba3f13c8",
+    "path": "include/geostudio/native/globe/vsg/ecs/ECSVisitors.h",
+    "sha256": "243e776d8e488700b1951215aaf6d44fc8afdfbc42fecc4ddb47ff93e17d7353"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/EntityNode.h",
+    "upstreamSha256": "6cffabeb54e0d250c842e40e74e248ceb304d45201f8229a989f13bbc3ae638c",
+    "path": "include/geostudio/native/globe/vsg/ecs/EntityNode.h",
+    "sha256": "d8c282745aa99dd45f70ad80a75a7e62bd571a49232e747da27914449b06973f"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/FeatureBuilder.cpp",
+    "upstreamSha256": "42d05cc6f9b90adeec1f116a91d0a26d228d26cb0f0f2de66c4fc1388a935f22",
+    "path": "src/globe/vsg/ecs/FeatureBuilder.cpp",
+    "sha256": "167429b20c013e610e47d3d055a5f79e2475b315461cc9dfd616dbf60b473bb9"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/FeatureBuilder.h",
+    "upstreamSha256": "9f5eaf72d5dac689d068fc0e54b3624cba0910b9542f30dd4c382c5b6c15a22f",
+    "path": "include/geostudio/native/globe/vsg/ecs/FeatureBuilder.h",
+    "sha256": "eecbb0936f10f31c848a7a61b2d3e0d1b402d87b002a7c4254c450f32bde3405"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/LabelSystem.cpp",
+    "upstreamSha256": "5f229d72570cad5555fdb022f0ff1b431205dc32355ba7aa32c4cfe982a17cc7",
+    "path": "src/globe/vsg/ecs/LabelSystem.cpp",
+    "sha256": "29704c513d9a3870f87e10d8bbf4be17e69d759216482597b3c6a673af48e24f"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/LabelSystem.h",
+    "upstreamSha256": "106fb53bdb5ae0f5f3ea18252a387803fc895f66aa547d7710f563acdf6b95fe",
+    "path": "include/geostudio/native/globe/vsg/ecs/LabelSystem.h",
+    "sha256": "8a3b5ceb98ea48931d331cd5819e1fa09fb5b9ba8d6cf66122f2976e02e3c0af"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/LineSystem.cpp",
+    "upstreamSha256": "9bb4c2db963de81e8f878db76a7582c22c49b81beca145a82fba4e771c1c4d6d",
+    "path": "src/globe/vsg/ecs/LineSystem.cpp",
+    "sha256": "bc4e1123dd70c8e97b967a32ff09baae0f9cd5aa559f842abd6e2d2d064b31e8"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/LineSystem.h",
+    "upstreamSha256": "11f81c9e8495c79cf89dd18ba5bc644fd096564bbf03a93275c4bbd91dde9a25",
+    "path": "include/geostudio/native/globe/vsg/ecs/LineSystem.h",
+    "sha256": "3803958a50486c52b6b3ea86b9d73d680f7a1ceb3a51a59897babcc9afbbb50c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/MeshSystem.cpp",
+    "upstreamSha256": "fd17f3aad1d8381deacd40f38a8dd1e2ddee109abe63db522d5ec89ef6bfd73e",
+    "path": "src/globe/vsg/ecs/MeshSystem.cpp",
+    "sha256": "a25e1bfb7a64f983b0dd007c8dc588d1a29705dd7b0b90b067e3040cafa927b6"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/MeshSystem.h",
+    "upstreamSha256": "025b8f977eaf94e0df18d0f27ba1ecbc0cd9c24ba573d48931978530d2549b75",
+    "path": "include/geostudio/native/globe/vsg/ecs/MeshSystem.h",
+    "sha256": "2afd22ac8760cf816aad99e34c1163ea253aa5e7940b9cb5d6c1488a757432fa"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ModelSystem.cpp",
+    "upstreamSha256": "48d9d0624e30cf1ac7090f860171f28f761e65f612ddedd56ef226496fbfee8d",
+    "path": "src/globe/vsg/ecs/ModelSystem.cpp",
+    "sha256": "c5cff6f2ce9b8bc9e9732b3235330193935fc9ed9cf62383ef912e30288e243e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/ModelSystem.h",
+    "upstreamSha256": "1345cbd9ba7fb5fe2fa66203a9492c47109ecdfce4e7ce42de0d05bf489a6993",
+    "path": "include/geostudio/native/globe/vsg/ecs/ModelSystem.h",
+    "sha256": "f398f98710680f365c611d0bc1643d97a9d08d6d32ca6d79018bdb34964de47e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/MotionSystem.h",
+    "upstreamSha256": "76ef5185ae58b3b1b6b454b37ab988140400a6b585ce87ee02cfbb648c13dfc2",
+    "path": "include/geostudio/native/globe/vsg/ecs/MotionSystem.h",
+    "sha256": "4d4f46e9dac3ae763b3c7f5e502aa68c0b5af19350088c8a969668882e90d0a9"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/NodeGraphSystem.cpp",
+    "upstreamSha256": "c33605670b42691cb3f5fb2b14dcc6d6355fc9ddeeb1da6302085f9b1d4e3745",
+    "path": "src/globe/vsg/ecs/NodeGraphSystem.cpp",
+    "sha256": "fb5c7d8f864ab4ea21ff5ab014bcc935964d1e37408aa422a40fe8010eb70d5b"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/NodeGraphSystem.h",
+    "upstreamSha256": "672e92db4f07f685259255443d76c5d0411e6aa8ee69be1a4078d1a0ca8cb78f",
+    "path": "include/geostudio/native/globe/vsg/ecs/NodeGraphSystem.h",
+    "sha256": "f000f8d42508293acc84d715171d464c403a38d9fc063d4d7adb34992cd84df2"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/OpticsSystem.cpp",
+    "upstreamSha256": "9b78e8a6f8bc90c74eef132a3066cf7089232155d7567c940568f792ddfb9a81",
+    "path": "src/globe/vsg/ecs/OpticsSystem.cpp",
+    "sha256": "616bf54cada5f7d2c13b961906d025c2c75643a627f54de8f09790b74f16ba5a"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/OpticsSystem.h",
+    "upstreamSha256": "fa39076bed1aef34bf8f27a180969d1b6ff195fb61d5fce006b859308ebc1525",
+    "path": "include/geostudio/native/globe/vsg/ecs/OpticsSystem.h",
+    "sha256": "253189e60148bf3011e6a90a3d12ec9bdf2262f41a45ae0921c46a02c1f6fcc6"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/OverlayBakeSystem.cpp",
+    "upstreamSha256": "cd0b6cd0bbe5696cf95924de7d084858b312919003ae3759dc50d702856e88b8",
+    "path": "src/globe/vsg/ecs/OverlayBakeSystem.cpp",
+    "sha256": "11d6bd31d73f85156aef0fd2300e9002737c228113e4e6f2efa585b27378ef7c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/OverlayBakeSystem.h",
+    "upstreamSha256": "63ff39bf655f8add0614dfa50eab3cd9831e2ecf5c57dd59be5394a275a62635",
+    "path": "include/geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h",
+    "sha256": "4219b994696f94b25c8174da7b8b8286f62314e4ef102ab2da8080202965006e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/OverlayRenderContext.h",
+    "upstreamSha256": "27edd9325d2d8dde2d031d06a6b180f0cc02a5c359b51799895482e48c7d8427",
+    "path": "include/geostudio/native/globe/vsg/ecs/OverlayRenderContext.h",
+    "sha256": "0cb9ed2dda068cdaebedeba6e8df97a70ffd61e6d788aca4188b1f195daffd94"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/PointSystem.cpp",
+    "upstreamSha256": "e8c266d7bd9417723eb2236e296b9c40771c358b781cb5a9c735fe3d0b9535ee",
+    "path": "src/globe/vsg/ecs/PointSystem.cpp",
+    "sha256": "7a7d6633cd24f4e1d4bdf48b560fe030559bbc7152ba8461de402d021f129d61"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/PointSystem.h",
+    "upstreamSha256": "6af0e36ccae080834d636006b3e7085c142fe1829061e3a0283ef580b29f0e15",
+    "path": "include/geostudio/native/globe/vsg/ecs/PointSystem.h",
+    "sha256": "3efcd61b2286c441914bd7f54f148f0d5487fd42fcf1f6f0a18c576eb2d101a1"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/PolygonSystem.cpp",
+    "upstreamSha256": "160a3b33ad397ee51937a2e507dc46c9d1c631fe35b3ccbd66caf0dbdef61b70",
+    "path": "src/globe/vsg/ecs/PolygonSystem.cpp",
+    "sha256": "91b4f3810ea823d079d2fb2e4008b0a60c0174096b28bb7d84dcb50f4c726c83"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/PolygonSystem.h",
+    "upstreamSha256": "9b4faff79efea21a372bd5fada61b8fafb53b970014e13df623281dd65cc2732",
+    "path": "include/geostudio/native/globe/vsg/ecs/PolygonSystem.h",
+    "sha256": "6ee2e4ea2021ad757553699260dc1241af986dc6575731a84d9628d338e3d0fa"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/RenderTextureParticipant.cpp",
+    "upstreamSha256": "afdc4204be0bb089fe6ef9573c05a7732656d4ee5b29a90faacba7b962083ab7",
+    "path": "src/globe/vsg/ecs/RenderTextureParticipant.cpp",
+    "sha256": "8e2a4f4630fc7b6769aa892c5175d776646084e81007521c2516c41e5e661fb2"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/RenderTextureParticipant.h",
+    "upstreamSha256": "b2e1590935b9d1efacc212f83f1b5f03386c6d1dfafcafbc57f954bcc68cee76",
+    "path": "include/geostudio/native/globe/vsg/ecs/RenderTextureParticipant.h",
+    "sha256": "be2d960f74af90bd155b432f615812f687e458c0acb824125d45cac6e0b004b9"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/SlugCoverage.h",
+    "upstreamSha256": "d9ec3eaf162968547ea5b85860df5300697bc1721b71fdfe9b72b7421d260444",
+    "path": "include/geostudio/native/globe/vsg/ecs/SlugCoverage.h",
+    "sha256": "21001e29211d24fffac06efa9792e03aac04aa50f46bbb653103d5c3d968fb84"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/SlugResource.h",
+    "upstreamSha256": "6db1e2280b2ef6585d17e76643059eafa0aa1eb97f05508a6d5d4a5f88a50465",
+    "path": "include/geostudio/native/globe/vsg/ecs/SlugResource.h",
+    "sha256": "d768d9b128651ded48616e03105f24bfb0e31dee6b4801f236ad61343b26e1de"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/SlugSystem.cpp",
+    "upstreamSha256": "a5d11c1851180be28e635355425b521fa9e27cf55f4a453f78b3f9f741f48c6e",
+    "path": "src/globe/vsg/ecs/SlugSystem.cpp",
+    "sha256": "71416195f53b2a30bc643381b2b30f2cf607fc388d848b31e5e7a3161c575727"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/SlugSystem.h",
+    "upstreamSha256": "b1b549e9414b7fb0b0c4b5a12d85e69f51f08d41aa6501e5c897b35eb130a540",
+    "path": "include/geostudio/native/globe/vsg/ecs/SlugSystem.h",
+    "sha256": "42c4d3fc10bccb4f0f0e46c325d2c0d0e9ffaf6df05e6e733a9aa392d80ba97d"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/System.h",
+    "upstreamSha256": "7609fbc2e104bb5a8e0e137f20b0cb81222f0c0df153e30daed6de230426020b",
+    "path": "include/geostudio/native/globe/vsg/ecs/System.h",
+    "sha256": "e28ab9766cd1373fb6323a30889ea501e558d88a7a173e1452df66b53385b312"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TerrainAnchorSystem.cpp",
+    "upstreamSha256": "c3aa923a1c436776067347b0c9fe0a9046a91d04e10b4272877429327d4cb7b7",
+    "path": "src/globe/vsg/ecs/TerrainAnchorSystem.cpp",
+    "sha256": "0c905e0b472d92a9efb712ae2bfe1143319941416fe001a274d3889c4a938cd2"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TerrainAnchorSystem.h",
+    "upstreamSha256": "e3f576db2f420eb88c0082f0bf5c1cbbcb352b7f3d42a56dd9ff215770e677a0",
+    "path": "include/geostudio/native/globe/vsg/ecs/TerrainAnchorSystem.h",
+    "sha256": "fdfb6bc02f1c1d6bbee92b123d6f6abbebe82d323fa9798a380923ed8b60ad3c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/Texture.h",
+    "upstreamSha256": "2a2215ef9be82d4ee23eaa3dcde618d0748a3db0e8ea1d7fc5a8b5198d9b36be",
+    "path": "include/geostudio/native/globe/vsg/ecs/Texture.h",
+    "sha256": "b32cdda3356baf3fa928c6b8e475db0e360cf326f3a0be3f6aabe4ae301dfa55"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TextureResource.h",
+    "upstreamSha256": "ea61fef67d1db99a7b6d5fde7ae91299cea693573d3f4a89eada0c54418d688b",
+    "path": "include/geostudio/native/globe/vsg/ecs/TextureResource.h",
+    "sha256": "a022e5d3776c39738ede84c0c30da25924f7c86aec4a1b0980a2904c1b7b2a8f"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TextureSystem.cpp",
+    "upstreamSha256": "45f2057124e4eb9179ca5f99c0b11c5455983d3e22f4247794f766bf6b38d91f",
+    "path": "src/globe/vsg/ecs/TextureSystem.cpp",
+    "sha256": "c7e417a6c0282792280a038e7301ec04dd640341e045a6880c29fb5ef0b7acff"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TextureSystem.h",
+    "upstreamSha256": "23d99b804e0392d2307716214911a4baefce2d06ff2825c1d8c5e266bda5a8b6",
+    "path": "include/geostudio/native/globe/vsg/ecs/TextureSystem.h",
+    "sha256": "78998cdb031d8f66be9c0ffc2b4912a49d4c84cf1be9b31ce85a99675c2f66de"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TransformDetail.cpp",
+    "upstreamSha256": "595d3a01f4645e44c1d780b2b1128c2c520a832f544fd951796689ae52a84c11",
+    "path": "src/globe/vsg/ecs/TransformDetail.cpp",
+    "sha256": "7cca167411623c396c3e4d6616414541741486b0620b891e5b2be6810d6596b5"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TransformDetail.h",
+    "upstreamSha256": "8981074330b1f3ba58245762b1f3d0e6dea192389b308cb592d6c8bc08f2f700",
+    "path": "include/geostudio/native/globe/vsg/ecs/TransformDetail.h",
+    "sha256": "997c90b52d35802d74106c8ffa9ca429bab1219a930d97d85e4ff75097dfb99c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TransformSystem.cpp",
+    "upstreamSha256": "49e0e3ea5fec8161c8d76b6533f81b8445cd70d7454844918043d223123ee59e",
+    "path": "src/globe/vsg/ecs/TransformSystem.cpp",
+    "sha256": "8a31a648281a675984b4f7f2497aed3b809aa1f7fc2790b3f381227cb03595ff"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/TransformSystem.h",
+    "upstreamSha256": "1246d2d66938d9214eaf95b52f6a67d0e5b8279ec950b854bd4c1f843f18a50c",
+    "path": "include/geostudio/native/globe/vsg/ecs/TransformSystem.h",
+    "sha256": "2c861a1e5c98ab4ad841323fb655a26bcc7baae9e04d0bb83bfffea5653b31d8"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/WidgetSystem.cpp",
+    "upstreamSha256": "f194e9329d4e101c9ce75462b7c05f8dccbe00171533c8e7cd9241d2c7ffbd56",
+    "path": "src/globe/vsg/ecs/WidgetSystem.cpp",
+    "sha256": "692217ab2e8544045436a63fb4780fe5cc3b31bbbaa95444719c5b79802c857e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/WidgetSystem.h",
+    "upstreamSha256": "cd78325528ca2107b920b8ea72087d2b6228c7d5e9f25432827d8c203965691f",
+    "path": "include/geostudio/native/globe/vsg/ecs/WidgetSystem.h",
+    "sha256": "1f237a3cd488807d03d56e46bb0d0994cb72cb2c53b743975f2a05f666b7c6d4"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/slug/README.md",
+    "upstreamSha256": "c711747103e77d87dd0ac1fdfede6a95670be20b218434fefbb4049ed54123fb",
+    "path": "src/globe/vsg/ecs/slug/README.md",
+    "sha256": "9fa7ec5a10a985c15e13f7568eba7aa29ecfb5c9d70edff7daeecab4644156cc"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/slug/SlugAdapter.cpp",
+    "upstreamSha256": "465e49699a9aeb7e6b8e0a13ba78dd10bed00c438d33fe68156df7e9bd12a717",
+    "path": "src/globe/vsg/ecs/slug/SlugAdapter.cpp",
+    "sha256": "d5c0551f35ce3ed1b5db98b74050ef90e06b576d2cb8732751b02c289b629b7a"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/ecs/slug/SlugAdapter.h",
+    "upstreamSha256": "b1884e43d73db2a821870b59358eb2d19b492d91438cda762bbf8d99def6bc9f",
+    "path": "include/geostudio/native/globe/vsg/ecs/slug/SlugAdapter.h",
+    "sha256": "bb3e9ad22867120c00021494e8ecd4460a3316e88a4f882c935e2c12647f02a9"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/ImGuiImage.cpp",
+    "upstreamSha256": "4f9d48b6bfbb6c4e13adf62a08f2f8776c3a500b50bb3303b8380f55df5797bc",
+    "path": "src/globe/vsg/imgui/ImGuiImage.cpp",
+    "sha256": "e715920ff10a474abfa71d3bd034d2f45639fbb61a100ec8bae314f316daf272"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/ImGuiImage.h",
+    "upstreamSha256": "a508b33e1f9aef3ff052d9f274212d7b76218c2bc0acd68f55d744712f94590e",
+    "path": "include/geostudio/native/globe/vsg/imgui/ImGuiImage.h",
+    "sha256": "abeb4aff40bf7b764b6ce986c7e2462856667b35de0be49b01065a5099fcc51b"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/ImGuiIntegration.cpp",
+    "upstreamSha256": "b0ea296016e182a0a34a2877b14dc9133ed7801b9a111f1729636be4222b116c",
+    "path": "src/globe/vsg/imgui/ImGuiIntegration.cpp",
+    "sha256": "5f7b2b9431d293bc803f3ea12803499957567e3ad3693c231ff9911270eb2f3a"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/ImGuiIntegration.h",
+    "upstreamSha256": "0822f762a6564dddd062241a539c65d0fd0b39f68fe0a7ce43e1299369ede85f",
+    "path": "include/geostudio/native/globe/vsg/imgui/ImGuiIntegration.h",
+    "sha256": "153a189a461b3420961d77442238d83a5cbe799b7b30097fc865ebc03690ed3e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/RenderImGui.cpp",
+    "upstreamSha256": "6109ee8fe7242b3e684eaeab55efca5807bc4856f5a7ecddb7b91e504a89d120",
+    "path": "src/globe/vsg/imgui/RenderImGui.cpp",
+    "sha256": "3d4dd1ebcea5163da87a3fd9abb69085934db8ecd069b0000c659146dac2dca3"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/RenderImGui.h",
+    "upstreamSha256": "36e4c49e628a6770f7bb84689acb99e7f660538114647cead513fb37c1d6f1be",
+    "path": "include/geostudio/native/globe/vsg/imgui/RenderImGui.h",
+    "sha256": "c607c074d4a350635c6c856cc5d60cb149cf313fccb03592e3722f539ab49150"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/SendEventsToImGui.cpp",
+    "upstreamSha256": "e32411db101151ddf8c7f042fed65e98380b4c9557b18e0440973d788d3e4f43",
+    "path": "src/globe/vsg/imgui/SendEventsToImGui.cpp",
+    "sha256": "8e912db5c83e3ef86f9159f3e32023f2faf779ba7779e0e49ecc8d9d631c494e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/imgui/SendEventsToImGui.h",
+    "upstreamSha256": "cea1f8ccb2952381dd06f1190fc32c9d40b95cc02be50e370bbc1a4509fd27f4",
+    "path": "include/geostudio/native/globe/vsg/imgui/SendEventsToImGui.h",
+    "sha256": "9594c7cbaf62c93a4dbc2ccb74ddf0622aa98debcc6b7d274e6c758e2df1c09f"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/json.h",
+    "upstreamSha256": "e8a482558be9527a223cbc6593e5f04f3cecf2de6f830e81a97c90d3a552d5c4",
+    "path": "include/geostudio/native/globe/vsg/json.h",
+    "sha256": "7d65da6556605c28e60cc35b9770a1c401f332635fa172be6525e85f45f5bdeb"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.atmo.glsl",
+    "upstreamSha256": "b6aa85fcd72ab2575e141622abb6e2e867728632587f3c343642a723b8b3be58",
+    "path": "resources/globe/shaders/rocky.atmo.glsl",
+    "sha256": "f5666171b2b9859727de1f5123e191481e9cda8e41395e53b991b4e5852c7549"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.atmo.sky.frag",
+    "upstreamSha256": "5e32ed85469cd930bab3f661344e8ac3b715a4552e1cf0bf9e18f22dd592eabb",
+    "path": "resources/globe/shaders/rocky.atmo.sky.frag",
+    "sha256": "a030e6c0b433d4e1c4d10b6c4e56129bc11e60447af725b279164ce098ad3e21"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.atmo.sky.vert",
+    "upstreamSha256": "b0f1b353339a6f432e7692357e4e85bab752f4e6d7f46feebf2384530451217a",
+    "path": "resources/globe/shaders/rocky.atmo.sky.vert",
+    "sha256": "11165cf0f478ce3f5f8774669f16f5bfa190b3c9b46338448e08b0357dab4e76"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.debug.frag.glsl",
+    "upstreamSha256": "eed7d2be1c51e132fc7c111ab992a98d0811769fd2c2c74cca0053b7752ec1b1",
+    "path": "resources/globe/shaders/rocky.debug.frag.glsl",
+    "sha256": "7374e6da458dd78f0753bcc7cf8acbdfd0b4de0fc7209f42c4adc95e2638a0ee"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.decal.cull.comp",
+    "upstreamSha256": "6c44023acb31a1e40b8296f550e5d2a68bc59b7db2795b2cda25ff84c1c6691b",
+    "path": "resources/globe/shaders/rocky.decal.cull.comp",
+    "sha256": "a913f832c9604231ef0d8f4f18f01b1d53c5c089911af7478e0cd2b728e908a0"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.decal.debug.frag",
+    "upstreamSha256": "e6962d2a0b250536ba5d00a970ce2a7f2097df3e093fbd1c9871a4f1c1125cc6",
+    "path": "resources/globe/shaders/rocky.decal.debug.frag",
+    "sha256": "99415f24ba76c4e43d6db0404941596c01232150521b53af906238465db4f2e0"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.decal.debug.vert",
+    "upstreamSha256": "b120e73cf9240cf2358ed24514ce124c743e774d45b76f1bff70d0038b772773",
+    "path": "resources/globe/shaders/rocky.decal.debug.vert",
+    "sha256": "f3bc6b910887bc50de5162ddaf19f5f11f99580f4f9b19634ec93ef705afd944"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.decal.h.glsl",
+    "upstreamSha256": "91adfe01af9e081f4e9903925e617e1a1a8c288ea6a36f6f7e1d5dd10d1f7495",
+    "path": "resources/globe/shaders/rocky.decal.h.glsl",
+    "sha256": "d48fe9ef57762e86fa14ac5c22109f06d6992ea0644302278193889ffaf085ad"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.decal.record.h.glsl",
+    "upstreamSha256": "8310159038f3a2be63f50afbbe64b36a958e8ff06e492beb3b3adff4cc8a04a3",
+    "path": "resources/globe/shaders/rocky.decal.record.h.glsl",
+    "sha256": "c0b4ba5677c6e4790381ee3d0ffa65cb1dbd5be033d9d5b1256a59a2fc823c7a"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.defines.h.glsl",
+    "upstreamSha256": "f7196b4e589567e2994bce6f7d63b6b75e02a4a6c51531dbbf8ae65ba055775e",
+    "path": "resources/globe/shaders/rocky.defines.h.glsl",
+    "sha256": "7a8ff9b8a625781fc3a8e8c072185a4201fbce1aa39e706f2cd702286022aca4"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.depthoffset.glsl",
+    "upstreamSha256": "0e67bada23ab0a767a4c08f88a08549249998cbd87a75256e4078f44f9234acb",
+    "path": "resources/globe/shaders/rocky.depthoffset.glsl",
+    "sha256": "c42b8e0c73ec68b5525c2cad77b86d9eb8a29c32927222a959f552ea057e7532"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.frustumgrid.computer.comp",
+    "upstreamSha256": "3781707487d650101fe6fdc0e0b7586c5ee5117e9cf6a789210e0237a0417edb",
+    "path": "resources/globe/shaders/rocky.frustumgrid.computer.comp",
+    "sha256": "49bbda9f6c4232eb1b4cbb3da015b61d44bbfe43bf06d73271dcf0111a067f24"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.frustumgrid.h.glsl",
+    "upstreamSha256": "06d998c0ef1e8c9a6d72dbba7a528edf60424de642846fde323d9b3273516f73",
+    "path": "resources/globe/shaders/rocky.frustumgrid.h.glsl",
+    "sha256": "56aaa1395a394c6b2734fdfea38ac6c281ec3f12c200370e86955ba1de41d590"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.highlight.glsl",
+    "upstreamSha256": "b3239deecc0f24fe26dfe3781a6f8f9795a186e988588d5bab74db5bc44e1ce7",
+    "path": "resources/globe/shaders/rocky.highlight.glsl",
+    "sha256": "fcb3751abcf978e744d941ee4ce67c77b64e3ef6b9fa26675e250591500cbbf9"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.icon.frag",
+    "upstreamSha256": "8dcafd92f7b85e0049081801b0367a09be11386bed1274944e5d8b1091a6cf7b",
+    "path": "resources/globe/shaders/rocky.icon.frag",
+    "sha256": "6746526c8fcd61cabd91f44e995cfbcfb6915042145955d18c371ae10d14146c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.icon.indirect.cull.comp",
+    "upstreamSha256": "3459a25cfbad7ed61654edaabd7c6e1ec323df27bd5ecc3fdf6f22729ff835a1",
+    "path": "resources/globe/shaders/rocky.icon.indirect.cull.comp",
+    "sha256": "0b5a070fc31901d660d31dfc990ac55b4fec5854355d4181eab668d8088f2cae"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.icon.indirect.frag",
+    "upstreamSha256": "f62f8cead075abcdadd0ffec9ebbd1829337af4967e79491fa3944fd7b08f683",
+    "path": "resources/globe/shaders/rocky.icon.indirect.frag",
+    "sha256": "9df9a7f706ee353ccaa090f30c19706c65200c0d3ef42faa9c95054394e46648"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.icon.indirect.vert",
+    "upstreamSha256": "4c21e6b7178ef79c83ec21e6159c4050740b95d465d46dcfcc0b186ba5996f26",
+    "path": "resources/globe/shaders/rocky.icon.indirect.vert",
+    "sha256": "6e4c5d3ea75fa4d2df93225a7995abb70fe698613e2cbc32d0e12a44c2555570"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.icon.vert",
+    "upstreamSha256": "cc5c71b14ca2ff2d0e03c053724b0f9742002a3c4c66045c4e993fbfc6a74575",
+    "path": "resources/globe/shaders/rocky.icon.vert",
+    "sha256": "ba5cedf8cb42c505bd9c211a1d970694949d542f37183f7e61adaebb15d2fe56"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.lighting.glsl",
+    "upstreamSha256": "40d88032dc1154fa33e7c1408af98329df196a653e53428aec243227b7022311",
+    "path": "resources/globe/shaders/rocky.lighting.glsl",
+    "sha256": "7713ee4e394fa096140210fd1ab3b4231ce8afe513e6b69e2eeb768ae33d5678"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.line.frag",
+    "upstreamSha256": "2f2927cfceef284c37f9b571976a78eeee2922a35930127a38166832a1819ace",
+    "path": "resources/globe/shaders/rocky.line.frag",
+    "sha256": "bfd3912df598a44169c041bf5ebddc6bad659b1c1b739fef266f532ef97c0eab"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.line.vert",
+    "upstreamSha256": "0f279408762287239d576fc20c42f48f19a1f7975c5f09176dbc3367d3dd7a8d",
+    "path": "resources/globe/shaders/rocky.line.vert",
+    "sha256": "fd8de9b9afd158dafdf72d8f01d1e6ebd4d29a7d5600741ac29d75762d7353c5"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.mesh.frag",
+    "upstreamSha256": "fb4455a0a655b3ff6e4e29376a4557782cb7727f83a5e014b5edbe6f4740bcaf",
+    "path": "resources/globe/shaders/rocky.mesh.frag",
+    "sha256": "0a9c5339395d2ffd0257a55f93477c88c620194ba97b70ecef9c1c2e29c2ece0"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.mesh.vert",
+    "upstreamSha256": "8ff537f4d4ab6e6d538b9ac06f3780d3a3845689d15096095542ddf5a19fbabd",
+    "path": "resources/globe/shaders/rocky.mesh.vert",
+    "sha256": "0e3811abdbaf3a786b71326dd8c12bf5e8077ccd60568659be246fca6f2fdf97"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.overlaybake.frag",
+    "upstreamSha256": "4c73a10f0d4e86a3226bb45a0a6d60bcfc7691bdac83d1b93b7b8cee1a80664d",
+    "path": "resources/globe/shaders/rocky.overlaybake.frag",
+    "sha256": "56a310d62159c8ad68718234791264e8934bf5d6c708d5a863371ae126d7dccf"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.overlaybake.vert",
+    "upstreamSha256": "3b62a7b6aef30212045be5107a170e4cb21e7d0011e282b9636ec6512b53deaf",
+    "path": "resources/globe/shaders/rocky.overlaybake.vert",
+    "sha256": "0138a66bca10cc3350bae9450ef80020ae86528520cbd524781dffc76b9b1280"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.point.frag",
+    "upstreamSha256": "d99cea51efa61f6088ca165738730172e416b19f38dbc56eba5b332bb092f52b",
+    "path": "resources/globe/shaders/rocky.point.frag",
+    "sha256": "e6e30bed931820532a9821e8f037aa6ddcfd725ee94187069ff0fabd55d88cd6"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.point.vert",
+    "upstreamSha256": "53500a706391fd38cec7b0b92a0c6d151a44d5ebfe09c8c83aab40ed118b89bd",
+    "path": "resources/globe/shaders/rocky.point.vert",
+    "sha256": "86c04d88f6af79e5017268e120d0e6da193da65f87105a0110cd7c70da27f825"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.projection.glsl",
+    "upstreamSha256": "6107fb93bebe5fd969a434d7aa9742b4164fee7966029ff5c569120df8ca8c34",
+    "path": "resources/globe/shaders/rocky.projection.glsl",
+    "sha256": "a37bdd4679f4b15a4458f2487b91eb3092c047e5559b2f9e8303a01f4a7e44bb"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.slug.glsl",
+    "upstreamSha256": "0f33333879abf6d607f51ba5a04577d85d066277d3bf4bad254e9ccd055b7763",
+    "path": "resources/globe/shaders/rocky.slug.glsl",
+    "sha256": "5aa6756feb721279d2bc6b1a628f589ff1b389e00e7896a7b5b16663b353cbf8"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.terrain.frag",
+    "upstreamSha256": "83cab48368028a552f2c8bc43726d949b39ebe10459c00afc1d80614b40ccb73",
+    "path": "resources/globe/shaders/rocky.terrain.frag",
+    "sha256": "eb78a4e099c46516f14726ad2c5bd1ad24e16f221013e23cda8e4e2065e1b38f"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.terrain.vert",
+    "upstreamSha256": "e6126159f3421c18ad17266b58f868fdafa335a7463cebbfb498fa75353aa144",
+    "path": "resources/globe/shaders/rocky.terrain.vert",
+    "sha256": "8899ae3a192ca538cd8913b1a82a3df14e4420482d3da2331fa9ff62e72c65da"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/rocky.viewdependentstate.glsl",
+    "upstreamSha256": "72c1209db97de0aaf06c5452fc7e46249deace0610862ebf6bab878274ca0cc2",
+    "path": "resources/globe/shaders/rocky.viewdependentstate.glsl",
+    "sha256": "fdb6640a7476706a2fba3380100ae8ca8af0adc104e58ce3b21003d145f20c46"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/shadows.glsl",
+    "upstreamSha256": "a14ac96ecb62836de1e235dcdf1e27eac56ccb16a70a589a1a738e53d6ea3835",
+    "path": "resources/globe/shaders/shadows.glsl",
+    "sha256": "fe1e36a4049304985bf0d08e29036ed15245e9b5d03c8299c0dd06e6f4ffc969"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/shadows_hard.glsl",
+    "upstreamSha256": "8837393f260999d28e0e3a6ed8468845b575dfc1ae7bee50db4939c1f14adba6",
+    "path": "resources/globe/shaders/shadows_hard.glsl",
+    "sha256": "919b67b66d9e1a991fac1361d9306703829c7be0b0b1a930eb419deea3f50c19"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/shadows_pcss.glsl",
+    "upstreamSha256": "8a8c3bbec9ca0e8ed75e65d8f6e56dbd5390f4084cd498eb8dd160dc6be8579f",
+    "path": "resources/globe/shaders/shadows_pcss.glsl",
+    "sha256": "2ca7646dfec6536adff318824d2115a8be25cdda3054547c718303dc74cf69a2"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/shaders/shadows_soft.glsl",
+    "upstreamSha256": "96ca08e44be7ce69ec1b40a0bb8d6bb7ed436f47931063a0ab612cb3bfc75765",
+    "path": "resources/globe/shaders/shadows_soft.glsl",
+    "sha256": "3dabe2b6e1e0959ceb8847acb20501977c5f9224870e821e8e18135f3a3714a4"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/GeometryPool.cpp",
+    "upstreamSha256": "150d47c507c3efdf6ed5ab4bb9e670cd4bb2af009f3792f241c4d5d5595403cf",
+    "path": "src/globe/vsg/terrain/GeometryPool.cpp",
+    "sha256": "580da9d43a0470b6f2a1d2e15b3b9b9a1c9e1eb5ca2b1c3fa26d02f1f32c785f"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/GeometryPool.h",
+    "upstreamSha256": "5fac6c859e22482f06f68e8a97bd278c0e6ccb45deaa02112520fe0121bc7b3d",
+    "path": "include/geostudio/native/globe/vsg/terrain/GeometryPool.h",
+    "sha256": "4199491ec93faeed0ba6dd0c32834751f83a1e4aed7d858506117cf03b891cd2"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/SurfaceNode.cpp",
+    "upstreamSha256": "7be1136f36f72ba94f5de11ac9c01945db52929df8d0e644bb80406c6f3644e2",
+    "path": "src/globe/vsg/terrain/SurfaceNode.cpp",
+    "sha256": "c7f5b2cd46ffc2485feb42e3b22a029e161e2d6ff1418181246709dca91e8b88"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/SurfaceNode.h",
+    "upstreamSha256": "41ecfe340e2e170b346114408aaa6844554368a9d6de3ece3ceb148baa14e4f1",
+    "path": "include/geostudio/native/globe/vsg/terrain/SurfaceNode.h",
+    "sha256": "986b62d751492defb5396133efa025cdcd261ffcc6231b91c32f963bead1e0cd"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainNode.cpp",
+    "upstreamSha256": "74bda10ea80788339f9440aaf2763d9e63d15fcec95ee18bc4db8cef380dbd47",
+    "path": "src/globe/vsg/terrain/TerrainNode.cpp",
+    "sha256": "e9d2897f8aabd248e6caa2149f66fc5117fceb27888873609064f3f8b0b699a4"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainNode.h",
+    "upstreamSha256": "c704a7520103bf53cd1da2abe73013574b95e51e14e2dc0137f7f5c7763721d1",
+    "path": "include/geostudio/native/globe/vsg/terrain/TerrainNode.h",
+    "sha256": "643647f0ac0119d0b85cacc9b70affd42f27a5869c554ec576b6abd5a328869e"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainSettings.cpp",
+    "upstreamSha256": "97caf1a57fc4d3122dba65ac76b1eaee7afb23ffc86813d511750569846e2efd",
+    "path": "src/globe/vsg/terrain/TerrainSettings.cpp",
+    "sha256": "34a3dcd9745429051149b009c26955609cabb0eedf934a212add40be26a5fb21"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainSettings.h",
+    "upstreamSha256": "85009d02fd19c9be12990c2d17d20006b9df32ee29067cde7f6c342a833442e3",
+    "path": "include/geostudio/native/globe/vsg/terrain/TerrainSettings.h",
+    "sha256": "2190017314083e37359131e5d2936e8af5cabbd0b36fc7490eb622ed8be8bbcf"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainState.cpp",
+    "upstreamSha256": "0ce6cbec05f41c856a7f2df31a52534b2360fefaff199a0717dbd68d977cc681",
+    "path": "src/globe/vsg/terrain/TerrainState.cpp",
+    "sha256": "652db3772f2bc08e23b8b3f68c743c1fd9b62ed051475c84aec1defc544ecb84"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainState.h",
+    "upstreamSha256": "c7c4b8bb157bc65779efc098c79d6f9a2cb5af05b71f2b699bec3df5080ae3e7",
+    "path": "include/geostudio/native/globe/vsg/terrain/TerrainState.h",
+    "sha256": "a47dba0827c23e481ed0e7db3c79e7b3a09471fbee16cbb28baa114c1d13735c"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainTileFactory.cpp",
+    "upstreamSha256": "20cb28e83de4e1ceca3626ad47ab14fbbb77dd1d3fbbb3b74b782d5ebc0cb8fb",
+    "path": "src/globe/vsg/terrain/TerrainTileFactory.cpp",
+    "sha256": "8b730fe470b0298ce4bafbbf07d6ea2511bc464e69ba19a7c61cd622cb1a05fd"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainTileFactory.h",
+    "upstreamSha256": "1f297b7d28cf3906a4fdedb6c57e012c49e3a51101068ecf42f39b2a9f675f86",
+    "path": "include/geostudio/native/globe/vsg/terrain/TerrainTileFactory.h",
+    "sha256": "e7db78fc0c02c5891b9bc6e5b3ca6ba68ad79def63ece38ea2a9897eac260768"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainTileHost.h",
+    "upstreamSha256": "43670362ac3464832a49bee67b625db36d3024bc757fe24c210de09d61b7d663",
+    "path": "include/geostudio/native/globe/vsg/terrain/TerrainTileHost.h",
+    "sha256": "d9357988b5307a658ce2e0f1f0985fea9ba6df1d16954aca5ef6d246d94a79ab"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainTileNode.cpp",
+    "upstreamSha256": "2e9adce766797138f3a4eee7d6c8bd8d2eec988247a4188b183030df1d5ef5ef",
+    "path": "src/globe/vsg/terrain/TerrainTileNode.cpp",
+    "sha256": "2530165c31e76fefb031d85849f9dec2f8f7bcec108572c608133da0f0cd1ea6"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainTileNode.h",
+    "upstreamSha256": "a2c43aaa6c14c16975139bf9f7de62f8ffdd5962e9b21f0bb7c8b2616031fa2d",
+    "path": "include/geostudio/native/globe/vsg/terrain/TerrainTileNode.h",
+    "sha256": "0f9e8050f9ac33ca76f359226252021549ebcc8b762f302bfc73b0e7e75c4525"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainTilePager.cpp",
+    "upstreamSha256": "af286d040dec486c34458bc710295b548bb6db6b284a43d1276111684e49bb02",
+    "path": "src/globe/vsg/terrain/TerrainTilePager.cpp",
+    "sha256": "cfa94434c28da2e360893823a4b5594a2d916d2e9092955599343cd5b9d236dd"
+  },
+  {
+    "upstreamPath": "src/rocky/vsg/terrain/TerrainTilePager.h",
+    "upstreamSha256": "3717a3536bb7d486a3e46a3e4d40fc2a17bb823137587a971cef0b6d5280f83c",
+    "path": "include/geostudio/native/globe/vsg/terrain/TerrainTilePager.h",
+    "sha256": "83272f0f0f16684c6d224759cd7e04a2f3de26f193f237a8593012220a8b4a65"
+  },
+  {
+    "upstreamPath": "src/rocky/weejobs.h",
+    "upstreamSha256": "5c3ef958bc8680509df5dbdbf89d0b5aaec2904f4a4649be384b2509820d4ab3",
+    "path": "include/geostudio/native/globe/weejobs.h",
+    "sha256": "aa191bc783abdd1efc028dc36110456d462fbebb81f7b7db0d9fe344d93d9bb7"
+  },
+  {
+    "upstreamPath": "src/rocky/weemesh.h",
+    "upstreamSha256": "cc9eab6f9982c12f54febffd94408a5615707d9386cd734d2ca4e876c05e9adb",
+    "path": "include/geostudio/native/globe/weemesh.h",
+    "sha256": "8001d1a9faa17bc1f9a3fc9ddd01171c3e02927a4a3a7bbd766c4fb0061e2622"
+  },
+  {
+    "upstreamPath": "src/tests/CMakeLists.txt",
+    "upstreamSha256": "210937ab868905929d4f036a1773c76ef09be750ac155b7a9d90ee057c2e8663",
+    "path": "tests/globe/CMakeLists.txt",
+    "sha256": "29e718149582cd4e0c30c881c966b226380ac916ab3e7db1d71496a0b57b5f05"
+  },
+  {
+    "upstreamPath": "src/tests/catch.hpp",
+    "upstreamSha256": "bb3847de599682e4352174565d0c17450fe0a7a57938941bc20dc73348a2641c",
+    "path": "tests/globe/catch.hpp",
+    "sha256": "53886c86f940ed302352e1f97a402c4fd569d840e016f91d7879d7203b3cc79f"
+  },
+  {
+    "upstreamPath": "src/tests/cmake/slughorn/CMakeLists.txt",
+    "upstreamSha256": "86179237f17e894948f3fd7ed8bf4433e384f864d0ea78d8691cb7021ff942d9",
+    "path": "tests/globe/cmake/slughorn/CMakeLists.txt",
+    "sha256": "26ad8a5a5a6543881863ddf3c96811080f7e934270770cb645d079b90d51eb62"
+  },
+  {
+    "upstreamPath": "src/tests/cmake/slughorn/slughorn_smoke-config.cmake",
+    "upstreamSha256": "94da438c593076e8d33b71b4f32eb2f0e30578a3edbef12b3f6b5281d8af7fd8",
+    "path": "tests/globe/cmake/slughorn/slughorn_smoke-config.cmake",
+    "sha256": "fe30ffe376a2f22226e71d507542a8a22c487dec677bd6a2d4aa58e0941b8ca1"
+  },
+  {
+    "upstreamPath": "src/tests/cmake/slughorn/smoke.cpp",
+    "upstreamSha256": "6e032e6087595122fd3e0be1370e9e0dffdac88dd79856daaf7cbdc113fd6478",
+    "path": "tests/globe/cmake/slughorn/smoke.cpp",
+    "sha256": "feee7d9f9cf2bd4ccb8285ec7ee0dd701974b3d95a0b326b18db925bdb26e473"
+  },
+  {
+    "upstreamPath": "src/tests/tests.cpp",
+    "upstreamSha256": "2323d62c460f762a1f0829daa326e1b1423b20cc103affd5bf81e7cf44763f0b",
+    "path": "tests/globe/tests.cpp",
+    "sha256": "2a28264a6b9b03943792babbb950508530c739445fac5c8012552594aabb15f7"
+  },
+  {
+    "upstreamPath": "src/tests/tests_antimeridian.cpp",
+    "upstreamSha256": "4bb5f6fd6795e3816c5b2f3a12cf25c4f24ed1e83d650d500b693add42230dc3",
+    "path": "tests/globe/tests_antimeridian.cpp",
+    "sha256": "b58fee7dfc2476aed4b205822766758463ce300014158f3a66a2c68afcde7715"
+  },
+  {
+    "upstreamPath": "src/tests/tests_overlay_depth.cpp",
+    "upstreamSha256": "6652b61f314603a0022ba3a5542417edaa0f61a3fbc493ec5fc3fe8f8d504afa",
+    "path": "tests/globe/tests_overlay_depth.cpp",
+    "sha256": "1321e714e9986d528debe577af913c80ffdfa5a67a63397a1e552270026b9aaa"
+  },
+  {
+    "upstreamPath": "src/tests/tests_overlay_lifecycle.cpp",
+    "upstreamSha256": "dc00c0068fc7446d607cb357d2c04eb71084985c96d5a291b6ee4b28866a808d",
+    "path": "tests/globe/tests_overlay_lifecycle.cpp",
+    "sha256": "ba8f497d3a338d49b6dd86c18da9657b965939cbec8401a4b7919eebe2f33356"
+  },
+  {
+    "upstreamPath": "src/tests/tests_projection_lifecycle.cpp",
+    "upstreamSha256": "a62a6c554186b586f771e3e13aacf8d2f8e077700c124cfae68e91b599ee9fe9",
+    "path": "tests/globe/tests_projection_lifecycle.cpp",
+    "sha256": "c2f128512736498780bbf845532550c3b28f70a525a1445cbc3c1ac586c4adfd"
+  },
+  {
+    "upstreamPath": "src/tests/tests_slug_fallback.cpp",
+    "upstreamSha256": "8b6c4bfefdd06ceffba982c4954fef1bc99cd52cb504904bda7d5ee06af25dc3",
+    "path": "tests/globe/tests_slug_fallback.cpp",
+    "sha256": "6af7bd94aaa5c4e78415aba570334ca8ee066979a122c44296aeacb4ba94b5f4"
+  },
+  {
+    "upstreamPath": "src/tests/tests_terrain_anchor.cpp",
+    "upstreamSha256": "4f8ba06ef48c1fc70ea6e1183becb13d749bc853c25112fcb8b23821f84ee821",
+    "path": "tests/globe/tests_terrain_anchor.cpp",
+    "sha256": "3122d2e95f8f447f390bd05552fa5582fee32521196bcfbc417cc8c08c57b4c7"
+  },
+  {
+    "upstreamPath": "src/tests/tests_tessellation.cpp",
+    "upstreamSha256": "e99492f6b75b5171adf874f07e9bee867d7198db035f26e41c396b406e04a0a4",
+    "path": "tests/globe/tests_tessellation.cpp",
+    "sha256": "cb85cc2ab6cc8b149f6dd758385fc6f21c006d1c66739c997c2e2fb97e78ce3a"
+  },
+  {
+    "upstreamPath": "src/tests/tests_texture.cpp",
+    "upstreamSha256": "b7d7f39c21f72e8a78a5ea48a7d838f2931bf65521b07d5b0db035fcfdba1a7d",
+    "path": "tests/globe/tests_texture.cpp",
+    "sha256": "be4fc764041738d4a3f1fa36fa699e61871db6fb2cfa7676b38bd53c9e1c4775"
+  },
+  {
+    "upstreamPath": "src/tests/tests_units.cpp",
+    "upstreamSha256": "ca2db27bf16248aa1b35cf166a90870ee1cf47e03ebf8f76abb0d2c6790fedca",
+    "path": "tests/globe/tests_units.cpp",
+    "sha256": "9a023a949d89cf91c56fdd1b461495529e430e8f433c36fdc063950e5fc3fa75"
+  },
+  {
+    "upstreamPath": "vcpkg-ports/imgui/CMakeLists.txt",
+    "upstreamSha256": "469172229e8a2e6ddb00105c4a764fa452ab143d21edd0b30cea589bf0b75191",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/imgui/imgui-config.cmake.in",
+    "upstreamSha256": "023a053fbf8e54970e9ebce1b75ceb34e064bb84bead4f3bed4e546c571b66ab",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/imgui/portfile.cmake",
+    "upstreamSha256": "c6bc089337bb902a27d967f1f9983de99747fd78df2b565e0cbd561b6c587060",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/imgui/vcpkg.json",
+    "upstreamSha256": "6e3be2462fe05a3b16fdbabb4cd37f9e0dfccea129dd2951462f3de7ec1bf7f9",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/slughorn/CMakeLists.txt",
+    "upstreamSha256": "285c2657ee6fc6cf993dba3622091ec7e1d513555bbda6c9a7982833e85a6ffd",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/slughorn/portfile.cmake",
+    "upstreamSha256": "a238d19aaa91c3eb43ab612842c58f48970484f25cd9d5d5bde57e8e08e6acbd",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/slughorn/slughorn-config.cmake.in",
+    "upstreamSha256": "d4f9c8580c89c0b79aa6ef501258ba5f8837159d5c84b614475fa092d7881cda",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/slughorn/slughorn-version.cmake",
+    "upstreamSha256": "2456ce6ab5b5a87a2648b8a464047d64f5f775cc5d333d1e42ed8f0e887df649",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/slughorn/vcpkg.json",
+    "upstreamSha256": "96c99bc6bf00d71cae80869855ed9463dbc9136e57818d066262b0e8fde12509",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/vsgxchange/portfile.cmake",
+    "upstreamSha256": "6e9c650e4268447569738a5ec6479ee4921e6296e2e4b022e03e445b89fa3459",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg-ports/vsgxchange/vcpkg.json",
+    "upstreamSha256": "e2667ab8f140a6e6caf17fd7ef98875e76dbe7c31fea3cb0c5f94ace80e738d1",
+    "path": null,
+    "sha256": null
+  },
+  {
+    "upstreamPath": "vcpkg.json",
+    "upstreamSha256": "9c401fb21901dea736694a2b95c2de1aac5be14dcf8e6e96bf683a19abd475de",
+    "path": null,
+    "sha256": null
+  }
+]

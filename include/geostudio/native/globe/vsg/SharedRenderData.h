@@ -1,0 +1,60 @@
+/**
+ * rocky c++
+ * Copyright 2026 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+
+#include <geostudio/native/globe/vsg/Common.h>
+#include <geostudio/native/globe/vsg/ViewDependentState.h>
+#include <geostudio/native/globe/Rendering.h>
+
+namespace geostudio::native
+{
+    // Render data that can be shared across systems. 
+    // VSGContextImpl creates and owns a unique instance of this.
+    struct ROCKY_EXPORT SharedRenderData
+    {
+        //! Default number of concurrently resident projected textures.
+        static const std::uint32_t DEFAULT_PROJECTED_TEXTURE_CAPACITY;
+
+        SharedRenderData();
+
+        ViewLocal<vsg::ref_ptr<ViewDependentStateEx>> viewDependentState;
+
+        // Fixed-capacity descriptor arenas shared by all views. DecalSystem
+        // populates only slots demanded by recently visible projections and
+        // restores unused slots to valid typed fallback images.
+        vsg::ref_ptr<vsg::DescriptorImage> decalTextures;
+
+#ifdef ROCKY_HAS_SLUGHORN
+        //! Per-overlay Slug atlas arenas. Matching curve/band entries always use
+        //! the same index, and every unused entry contains a typed fallback.
+        //! SlugLayerGPU records refer to this shared index through DecalGPU.
+        vsg::ref_ptr<vsg::DescriptorImage> slugCurveTexture;
+        vsg::ref_ptr<vsg::DescriptorImage> slugBandTexture;
+#endif
+
+        //! Rebuilds the fixed projected-texture descriptor array. Call this during
+        //! application startup, before any graphics pipelines are compiled.
+        void configureProjectedTextureCapacity(std::uint32_t capacity);
+
+        //! Number of unique projected textures that can be resident concurrently.
+        std::uint32_t projectedTextureCapacity() const;
+
+        //! whether any of the shared descriptors (above) has changed
+        //! since the last check:
+        inline bool sharedDescriptorsChanged(Revision& mine) const {
+            bool changed = mine != revision;
+            mine = revision;
+            return changed;
+        }
+
+        void dirtySharedDescriptors();
+
+        void rebuildVdsDescriptorSet(ViewIDType viewID, ObjectLifecycle*);
+
+        Revision revision = 0;
+    };
+}
+

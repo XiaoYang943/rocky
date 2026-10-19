@@ -1,0 +1,3170 @@
+--- a/vendor/vsgCs/.clang-tidy
++++ /dev/null
+@@ -1,17 +0,0 @@
+----
+-Checks: >
+-  google-*,
+-  performance-*,
+-  portability-*,
+-  readability-*,
+-  modernize-*,
+-  misc-include-cleaner,
+-  -google-build-using-namespace,
+-  -readability-identifier-length,
+-  -readability-math-missing-parentheses,
+-  -readability-uppercase-literal-suffix,
+-  -google-readability-namespace-comments,
+-  -readability-named-parameter,
+-  -readability-implicit-bool-conversion,
+-  -readability-magic-numbers,
+-  -modernize-use-trailing-return-type
+--- a/vendor/vsgCs/.github/workflows/cmake-multi-platform.yml
++++ /dev/null
+@@ -1,60 +0,0 @@
+-# Based on starter GitHub workflow
+-
+-on:
+-  push:
+-    branches: [ "master", "next" ]
+-  pull_request:
+-env:
+-    VCPKG_BINARY_SOURCES: "clear;x-gha,readwrite"
+-jobs:
+-  build:
+-    runs-on: ${{ matrix.os }}
+-
+-    strategy:
+-      # Set fail-fast to false to ensure that feedback is delivered for all matrix combinations. Consider changing this to true when your workflow is stable.
+-      fail-fast: false
+-
+-      # To add more build types (Release, Debug, RelWithDebInfo, etc.) customize the build_type list.
+-      matrix:
+-        os: [ubuntu-latest, windows-latest]
+-        build_type: [Release]
+-        include:
+-          - os: windows-latest
+-            preset: Windows-Devel
+-          - os: ubuntu-latest
+-            preset: linux-clang
+-    steps:
+-    - uses: actions/checkout@v4
+-    - name: Export GitHub Actions cache environment variables
+-      uses: actions/github-script@v7
+-      with:
+-        script: |
+-          core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
+-          core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+-    - name: Set reusable strings
+-      # Turn repeated input strings (such as the build output directory) into step outputs. These step outputs can be used throughout the workflow file.
+-      id: strings
+-      shell: bash
+-      run: |
+-        echo "build-output-dir=${{ github.workspace }}/build" >> "$GITHUB_OUTPUT"
+-    - name: Set up Linux libraries and environment
+-      if: startsWith(matrix.os, 'ubuntu')
+-      run: |
+-        sudo apt-get -qq update
+-        sudo apt-get -qq install libxcb1-dev
+-        sudo apt-get -qq install llvm
+-        sudo apt-get -qq install libx11-dev
+-        sudo apt-get -qq install libxrandr-dev
+-        echo "VCPKG_ROOT=$VCPKG_INSTALLATION_ROOT" >> "$GITHUB_ENV"
+-    - name: Set up Windows environment
+-      if: startsWith(matrix.os, 'windows')
+-      run: |
+-        echo "VCPKG_ROOT=$env:VCPKG_INSTALLATION_ROOT" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+-    - name: Configure CMake
+-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
+-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
+-      run: |
+-        cmake --preset=${{ matrix.preset }} -B ${{ steps.strings.outputs.build-output-dir }}
+-    - name: Build
+-      # Build your program with the given configuration. Note that --config is needed because the default Windows generator is a multi-config generator (Visual Studio generator).
+-      run: cmake --build ${{ steps.strings.outputs.build-output-dir }} --config ${{ matrix.build_type }}
+--- a/vendor/vsgCs/.gitmodules
++++ /dev/null
+@@ -1,3 +0,0 @@
+-[submodule "3rdparty/tracy"]
+-	path = 3rdparty/tracy
+-	url = git@github.com:wolfpld/tracy.git
+--- a/vendor/vsgCs/CMakeLists.txt
++++ /dev/null
+@@ -1,144 +0,0 @@
+-cmake_minimum_required(VERSION 3.22)
+-
+-option(VSGCS_USE_PROJ "Use the Proj library for coordinate system transformations" ON)
+-
+-if(VSGCS_USE_PROJ)
+-  list(APPEND VCPKG_MANIFEST_FEATURES "proj")
+-endif()
+-
+-# SSL works better on some systems with the system openssl library, in particular Fedora.
+-if(VSGCS_USE_SYSTEM_OPENSSL)
+-  set(VCPKG_OVERLAY_PORTS "extern/optional-overlays/openssl")
+-endif()
+-
+-project(vsgCs
+-    VERSION 1.1.0
+-    DESCRIPTION "VSG library for rendering 3D Tiles and Cesium ion assets"
+-    LANGUAGES CXX C
+-)
+-set(VSGCS_SOVERSION 0)
+-
+-# We have some custom .cmake scripts not in the official distribution.
+-set(CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${vsgCs_SOURCE_DIR}/CMakeModules")
+-
+-include("vsgCsMacros")
+-
+-# set the use of C++20 as Cesium Native requires it
+-set(CMAKE_CXX_STANDARD 20)
+-
+-if (MSVC)
+-  # template madness
+-  add_compile_options(/bigobj)
+-  # windows.h madness
+-  add_compile_definitions(NOGDI NOMINMAX)
+-endif()
+-
+-option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+-
+-option(RUN_CLANG_TIDY "run the clang-tidy checker" OFF)
+-set(VSGCS_CESIUM_NATIVE_DIRECTORY "" CACHE PATH "directory for Cesium Native source if not installed")
+-
+-# Find Vulkan and the VSG
+-if (VULKAN_SDK)
+-    set(ENV{VULKAN_SDK} ${VULKAN_SDK})
+-endif()
+-
+-set(VSG_MIN_VERSION 1.1.11)
+-
+-find_package(vsg ${VSG_MIN_VERSION} REQUIRED)
+-
+-find_package(vsgXchange)
+-
+-set(VSGIMGUI_MIN_VERSION 0.3.0)
+-
+-find_package(vsgImGui ${VSGIMGUI_MIN_VERSION} REQUIRED)
+-
+-if(VSGCS_CESIUM_NATIVE_DIRECTORY)
+-  add_subdirectory(${VSGCS_CESIUM_NATIVE_DIRECTORY} cesium-native)
+-else()
+-  find_package(cesium-native REQUIRED)
+-endif()
+-
+-if(VSGCS_USE_PROJ)
+-  find_package(PROJ REQUIRED)
+-endif()
+-find_package(imgui REQUIRED)
+-find_package(tinyxml2 REQUIRED)
+-find_package(spdlog REQUIRED)
+-find_package(Microsoft.GSL REQUIRED)
+-
+-if(PROJECT_IS_TOP_LEVEL)
+-  set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
+-
+-  find_program(CLANG_TIDY_EXECUTABLE clang-tidy)
+-  find_program(RUN_CLANG_TIDY_EXECUTABLE run-clang-tidy)
+-
+-  if(CLANG_TIDY_EXECUTABLE AND RUN_CLANG_TIDY_EXECUTABLE)
+-    add_custom_target(run-clang-tidy
+-      COMMAND ${RUN_CLANG_TIDY_EXECUTABLE}
+-      -clang-tidy-binary ${CLANG_TIDY_EXECUTABLE}
+-      -p ${CMAKE_BINARY_DIR}
+-    )
+-  endif()
+-endif()
+-
+-find_path(VALGRIND_H_PATH
+-  valgrind.h
+-  PATHS ${CMAKE_INCLUDE_PATH}/valgrind ${CMAKE_SYSTEM_INCLUDE_PATH}/valgrind)
+-
+-message("valgrind path: ${VALGRIND_H_PATH}")
+-
+-vsgCs_setup_build_vars()
+-
+-include(GNUInstallDirs)
+-
+-set(VSGCS_DATA_DIR "${CMAKE_INSTALL_DATADIR}/vsgCs")
+-set(VSGCS_FULL_DATA_DIR "${CMAKE_INSTALL_FULL_DATADIR}/vsgCs")
+-
+-if(VSGCS_USE_PROJ)
+-  if(VCPKG_INSTALLED_DIR)
+-    option(VSGCS_INSTALL_PROJ_DATA "Install Proj data from vcpkg" ON)
+-    if(VSGCS_INSTALL_PROJ_DATA)
+-      set(VSGCS_FULL_PROJ_DATA_DIR "${VSGCS_FULL_DATA_DIR}/proj" CACHE PATH "Directory for Proj data")
+-      install(
+-        DIRECTORY "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/share/proj"
+-        DESTINATION "${VSGCS_DATA_DIR}"
+-        PATTERN "*.cmake" EXCLUDE)
+-    endif()
+-  else()
+-    set(VSGCS_FULL_PROJ_DATA_DIR "" CACHE PATH "Directory for Proj data")
+-  endif()
+-endif()
+-
+-if(WIN32)
+-  set(CMAKE_INSTALL_UCRT_LIBRARIES YES)
+-
+-  include(InstallRequiredSystemLibraries)
+-endif()
+-
+-# source directory for library and applications
+-
+-add_subdirectory(src)
+-add_subdirectory(data)
+-
+-option(BUILD_TRACY "build with tracy profiling and server" OFF)
+-
+-if (BUILD_TRACY)
+-  option ( TRACY_ENABLE "" ON)
+-  option ( TRACY_ON_DEMAND "" ON)
+-  add_subdirectory(3rdparty/tracy)
+-  set_target_properties(TracyClient PROPERTIES COMPILE_WARNING_AS_ERROR OFF)
+-endif()
+-
+-if(NOT VSGCS_USE_SYSTEM_OPENSSL AND VCPKG_INSTALLED_DIR)
+-  set(_SSLConfigDir "${VCPKG_INSTALLED_DIR}/${VCPKG_TARGET_TRIPLET}/etc/ssl")
+-  if(IS_DIRECTORY "${_SSLConfigDir}")
+-    install(
+-      DIRECTORY "${_SSLConfigDir}"
+-      DESTINATION "${VSGCS_DATA_DIR}/etc")
+-  endif()
+-endif()
+-
+-include(FeatureSummary)
+-feature_summary(WHAT ALL)
+-
+--- a/vendor/vsgCs/CMakeModules/Fedora41Toolchain.cmake
++++ /dev/null
+@@ -1,4 +0,0 @@
+-# Work around a bug in patchelf, which doesn't work with the ELF file arrangement in Fedora 41
+-set(VCPKG_LINKER_FLAGS "-Wl,-z,noseparate-code")
+-
+-include("$ENV{VCPKG_ROOT}/scripts/toolchains/linux.cmake")
+--- a/vendor/vsgCs/CMakeModules/LinuxClangToolchain.cmake
++++ /dev/null
+@@ -1,14 +0,0 @@
+-SET(CMAKE_SYSTEM_NAME Linux)
+-SET(CMAKE_SYSTEM_PROCESSOR x86_64)
+-
+-SET(CMAKE_C_COMPILER /usr/bin/clang)
+-SET(CMAKE_CXX_COMPILER /usr/bin/clang++)
+-SET(CMAKE_AR /usr/bin/llvm-ar)
+-SET(CMAKE_BUILD_WITH_INSTALL_RPATH on)
+-
+-# This was borrowed from cesium-unreal, which has this comment:
+-#    These were deduced by scouring Unreal's LinuxToolChain.cs.
+-# It's not clear if the librarie arguments are necessary or useful.
+-SET(CMAKE_CXX_FLAGS "-target x86_64-unknown-linux-gnu -Wno-overriding-option -Wno-#warnings")
+-SET(CMAKE_C_FLAGS "-target x86_64-unknown-linux-gnu -Wno-overriding-option -Wno-#warnings")
+-SET(CMAKE_EXE_LINKER_FLAGS "-fuse-ld=lld -target x86_64-unknown-linux-gnu -lm -lc -lpthread -lgcc_s -lgcc")
+--- a/vendor/vsgCs/CMakeModules/vsgCsMacros.cmake
++++ /dev/null
+@@ -1,19 +0,0 @@
+-# Copied from vsgMacros.cmake, but we want different warning options
+-# and will set them up differently
+-
+-macro(vsgCs_setup_build_vars)
+-    # Change the default build type to Release
+-    if(NOT CMAKE_BUILD_TYPE)
+-        set(CMAKE_BUILD_TYPE Release CACHE STRING "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel." FORCE)
+-    endif(NOT CMAKE_BUILD_TYPE)
+-
+-    if(CMAKE_COMPILER_IS_GNUCXX)
+-      set(VSGCS_WARNING_FLAGS -Wall -Wextra -Wpedantic  CACHE STRING "Compile flags to use.")
+-    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+-      set(VSGCS_WARNING_FLAGS -Wall -Wextra -Wparentheses -Wreturn-type -Wmissing-braces -Wunknown-pragmas -Wshadow -Wunused CACHE STRING "Compile flags to use.")
+-    else()
+-      set(VSGCS_WARNING_FLAGS CACHE STRING "Compile flags to use.")
+-    endif()
+-
+-    add_compile_options(${VSGCS_WARNING_FLAGS})
+-endmacro()
+--- a/vendor/vsgCs/CMakePresets.json
++++ /dev/null
+@@ -1,84 +0,0 @@
+-{
+-  "version": 3,
+-  "configurePresets": [
+-    {
+-      "name": "vcpkg",
+-      "cacheVariables": {
+-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+-      }
+-    },
+-    {
+-      "name": "vcpkg-debug",
+-      "inherits": "vcpkg",
+-      "binaryDir": "${sourceDir}/build-debug",
+-      "cacheVariables": {
+-        "CMAKE_BUILD_TYPE": "Debug"
+-      }
+-    },
+-    {
+-      "name": "vcpkg-release",
+-      "inherits": "vcpkg",
+-      "binaryDir": "${sourceDir}/build-release",
+-      "cacheVariables": {
+-        "CMAKE_BUILD_TYPE": "Release"
+-      }
+-    },
+-    {
+-      "name": "Windows-Devel",
+-      "inherits": "vcpkg",
+-      "generator": "Visual Studio 17 2022",
+-      "binaryDir": "${sourceDir}/build",
+-      "cacheVariables": {
+-        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+-        "VCPKG_TARGET_TRIPLET": "x64-windows-static-md"
+-      }
+-    },
+-    {
+-      "name": "strict",
+-      "cacheVariables": {
+-        "CMAKE_COMPILE_WARNING_AS_ERROR": "YES"
+-      }
+-    },
+-    {
+-      "name": "local-cesium-native",
+-      "cacheVariables": {
+-        "VCPKG_MANIFEST_NO_DEFAULT_FEATURES": true,
+-        "VCPKG_MANIFEST_FEATURES": "cesium-native-local"
+-      }
+-    },
+-    {
+-      "name": "linux-clang",
+-      "inherits": "vcpkg",
+-      "cacheVariables": {
+-        "VCPKG_CHAINLOAD_TOOLCHAIN_FILE": "${sourceDir}/CMakeModules/LinuxClangToolchain.cmake",
+-        "VCPKG_TARGET_TRIPLET": "x64-linux-clang",
+-        "VCPKG_HOST_TRIPLET": "x64-linux-clang"
+-      }
+-    },
+-    {
+-      "name": "linux-debinfo",
+-      "inherits": "vcpkg",
+-      "binaryDir": "${sourceDir}/build-debinfo",
+-      "cacheVariables": {
+-        "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+-        "CMAKE_CXX_FLAGS_RELWITHDEBINFO": "-O2 -g -DNDEBUG -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer",
+-        "VCPKG_TARGET_TRIPLET": "x64-linux-relwithdebinfo",
+-        "VCPKG_HOST_TRIPLET": "x64-linux-relwithdebinfo"
+-      }
+-    }
+-  ],
+-  "buildPresets": [
+-    {
+-      "name": "Windows-Debug",
+-      "displayName": "Windows Debug",
+-      "configurePreset": "Windows-Devel",
+-      "configuration": "Debug"
+-    },
+-    {
+-      "name": "Windows-Release",
+-      "displayName": "Windows Release",
+-      "configurePreset": "Windows-Devel",
+-      "configuration": "Release"
+-    }
+-  ]
+-}
+--- a/vendor/vsgCs/data/CMakeLists.txt
++++ /dev/null
+@@ -1,13 +0,0 @@
+-set(IMAGE_FILES
+-  images/LDR_LLL1_0.png)
+-set(SHADER_FILES
+-  shaders/csstandard.vert
+-  shaders/cspoint.vert
+-  shaders/csstandard_pbr.frag
+-  shaders/descriptor_defs.glsl)
+-
+-install(FILES ${IMAGE_FILES}
+-  DESTINATION ${VSGCS_DATA_DIR}/images)
+-
+-install(FILES ${SHADER_FILES}
+-  DESTINATION ${VSGCS_DATA_DIR}/shaders)
+--- a/vendor/vsgCs/extern/optional-overlays/openssl/portfile.cmake
++++ /dev/null
+@@ -1,2 +0,0 @@
+-# <path to project>/overlays/openssl/portfile.cmake
+-set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
+--- a/vendor/vsgCs/extern/optional-overlays/openssl/vcpkg.json
++++ /dev/null
+@@ -1,4 +0,0 @@
+-{
+-  "name": "openssl",
+-  "version": "3.5.0"
+-}
+--- a/vendor/vsgCs/extern/vcpkg-overlays/asyncplusplus/portfile.cmake
++++ /dev/null
+@@ -1,21 +0,0 @@
+-vcpkg_check_linkage(ONLY_STATIC_LIBRARY)
+-
+-vcpkg_from_github(
+-    OUT_SOURCE_PATH SOURCE_PATH
+-    REPO Amanieu/asyncplusplus
+-    REF 4159da79e20ad6d0eb1f13baa0f10e989edd9fba
+-    SHA512 a7b099ce24184aa56e843d4858228196f8220374585a375a9c0d944832bd68c8aabd6b2efde5aacbb9c73f9dd8e942e97262be04550205b3fbea44d8b972d78e
+-    HEAD_REF master
+-)
+-
+-vcpkg_cmake_configure(
+-    SOURCE_PATH "${SOURCE_PATH}"
+-)
+-
+-vcpkg_cmake_install()
+-
+-vcpkg_cmake_config_fixup(CONFIG_PATH cmake PACKAGE_NAME async++)
+-
+-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include" "${CURRENT_PACKAGES_DIR}/debug/share")
+-
+-file(INSTALL "${SOURCE_PATH}/LICENSE" DESTINATION "${CURRENT_PACKAGES_DIR}/share/${PORT}" RENAME copyright)
+--- a/vendor/vsgCs/extern/vcpkg-overlays/asyncplusplus/vcpkg.json
++++ /dev/null
+@@ -1,18 +0,0 @@
+-{
+-  "name": "asyncplusplus",
+-  "version": "1.1",
+-  "port-version": 2,
+-  "description": "Async++ is a lightweight concurrency framework for C++11",
+-  "license": "MIT",
+-  "supports": "!uwp",
+-  "dependencies": [
+-    {
+-      "name": "vcpkg-cmake",
+-      "host": true
+-    },
+-    {
+-      "name": "vcpkg-cmake-config",
+-      "host": true
+-    }
+-  ]
+-}
+--- a/vendor/vsgCs/extern/vcpkg-overlays/cesium-native/config.patch
++++ /dev/null
+@@ -1,11 +0,0 @@
+-diff --git i/cmake/config/Config.cmake.in w/cmake/config/Config.cmake.in
+-index bdde0633e..6cf49f119 100644
+---- i/cmake/config/Config.cmake.in
+-+++ w/cmake/config/Config.cmake.in
+-@@ -24,5 +24,6 @@ find_dependency(tinyxml2 CONFIG REQUIRED)
+- find_dependency(unofficial-sqlite3 CONFIG REQUIRED)
+- find_dependency(ada CONFIG REQUIRED)
+- find_dependency(WebP CONFIG REQUIRED)
+-+find_dependency(blend2d CONFIG REQUIRED)
+- 
+- include("${CMAKE_CURRENT_LIST_DIR}/cesium-nativeTargets.cmake")
+--- a/vendor/vsgCs/extern/vcpkg-overlays/cesium-native/portfile.cmake
++++ /dev/null
+@@ -1,34 +0,0 @@
+-vcpkg_check_features(OUT_FEATURE_OPTIONS FEATURE_OPTIONS
+-  FEATURES
+-  dependencies-only CESIUM_NATIVE_DEPS_ONLY
+-)
+-
+-if(CESIUM_NATIVE_DEPS_ONLY)
+-  message(STATUS "skipping installation of cesium-native")
+-  set(VCPKG_POLICY_EMPTY_PACKAGE enabled)
+-  return()
+-endif()
+-
+-vcpkg_from_github(
+-  OUT_SOURCE_PATH SOURCE_PATH
+-  REPO CesiumGS/cesium-native
+-  REF "v${VERSION}"
+-  SHA512 cad6164bf81d83174be0a97ea5f626267d3ebe59f058957fd375215159903a3128a390471bdb4ee2fee6aa09ca3996904b409d30021d441b7416ffd8f16e1593
+-  HEAD_REF main
+-        )
+-
+-# cesium-native doesn't provide a convenient way to turn off
+-# warning-as-error, but compiling with clang can produce a spew of
+-# errors
+-
+-vcpkg_cmake_configure(
+-        SOURCE_PATH "${SOURCE_PATH}"
+-        OPTIONS
+-                -DCESIUM_USE_EZVCPKG=OFF
+-                --compile-no-warning-as-error
+-        )
+-
+-vcpkg_cmake_install()
+-vcpkg_cmake_config_fixup(CONFIG_PATH share/cesium-native/cmake PACKAGE_NAME cesium-native)
+-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include" "${CURRENT_PACKAGES_DIR}/debug/share")
+-vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE")
+--- a/vendor/vsgCs/extern/vcpkg-overlays/cesium-native/vcpkg.json
++++ /dev/null
+@@ -1,59 +0,0 @@
+-{
+-  "name": "cesium-native",
+-  "version-string": "0.58.0",
+-  "features": {
+-    "dependencies-only": {
+-      "description": "install port's dependencies without the port"
+-    }
+-  },
+-  "dependencies": [
+-    "vcpkg-cmake",
+-    "vcpkg-cmake-config",
+-    "asyncplusplus",
+-    "curl",
+-    "doctest",
+-    "expected-lite",
+-    "fmt",
+-    "glm",
+-    "rapidjson",
+-    "spdlog",
+-    "stb",
+-    "ada-url",
+-    "draco",
+-    {
+-      "name": "ktx",
+-      "default-features": false
+-    },
+-    "modp-base64",
+-    "meshoptimizer",
+-    "openssl",
+-    "s2geometry",
+-    "libjpeg-turbo",
+-    "sqlite3",
+-    "tinyxml2",
+-    "libwebp",
+-    "zlib-ng",
+-    "picosha2",
+-    "earcut-hpp",
+-    "cpp-httplib",
+-    "libmorton",
+-    {
+-      "name": "blend2d",
+-      "default-features": false,
+-      "features": [
+-        {
+-          "name": "jit",
+-          "platform": "!ios"
+-        }
+-      ]
+-    },
+-    {
+-      "name": "asmjit",
+-      "platform": "!ios"
+-    },
+-    "spz",
+-    "zstd"
+-
+-  ]
+-}
+-
+--- a/vendor/vsgCs/extern/vcpkg-overlays/vsgimgui/devendor.patch
++++ /dev/null
+@@ -1,150 +0,0 @@
+-diff --git a/CMakeLists.txt b/CMakeLists.txt
+-index a9e6265..96a2ecb 100644
+---- a/CMakeLists.txt
+-+++ b/CMakeLists.txt
+-@@ -22,34 +22,13 @@ if (VULKAN_SDK)
+-     set(ENV{VULKAN_SDK} ${VULKAN_SDK})
+- endif()
+- 
+--find_package(vsg 1.0.5)
+-+find_package(vsg REQUIRED)
+-+find_package(imgui REQUIRED)
+-+find_package(implot REQUIRED)
+- 
+- vsg_setup_dir_vars()
+- vsg_setup_build_vars()
+- 
+--if ( (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/imgui/imgui.h) OR
+--     (NOT EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/src/implot/implot.h) )
+--    find_package(Git QUIET)
+--
+--    execute_process(COMMAND ${GIT_EXECUTABLE} submodule update --init --recursive
+--                    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+--                    RESULT_VARIABLE GIT_SUBMOD_RESULT)
+--
+--    if(NOT GIT_SUBMOD_RESULT EQUAL "0")
+--        message(FATAL_ERROR "git submodule update --init --recursive failed with ${GIT_SUBMOD_RESULT}, please checkout submodules")
+--    endif()
+--endif()
+--
+--vsg_copy_imgui_headers(
+--    FILES
+--        ${VSGIMGUI_SOURCE_DIR}/src/imgui/imgui.h
+--        ${VSGIMGUI_SOURCE_DIR}/src/imgui/imconfig.h
+--        ${VSGIMGUI_SOURCE_DIR}/src/imgui/imgui_internal.h
+--        ${VSGIMGUI_SOURCE_DIR}/src/imgui/imstb_textedit.h
+--        ${VSGIMGUI_SOURCE_DIR}/src/imgui//misc/cpp/imgui_stdlib.h
+--        ${VSGIMGUI_SOURCE_DIR}/src/implot/implot.h
+--        ${VSGIMGUI_SOURCE_DIR}/src/implot/implot_internal.h
+--)
+- 
+- vsg_add_target_clang_format(
+-     FILES
+-diff --git a/include/vsgImGui/RenderImGui.h b/include/vsgImGui/RenderImGui.h
+-index b4210d2..33198e4 100644
+---- a/include/vsgImGui/RenderImGui.h
+-+++ b/include/vsgImGui/RenderImGui.h
+-@@ -31,7 +31,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+- #include <vsg/vk/DescriptorPool.h>
+- 
+- #include <vsgImGui/Export.h>
+--#include <vsgImGui/imgui.h>
+-+#include <imgui.h>
+- 
+- namespace vsgImGui
+- {
+-diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+-index 41d749d..919159e 100644
+---- a/src/CMakeLists.txt
+-+++ b/src/CMakeLists.txt
+-@@ -6,40 +6,21 @@ set(EXTRA_INCLUDES)
+- SET(HEADER_PATH ${VSGIMGUI_SOURCE_DIR}/include/vsgImGui)
+- 
+- set(HEADERS
+--    ${HEADER_PATH}/imgui.h
+-     ${HEADER_PATH}/SendEventsToImGui.h
+-     ${HEADER_PATH}/RenderImGui.h
+-     ${HEADER_PATH}/Texture.h
+--    imgui/imconfig.h
+--    imgui/imgui_internal.h
+--    imgui/imstb_rectpack.h
+--    imgui/imstb_textedit.h
+--    imgui/imstb_truetype.h
+--    imgui/misc/cpp/imgui_stdlib.h
+--    implot/implot.h
+--    implot/implot_internal.h
+- )
+- 
+- set(SOURCES
+-     vsgImGui/RenderImGui.cpp
+-     vsgImGui/SendEventsToImGui.cpp
+-     vsgImGui/Texture.cpp
+--    imgui/imgui.cpp
+--    imgui/imgui_draw.cpp
+--    imgui/imgui_tables.cpp
+--    imgui/imgui_widgets.cpp
+--    imgui/backends/imgui_impl_vulkan.cpp
+--    imgui/misc/cpp/imgui_stdlib.cpp
+--    implot/implot.cpp
+--    implot/implot_items.cpp
+- )
+- 
+- OPTION(SHOW_DEMO_WINDOW "Toggle the build of the ImGui::ShowDemoWindow(bool*) and ImPlot::ShadowDemoWindow(bool*)" ON)
+- 
+- if (SHOW_DEMO_WINDOW)
+-     set(SOURCES ${SOURCES}
+--        imgui/imgui_demo.cpp
+--        implot/implot_demo.cpp
+-     )
+- else()
+-     set(SOURCES ${SOURCES}
+-@@ -73,6 +54,8 @@ target_include_directories(vsgImGui PUBLIC
+- target_link_libraries(vsgImGui
+-     PUBLIC
+-         vsg::vsg
+-+        imgui::imgui
+-+        implot::implot
+-     PRIVATE
+-         ${EXTRA_LIBRARIES}
+- )
+-diff --git a/src/vsgImGui/RenderImGui.cpp b/src/vsgImGui/RenderImGui.cpp
+-index 5d7cf06..dac2227 100644
+---- a/src/vsgImGui/RenderImGui.cpp
+-+++ b/src/vsgImGui/RenderImGui.cpp
+-@@ -22,9 +22,9 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+- </editor-fold> */
+- 
+- #include <vsgImGui/RenderImGui.h>
+--#include <vsgImGui/implot.h>
+-+#include <implot.h>
+- 
+--#include "../imgui/backends/imgui_impl_vulkan.h"
+-+#include <imgui_impl_vulkan.h>
+- 
+- #include <vsg/io/Logger.h>
+- #include <vsg/vk/State.h>
+-diff --git a/src/vsgImGui/SendEventsToImGui.cpp b/src/vsgImGui/SendEventsToImGui.cpp
+-index 4e83e4c..b1f4d83 100644
+---- a/src/vsgImGui/SendEventsToImGui.cpp
+-+++ b/src/vsgImGui/SendEventsToImGui.cpp
+-@@ -22,7 +22,7 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+- </editor-fold> */
+- 
+- #include <vsgImGui/SendEventsToImGui.h>
+--#include <vsgImGui/imgui.h>
+-+#include <imgui.h>
+- 
+- #include <vsg/ui/KeyEvent.h>
+- #include <vsg/ui/PointerEvent.h>
+-diff --git a/src/vsgImGuiConfig.cmake.in b/src/vsgImGuiConfig.cmake.in
+-index e2c14f2..5cf8bd9 100644
+---- a/src/vsgImGuiConfig.cmake.in
+-+++ b/src/vsgImGuiConfig.cmake.in
+-@@ -2,5 +2,7 @@ include(CMakeFindDependencyMacro)
+- 
+- find_dependency(Vulkan)
+- find_dependency(vsg)
+-+find_dependency(imgui)
+-+find_dependency(implot)
+- 
+- include("${CMAKE_CURRENT_LIST_DIR}/vsgImGuiTargets.cmake")
+--- a/vendor/vsgCs/extern/vcpkg-overlays/vsgimgui/imtextureid.patch
++++ /dev/null
+@@ -1,25 +0,0 @@
+-diff --git a/include/vsgImGui/Export.h b/include/vsgImGui/Export.h
+-index f6a3b2e..05884c5 100644
+---- a/include/vsgImGui/Export.h
+-+++ b/include/vsgImGui/Export.h
+-@@ -39,4 +39,8 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+- #define IMPLOT_API VSGIMGUI_DECLSPEC
+- 
+- #include <vulkan/vulkan.h>
+--#define ImTextureID VkDescriptorSet
+-+namespace vsgImGui
+-+{
+-+    typedef unsigned long long ImTextureID_t;
+-+}
+-+#define ImTextureID vsgImGui::ImTextureID_t
+-diff --git a/src/vsgImGui/Texture.cpp b/src/vsgImGui/Texture.cpp
+-index ca5e3d7..31a268b 100644
+---- a/src/vsgImGui/Texture.cpp
+-+++ b/src/vsgImGui/Texture.cpp
+-@@ -84,5 +84,5 @@ void Texture::compile(vsg::Context& context)
+- 
+- ImTextureID Texture::id(uint32_t deviceID) const
+- {
+--    return descriptorSet ? static_cast<ImTextureID>(descriptorSet->vk(deviceID)) : ImTextureID{};
+-+    return descriptorSet ? reinterpret_cast<ImTextureID>(descriptorSet->vk(deviceID)) : ImTextureID{};
+- }
+--- a/vendor/vsgCs/extern/vcpkg-overlays/vsgimgui/portfile.cmake
++++ /dev/null
+@@ -1,22 +0,0 @@
+-vcpkg_from_github(
+-    OUT_SOURCE_PATH SOURCE_PATH
+-    REPO vsg-dev/vsgImGui
+-    REF "v${VERSION}"
+-    SHA512 f27ef25edb95c2129553732054080582a6990b6d84ae6f3ff2007489f02cfcb6ce3f728eb56b584315f5e9835daf74d104962b07b35463ba655bf7aa5c99489c
+-    HEAD_REF master
+-    PATCHES
+-        devendor.patch
+-        remove-manual-font-creation.patch
+-        imtextureid.patch
+-)
+-
+-file(REMOVE "${SOURCE_PATH}/include/vsgImGui/imgui.h")
+-
+-vcpkg_cmake_configure(SOURCE_PATH "${SOURCE_PATH}")
+-vcpkg_cmake_install()
+-vcpkg_cmake_config_fixup(PACKAGE_NAME "vsgImGui" CONFIG_PATH "lib/cmake/vsgImGui")
+-vcpkg_copy_pdbs()
+-
+-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/include")
+-file(REMOVE_RECURSE "${CURRENT_PACKAGES_DIR}/debug/share")
+-vcpkg_install_copyright(FILE_LIST "${SOURCE_PATH}/LICENSE.md")
+--- a/vendor/vsgCs/extern/vcpkg-overlays/vsgimgui/remove-manual-font-creation.patch
++++ /dev/null
+@@ -1,44 +0,0 @@
+-diff --git a/include/vsgImGui/RenderImGui.h b/include/vsgImGui/RenderImGui.h
+-index e8186c6..8059d75 100644
+---- a/include/vsgImGui/RenderImGui.h
+-+++ b/include/vsgImGui/RenderImGui.h
+-@@ -86,7 +86,6 @@ namespace vsgImGui
+-                    vsg::ref_ptr<vsg::RenderPass> renderPass,
+-                    uint32_t minImageCount, uint32_t imageCount,
+-                    VkExtent2D imageSize, bool useClearAttachments);
+--        void _uploadFonts();
+-     };
+- 
+- } // namespace vsgImGui
+-diff --git a/src/vsgImGui/RenderImGui.cpp b/src/vsgImGui/RenderImGui.cpp
+-index 306030b..d662531 100644
+---- a/src/vsgImGui/RenderImGui.cpp
+-+++ b/src/vsgImGui/RenderImGui.cpp
+-@@ -60,7 +60,6 @@ namespace vsgImGui
+- RenderImGui::RenderImGui(const vsg::ref_ptr<vsg::Window>& window, bool useClearAttachments)
+- {
+-     _init(window, useClearAttachments);
+--    _uploadFonts();
+- }
+- 
+- RenderImGui::RenderImGui(vsg::ref_ptr<vsg::Device> device, uint32_t queueFamily,
+-@@ -69,7 +68,6 @@ RenderImGui::RenderImGui(vsg::ref_ptr<vsg::Device> device, uint32_t queueFamily,
+-                          VkExtent2D imageSize, bool useClearAttachments)
+- {
+-     _init(device, queueFamily, renderPass, minImageCount, imageCount, imageSize, useClearAttachments);
+--    _uploadFonts();
+- }
+- 
+- RenderImGui::~RenderImGui()
+-@@ -184,11 +182,6 @@ void RenderImGui::_init(
+-     }
+- }
+- 
+--void RenderImGui::_uploadFonts()
+--{
+--    ImGui_ImplVulkan_CreateFontsTexture();
+--}
+--
+- void RenderImGui::accept(vsg::RecordTraversal& rt) const
+- {
+-     auto& commandBuffer = *(rt.getState()->_commandBuffer);
+--- a/vendor/vsgCs/extern/vcpkg-overlays/vsgimgui/vcpkg.json
++++ /dev/null
+@@ -1,25 +0,0 @@
+-{
+-  "name": "vsgimgui",
+-  "version": "0.3.0",
+-  "description": "Library that integrates VulkanSceneGraph with Dear ImGui & ImPlot.",
+-  "homepage": "https://github.com/vsg-dev/vsgImGui",
+-  "license": "MIT",
+-  "dependencies": [
+-    {
+-      "name": "imgui",
+-      "features": [
+-        "vulkan-binding"
+-      ]
+-    },
+-    "implot",
+-    {
+-      "name": "vcpkg-cmake",
+-      "host": true
+-    },
+-    {
+-      "name": "vcpkg-cmake-config",
+-      "host": true
+-    },
+-    "vsg"
+-  ]
+-}
+--- a/vendor/vsgCs/extern/vcpkg-triplets/x64-linux-clang.cmake
++++ /dev/null
+@@ -1,6 +0,0 @@
+-set(VCPKG_TARGET_ARCHITECTURE x64)
+-set(VCPKG_CRT_LINKAGE dynamic)
+-set(VCPKG_LIBRARY_LINKAGE static)
+-
+-set(VCPKG_CMAKE_SYSTEM_NAME Linux)
+-set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/../../CMakeModules/LinuxClangToolchain.cmake")
+--- a/vendor/vsgCs/extern/vcpkg-triplets/x64-linux-fedora41.cmake
++++ /dev/null
+@@ -1,3 +0,0 @@
+-include("$ENV{VCPKG_ROOT}/triplets/x64-linux.cmake")
+-
+-set(VCPKG_CHAINLOAD_TOOLCHAIN_FILE "${CMAKE_CURRENT_LIST_DIR}/../../CMakeModules/Fedora41Toolchain.cmake")
+--- a/vendor/vsgCs/extern/vcpkg-triplets/x64-linux-relwithdebinfo.cmake
++++ /dev/null
+@@ -1,4 +0,0 @@
+-set(VCPKG_CXX_FLAGS_RELEASE "-g -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer")
+-set(VCPKG_C_FLAGS_RELEASE "-g -fno-omit-frame-pointer -mno-omit-leaf-frame-pointer")
+-
+-include("$ENV{VCPKG_ROOT}/triplets/x64-linux.cmake")
+--- a/vendor/vsgCs/src/CMakeLists.txt
++++ /dev/null
+@@ -1,10 +0,0 @@
+-add_subdirectory(vsgCs)
+-add_subdirectory(CsApp)
+-add_subdirectory(applications)
+-
+-install(EXPORT vsgCsTargets
+-  FILE vsgCsTargets.cmake
+-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/vsgCs)
+-
+-install(FILES vsgCsConfig.cmake
+-  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/vsgCs)
+--- a/examples/tiles3d/CsApp/CreditComponent.cpp
++++ b/examples/tiles3d/CsApp/CreditComponent.cpp
+@@ -27,9 +27,9 @@
+ #include <imgui.h>
+ 
+ #include "CreditComponent.h"
+-#include "vsgCs/Config.h"
+-#include "vsgCs/runtimeSupport.h"
+-#include "vsgCs/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/Config.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
+ 
+ #include <tinyxml2.h>
+ #include <algorithm>
+@@ -82,7 +82,7 @@
+     if (insertResult.second)
+     {
+         // New entry - image will be available later
+-        remoteImage.imageResult = std::make_shared<TextureFuture>(vsgCs::readRemoteTexture(url));
++        remoteImage.imageResult = std::make_shared<TextureFuture>(geostudio::native::tiles3d::readRemoteTexture(url));
+     }
+     if (remoteImage.texture)
+     {
+--- a/examples/tiles3d/CsApp/CreditComponent.h
++++ b/examples/tiles3d/CsApp/CreditComponent.h
+@@ -24,8 +24,8 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/RuntimeEnvironment.h"
+-#include "vsgCs/runtimeSupport.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <vsgImGui/RenderImGui.h>
+ #include <vsgImGui/SendEventsToImGui.h>
+@@ -44,21 +44,21 @@
+     class CreditComponent : public vsg::Inherit<vsg::Command, CreditComponent>
+     {
+     public:
+-        explicit CreditComponent(const vsg::ref_ptr<vsgCs::RuntimeEnvironment>& env)
++        explicit CreditComponent(const vsg::ref_ptr<geostudio::native::tiles3d::RuntimeEnvironment>& env)
+             : environment(env)
+         {
+         }
+         void record(vsg::CommandBuffer& cb) const override;
+     protected:
+         // level of indirection because of deleted Future constructors?
+-        using TextureFuture = CesiumAsync::Future<vsgCs::ReadImGuiTextureResult>;
++        using TextureFuture = CesiumAsync::Future<geostudio::native::tiles3d::ReadImGuiTextureResult>;
+         struct RemoteImage
+         {
+             std::shared_ptr<TextureFuture> imageResult;
+             vsg::ref_ptr<vsgImGui::Texture> texture;
+         };
+         mutable std::map<std::string, RemoteImage> imageCache;
+-        vsg::ref_ptr<vsgCs::RuntimeEnvironment> environment;
++        vsg::ref_ptr<geostudio::native::tiles3d::RuntimeEnvironment> environment;
+         vsg::ref_ptr<vsgImGui::Texture> getTexture(const std::string& url) const;
+         void renderImg(vsg::CommandBuffer& cb, const tinyxml2::XMLElement* element) const; 
+     };
+--- a/examples/tiles3d/CsApp/CsViewer.cpp
++++ b/examples/tiles3d/CsApp/CsViewer.cpp
+@@ -24,8 +24,8 @@
+ 
+ #include "CsViewer.h"
+ 
+-#include "vsgCs/runtimeSupport.h"
+-#include "vsgCs/Tracing.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/Tracing.h"
+ 
+ using namespace CsApp;
+ 
+@@ -36,10 +36,10 @@
+     for (auto itr = _events.begin(); itr != _events.end(); ++itr)
+     {
+         auto& vsg_event = *itr;
+-        auto eventAsMove = vsgCs::ref_ptr_cast<vsg::MoveEvent>(vsg_event);
++        auto eventAsMove = geostudio::native::tiles3d::ref_ptr_cast<vsg::MoveEvent>(vsg_event);
+         if (eventAsMove.valid() && next(itr) != _events.end())
+         {
+-            auto nextEvent = vsgCs::ref_ptr_cast<vsg::MoveEvent>(*next(itr));
++            auto nextEvent = geostudio::native::tiles3d::ref_ptr_cast<vsg::MoveEvent>(*next(itr));
+             if (nextEvent.valid() && nextEvent->mask == eventAsMove->mask)
+             {
+                 continue;
+--- a/examples/tiles3d/CsApp/CsViewer.h
++++ b/examples/tiles3d/CsApp/CsViewer.h
+@@ -24,7 +24,7 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/Export.h"
+ 
+ #include <vsg/app/Viewer.h>
+ 
+--- a/examples/tiles3d/CsApp/MapManipulator.cpp
++++ b/examples/tiles3d/CsApp/MapManipulator.cpp
+@@ -5,8 +5,8 @@
+  */
+ #include "MapManipulator.h"
+ 
+-#include "vsgCs/Tracing.h"
+-#include "vsgCs/WorldNode.h"
++#include "geostudio/native/tiles3d/Tracing.h"
++#include "geostudio/native/tiles3d/WorldNode.h"
+ 
+ 
+ #include <tuple>
+@@ -25,7 +25,7 @@
+ #define M_PI vsg::PI
+ #endif
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ #undef LC
+ #define LC "[MapManipulator] "
+--- a/examples/tiles3d/CsApp/MapManipulator.h
++++ b/examples/tiles3d/CsApp/MapManipulator.h
+@@ -5,9 +5,9 @@
+  */
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
+-#include "vsgCs/GeospatialServices.h"
+-#include "vsgCs/runtimeSupport.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/GeospatialServices.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <vsg/core/Inherit.h>
+ #include <vsg/core/Visitor.h>
+@@ -26,7 +26,7 @@
+     class Window;
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class WorldNode;
+     class UpdateCenterOperation;
+--- a/examples/tiles3d/gltfviewer/gltfviewer.cpp
++++ b/examples/tiles3d/gltfviewer/gltfviewer.cpp
+@@ -1,7 +1,7 @@
+-#include "vsgCs/GltfLoader.h"
+-#include "vsgCs/pbr.h"
+-#include "vsgCs/RuntimeEnvironment.h"
+-#include "vsgCs/runtimeSupport.h"
++#include "geostudio/native/tiles3d/GltfLoader.h"
++#include "geostudio/native/tiles3d/pbr.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <vsg/all.h>
+ 
+@@ -10,7 +10,7 @@
+ int main(int argc, char** argv)
+ {
+     vsg::CommandLine arguments(&argc, argv);
+-    auto environment = vsgCs::RuntimeEnvironment::get();
++    auto environment = geostudio::native::tiles3d::RuntimeEnvironment::get();
+     auto window = environment->openWindow(arguments, "worldviewer");
+ 
+ 
+@@ -32,15 +32,15 @@
+         // Bind the lighting for the whole world
+     auto bindViewDescriptorSets
+         = vsg::BindViewDescriptorSets::create(VK_PIPELINE_BIND_POINT_GRAPHICS,
+-                                              vsgCs::RuntimeEnvironment::get()->genv->overlayPipelineLayout,
+-                                              vsgCs::pbr::VIEW_DESCRIPTOR_SET);
++                                              geostudio::native::tiles3d::RuntimeEnvironment::get()->genv->overlayPipelineLayout,
++                                              geostudio::native::tiles3d::pbr::VIEW_DESCRIPTOR_SET);
+     scene->add(bindViewDescriptorSets);
+-    auto loader = vsgCs::GltfLoader::create();
++    auto loader = geostudio::native::tiles3d::GltfLoader::create();
+     
+     if (argc>1)
+     {
+         vsg::Path filename = argv[1];
+-        auto model = vsgCs::ref_ptr_cast<vsg::Node>(loader->read(filename, vsgCs::RuntimeEnvironment::get()->options));
++        auto model = geostudio::native::tiles3d::ref_ptr_cast<vsg::Node>(loader->read(filename, geostudio::native::tiles3d::RuntimeEnvironment::get()->options));
+         if (!model)
+         {
+             std::cout<<"Faled to load "<<filename<<'\n';
+--- a/examples/tiles3d/worldviewer/UI.cpp
++++ b/examples/tiles3d/worldviewer/UI.cpp
+@@ -29,16 +29,16 @@
+ #include <vsg/utils/Builder.h>
+ 
+ #if defined(vsgXchange_found)
+-#include <vsgXchange/all.h>
++#include <geostudio/native/io/all.h>
+ #endif
+ #include <imgui.h>
+ 
+-#include "vsgCs/Config.h"
+-#include "vsgCs/WorldNode.h"
+-#include "vsgCs/runtimeSupport.h"
++#include "geostudio/native/tiles3d/Config.h"
++#include "geostudio/native/tiles3d/WorldNode.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+ 
+ // For debugging manipulator
+--- a/examples/tiles3d/worldviewer/UI.h
++++ b/examples/tiles3d/worldviewer/UI.h
+@@ -26,13 +26,13 @@
+ 
+ #include "CsApp/CreditComponent.h"
+ #include "CsApp/MapManipulator.h"
+-#include "vsgCs/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
+ 
+ #include <vsg/all.h>
+ #include <vsgImGui/RenderImGui.h>
+ #include <vsgImGui/SendEventsToImGui.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class UI : public vsg::Inherit<vsg::Object, UI>
+     {
+--- a/examples/tiles3d/worldviewer/worldviewer.cpp
++++ b/examples/tiles3d/worldviewer/worldviewer.cpp
+@@ -33,7 +33,7 @@
+ #include <vulkan/vulkan_core.h>
+ 
+ #ifdef vsgXchange_FOUND
+-#include <vsgXchange/all.h>
++#include <geostudio/native/io/all.h>
+ #endif
+ 
+ #include <vsgImGui/RenderImGui.h>
+@@ -44,7 +44,7 @@
+ 
+ #ifdef HAVE_VALGRIND
+ #include <valgrind.h>
+-#include "vsgCs/CppAllocator.h"
++#include "geostudio/native/tiles3d/CppAllocator.h"
+ #endif
+ 
+ #include <filesystem>
+@@ -52,15 +52,15 @@
+ #include <iostream>
+ #include <vector>
+ 
+-#include "vsgCs/GeoNode.h"
+-#include "vsgCs/GltfLoader.h"
+-#include "vsgCs/jsonUtils.h"
+-#include "vsgCs/TilesetNode.h"
+-#include "vsgCs/Tracing.h"
+-#include "vsgCs/TracingCommandGraph.h"
+-#include "vsgCs/RuntimeEnvironment.h"
+-#include "vsgCs/runtimeSupport.h"
+-#include "vsgCs/WorldNode.h"
++#include "geostudio/native/tiles3d/GeoNode.h"
++#include "geostudio/native/tiles3d/GltfLoader.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
++#include "geostudio/native/tiles3d/TilesetNode.h"
++#include "geostudio/native/tiles3d/Tracing.h"
++#include "geostudio/native/tiles3d/TracingCommandGraph.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/WorldNode.h"
+ #include "UI.h"
+ #include "CsApp/CsViewer.h"
+ 
+@@ -73,7 +73,7 @@
+         << "where options include:\n"
+         << "--world-file file\t\t JSON world file"
+         << "--headlight\t\t Fix lighting in viewing direction\n"
+-        << vsgCs::RuntimeEnvironment::usage()
++        << geostudio::native::tiles3d::RuntimeEnvironment::usage()
+         << "-f numFrames\t\t run for numFrames and exit\n"
+         << "--hmh height\t\t horizon mountain height for ellipsoid perspective viewing\n"
+         << "--disble-EllipsoidPerspective|--dep disable ellipsoid perspective\n"
+@@ -88,14 +88,14 @@
+ {
+ public:
+     VsgCsScenegraphBuilder(vsg::CommandLine& arguments_,
+-                           const vsg::ref_ptr<vsgCs::RuntimeEnvironment>& env_)
++                           const vsg::ref_ptr<geostudio::native::tiles3d::RuntimeEnvironment>& env_)
+         : arguments(arguments_), env(env_)
+     {
+         createScenegraph();
+     }
+-    vsg::ref_ptr<vsgCs::WorldNode> worldNode;
++    vsg::ref_ptr<geostudio::native::tiles3d::WorldNode> worldNode;
+     vsg::ref_ptr<vsg::StateGroup> xchangeModels;
+-    std::vector<vsg::ref_ptr<vsgCs::TilesetNode>> tilesetNodes;
++    std::vector<vsg::ref_ptr<geostudio::native::tiles3d::TilesetNode>> tilesetNodes;
+ 
+     void createScenegraph()
+     {
+@@ -110,10 +110,10 @@
+                 }
+                 continue;
+             }
+-            if (vsgCs::isUrl(argString) ||
++            if (geostudio::native::tiles3d::isUrl(argString) ||
+                 argString.ends_with("tileset.json") ||
+                 (argString.ends_with(".json")
+-                 && vsgCs::isTilesetJson(argString, env->options))) {
++                 && geostudio::native::tiles3d::isTilesetJson(argString, env->options))) {
+                 if (auto tilesetNode  = createTileset(argString))
+                 {
+                     tilesetNodes.push_back(tilesetNode);
+@@ -126,7 +126,7 @@
+             else
+             {
+                 vsg::Path filename = arguments[i];
+-                if (auto node = vsgCs::ref_ptr_cast<vsg::Node>(vsg::read(filename, env->options)))
++                if (auto node = geostudio::native::tiles3d::ref_ptr_cast<vsg::Node>(vsg::read(filename, env->options)))
+                 {
+                     addToXchangeModels(node);
+                 }
+@@ -134,7 +134,7 @@
+         }
+         if (!worldNode && !tilesetNodes.empty())
+         {
+-            worldNode = vsgCs::WorldNode::create();
++            worldNode = geostudio::native::tiles3d::WorldNode::create();
+         }
+         worldNode->tilesetNodes().insert(worldNode->tilesetNodes().end(),
+                                          tilesetNodes.begin(), tilesetNodes.end());
+@@ -152,21 +152,21 @@
+ 
+     void addVsgCsObject(const std::string& fileName)
+     {
+-        auto jsonSource = vsgCs::readFile(fileName, env->options);
+-        auto object = vsgCs::JSONObjectFactory::get()->buildFromSource(jsonSource);
++        auto jsonSource = geostudio::native::tiles3d::readFile(fileName, env->options);
++        auto object = geostudio::native::tiles3d::JSONObjectFactory::get()->buildFromSource(jsonSource);
+         if (!object)
+         {
+             std::cout << "Unable to load file " << fileName << '\n';
+         }
+-        if (auto maybeWorldNode = vsgCs::ref_ptr_cast<vsgCs::WorldNode>(object))
++        if (auto maybeWorldNode = geostudio::native::tiles3d::ref_ptr_cast<geostudio::native::tiles3d::WorldNode>(object))
+         {
+             worldNode = maybeWorldNode;
+         }
+-        else if (auto maybeTilesetNode = vsgCs::ref_ptr_cast<vsgCs::TilesetNode>(object))
++        else if (auto maybeTilesetNode = geostudio::native::tiles3d::ref_ptr_cast<geostudio::native::tiles3d::TilesetNode>(object))
+         {
+             tilesetNodes.push_back(maybeTilesetNode);
+         }
+-        else if (auto modelNode = vsgCs::ref_ptr_cast<vsg::Node>(object))
++        else if (auto modelNode = geostudio::native::tiles3d::ref_ptr_cast<vsg::Node>(object))
+         {
+             addToXchangeModels(modelNode);
+         }
+@@ -176,10 +176,10 @@
+         }
+     }
+ 
+-    vsg::ref_ptr<vsgCs::TilesetNode> createTileset(const std::string& argString)
++    vsg::ref_ptr<geostudio::native::tiles3d::TilesetNode> createTileset(const std::string& argString)
+     {
+         std::string url;
+-        if (vsgCs::isUrl(argString))
++        if (geostudio::native::tiles3d::isUrl(argString))
+         {
+             url = argString;
+         }
+@@ -197,8 +197,8 @@
+         }
+         std::string tilesetJson(R"({"Type": "Tileset", "tilesetUrl": ")");
+         tilesetJson += url + R"("})";
+-        auto object = vsgCs::JSONObjectFactory::get()->buildFromSource(tilesetJson);
+-        auto maybeTileset = vsgCs::ref_ptr_cast<vsgCs::TilesetNode>(object);
++        auto object = geostudio::native::tiles3d::JSONObjectFactory::get()->buildFromSource(tilesetJson);
++        auto maybeTileset = geostudio::native::tiles3d::ref_ptr_cast<geostudio::native::tiles3d::TilesetNode>(object);
+         if (!maybeTileset)
+         {
+             std::cout << "Can't create tileset for " << argString << "\n";
+@@ -206,14 +206,14 @@
+         return maybeTileset;
+     }
+     vsg::CommandLine& arguments;
+-    vsg::ref_ptr<vsgCs::RuntimeEnvironment> env;
++    vsg::ref_ptr<geostudio::native::tiles3d::RuntimeEnvironment> env;
+ };
+ 
+ class ViewState
+ {
+ public:
+     ViewState(vsg::CommandLine& arguments,
+-                const vsg::ref_ptr<vsgCs::RuntimeEnvironment>& env_,
++                const vsg::ref_ptr<geostudio::native::tiles3d::RuntimeEnvironment>& env_,
+                 const vsg::ref_ptr<vsg::EllipsoidModel>& ellipsoidModel_,
+                 const vsg::ref_ptr<vsg::Window>& window_)
+         : ellipsoidModel(ellipsoidModel_), env(env_), window(window_)
+@@ -322,7 +322,7 @@
+     vsg::ref_ptr<vsg::LookAt> lookAt;
+     vsg::ref_ptr<vsg::EllipsoidModel> ellipsoidModel;
+ protected:
+-    vsg::ref_ptr<vsgCs::RuntimeEnvironment> env;
++    vsg::ref_ptr<geostudio::native::tiles3d::RuntimeEnvironment> env;
+     vsg::ref_ptr<vsg::Window> window;
+ };
+ }
+@@ -340,7 +340,7 @@
+     {
+         auto& allocator = vsg::Allocator::instance();
+         savedAllocator = std::move(allocator);
+-        allocator = std::make_unique<vsgCs::CppAllocator>();
++        allocator = std::make_unique<geostudio::native::tiles3d::CppAllocator>();
+     }
+     auto restoreAllocator = gsl::finally([&savedAllocator]()
+     {
+@@ -363,15 +363,15 @@
+         }
+         // set up vsg::Options to pass in filepaths and ReaderWriter's and other IO related options
+         // to use when reading and writing files.
+-        // vsgCs::RuntimeEnvironment manages parsing of common arguments, initialization of the
++        // geostudio::native::tiles3d::RuntimeEnvironment manages parsing of common arguments, initialization of the
+         // Vulkan environment, and the Cesium ion token (if any).
+-        auto environment = vsgCs::RuntimeEnvironment::get();
++        auto environment = geostudio::native::tiles3d::RuntimeEnvironment::get();
+         auto window = environment->openWindow(arguments, "worldviewer");
+-        environment->options->add(vsgCs::GltfLoader::create(environment));
++        environment->options->add(geostudio::native::tiles3d::GltfLoader::create(environment));
+ #ifdef vsgXchange_FOUND
+         // add vsgXchange's support for reading and writing 3rd party file formats. If vsgXchange
+         // isn't found, then we will only be able to read .vsgt models and glTF files.
+-        environment->options->add(vsgXchange::all::create());
++        environment->options->add(geostudio::native::io::all::create());
+         arguments.read(environment->options);
+ #endif
+         // numFrames and pathFilename come from vsgViewer. They provide a way to display a
+@@ -437,7 +437,7 @@
+         }
+ 
+         // Do early cesium-native initialization
+-        vsgCs::startup();
++        geostudio::native::tiles3d::startup();
+         // create the VSG viewer and assign window(s) to it
+         auto viewer = CsApp::CsViewer::create();
+ 
+@@ -467,8 +467,8 @@
+         viewer->addWindow(window);
+         auto views = viewState.createViews();
+         // Basic VSG objects for rendering
+-        auto commandGraph = vsgCs::TracingCommandGraph::create(environment, window);
+-        auto renderGraph = vsgCs::TracingRenderGraph::create(window);
++        auto commandGraph = geostudio::native::tiles3d::TracingCommandGraph::create(environment, window);
++        auto renderGraph = geostudio::native::tiles3d::TracingRenderGraph::create(window);
+         // The classic VSG background, translated into sRGB values.
+         renderGraph->setClearValues({{0.02899f, 0.02899f, 0.13321f}});
+         commandGraph->addChild(renderGraph);
+@@ -483,7 +483,7 @@
+         }
+         // Create this application's user interface, including the trackball manipulator and the
+         // graphical overlay.
+-        auto ui = vsgCs::UI::create();
++        auto ui = geostudio::native::tiles3d::UI::create();
+         auto uiCamera = views[0]->camera;
+         ui->createUI(window, viewer, uiCamera, ellipsoidModel, environment->options, worldNode, vsg_scene,
+                      environment, debugManipulator);
+@@ -507,7 +507,7 @@
+         viewer->compile();
+ 
+         auto lastAct = gsl::finally([worldNode]() {
+-            vsgCs::shutdown();
++            geostudio::native::tiles3d::shutdown();
+             worldNode->shutdown();});
+ 
+         // rendering main loop
+@@ -516,7 +516,7 @@
+             if (viewState.setViewpointAfterLoad
+                 && worldNode->getRootTile())
+             {
+-                auto lookAt = vsgCs::makeLookAtFromTile(worldNode->getRootTile(),
++                auto lookAt = geostudio::native::tiles3d::makeLookAtFromTile(worldNode->getRootTile(),
+                                                         viewState.poi_distance,
+                                                         viewState.localModel);
+                 ui->setViewpoint(lookAt, 1.0);
+--- a/vendor/vsgCs/src/vsgCs/CMakeLists.txt
++++ /dev/null
+@@ -1,144 +0,0 @@
+-find_package(CURL REQUIRED)
+-find_package(OpenSSL REQUIRED)
+-
+-set(LIB_NAME vsgCs)
+-
+-set(LIB_PUBLIC_HEADERS
+-  accessorUtils.h
+-  accessor_traits.h
+-  ${PROJECT_BINARY_DIR}/include/vsgCs/Config.h
+-  CRS.h
+-  CsDebugColorizeTilesOverlay.h
+-  CsWebMapServiceRasterOverlay.h
+-  CsWebMapTileServiceRasterOverlay.h
+-  CsTileMapServiceRasterOverlay.h
+-  CsUrlTemplateRasterOverlay.h
+-  CsOverlay.h
+-  CesiumGltfBuilder.h
+-  CppAllocator.h
+-  ${CMAKE_CURRENT_BINARY_DIR}/Export.h
+-  GeoNode.h
+-  GeospatialServices.h
+-  GltfLoader.h
+-  GraphicsEnvironment.h
+-  jsonUtils.h
+-  LoadGltfResult.h
+-  ModelBuilder.h
+-  RuntimeEnvironment.h
+-  ShaderFactory.h
+-  Styling.h
+-  TracingCommandGraph.h
+-  TilesetNode.h
+-  Version.h
+-  vsgResourcePreparer.h
+-  runtimeSupport.h
+-  WorldAnchor.h
+-  WorldNode.h
+-)
+-
+-set(SOURCES
+-  CRS.cpp
+-  CsDebugColorizeTilesOverlay.cpp
+-  CsWebMapServiceRasterOverlay.cpp
+-  CsWebMapTileServiceRasterOverlay.cpp
+-  CsTileMapServiceRasterOverlay.cpp
+-  CsUrlTemplateRasterOverlay.cpp
+-  CsOverlay.cpp
+-  CesiumGltfBuilder.cpp
+-  CompilableImage.cpp
+-  GeoNode.cpp
+-  GeospatialServices.cpp
+-  GltfLoader.cpp
+-  GraphicsEnvironment.cpp
+-  jsonUtils.cpp
+-  ModelBuilder.cpp
+-  OpThreadTaskProcessor.cpp
+-  RuntimeEnvironment.cpp
+-  ShaderFactory.cpp
+-  Styling.cpp
+-  TracingCommandGraph.cpp
+-  TilesetNode.cpp
+-  UrlAssetAccessor.cpp
+-  runtimeSupport.cpp
+-  ${CMAKE_CURRENT_BINARY_DIR}/Version.cpp
+-  vsgResourcePreparer.cpp
+-  pbr.cpp
+-  WorldAnchor.cpp
+-  WorldNode.cpp
+-)
+-
+-add_library(
+-    ${LIB_NAME}
+-    ${SOURCES}
+-)
+-
+-if(VALGRIND_H_PATH)
+-  list(APPEND LIB_PUBLIC_HEADERS CppAllocator.h)
+-  target_sources(vsgCs PRIVATE CppAllocator.cpp)
+-endif()
+-
+-set_target_properties(${LIB_NAME} PROPERTIES
+-  PUBLIC_HEADER "${LIB_PUBLIC_HEADERS}"
+-)
+-
+-target_include_directories(${LIB_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>)
+-target_include_directories(${LIB_NAME} PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>)
+-target_include_directories(${LIB_NAME} PUBLIC $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>)
+-
+-if(VSGCS_BUILD_SHARED_LIBS)
+-  target_compile_definitions(${LIB_NAME} PRIVATE VSGCS_LIBRARY)
+-else()
+-  target_compile_definitions(${LIB_NAME} PUBLIC VSGCS_LIBRARY_STATIC)
+-endif()
+-
+-if(NOT VSGCS_USE_SYSTEM_OPENSSL AND VCPKG_INSTALLED_DIR)
+-  target_compile_definitions(${LIB_NAME}
+-    PRIVATE VSGCS_OPENSSL_CONF="${VSGCS_FULL_DATA_DIR}/etc/ssl/openssl.cnf"
+-  )
+-endif()
+-
+-include(CheckIncludeFileCXX)
+-
+-check_include_file_cxx("sys/utsname.h" HAVE_SYS_UTSNAME)
+-
+-if(HAVE_SYS_UTSNAME)
+-  target_compile_definitions(${LIB_NAME} PRIVATE HAVE_SYS_UTSNAME)
+-endif()
+-
+-target_link_libraries(${LIB_NAME} PUBLIC
+-  vsg::vsg vsgImGui::vsgImGui Cesium3DTilesSelection CesiumRasterOverlays CesiumGltfContent CesiumGltfReader CesiumGltf CesiumCurl Microsoft.GSL::GSL)
+-if(CESIUM_SPDLOG_HEADER_ONLY)
+-  target_link_libraries(${LIB_NAME} PUBLIC spdlog::spdlog_header_only)
+-else()
+-  target_link_libraries(${LIB_NAME} PUBLIC spdlog::spdlog)
+-endif()
+-target_link_libraries(${LIB_NAME} PRIVATE CURL::libcurl OpenSSL::SSL)
+-if(VSGCS_USE_PROJ)
+-  target_link_libraries(${LIB_NAME} PRIVATE PROJ::proj)
+-endif()
+-
+-if(BUILD_TRACY)
+-  target_link_libraries(${LIB_NAME} PUBLIC Tracy::TracyClient)
+-endif()
+-
+-install(TARGETS ${LIB_NAME} EXPORT vsgCsTargets
+-  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+-  RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+-  PUBLIC_HEADER DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIB_NAME}"
+-  )
+-
+-configure_file("Config.h.in"
+-  "${PROJECT_BINARY_DIR}/include/vsgCs/Config.h")
+-
+-configure_file("Version.cpp.in"
+-  "${CMAKE_CURRENT_BINARY_DIR}/Version.cpp")
+-  
+-include(GenerateExportHeader)
+-generate_export_header(vsgCs EXPORT_FILE_NAME Export.h)
+-
+-install(FILES
+-  "${CMAKE_CURRENT_BINARY_DIR}/Export.h"
+-  "${PROJECT_BINARY_DIR}/include/vsgCs/Config.h"
+-  DESTINATION "${CMAKE_INSTALL_INCLUDEDIR}/${LIB_NAME}"
+-)
+--- a/src/tiles3d/runtime/CRS.cpp
++++ b/src/tiles3d/runtime/CRS.cpp
+@@ -29,10 +29,10 @@
+  * MIT License
+  */
+ 
+-#include "CRS.h"
+-
+-#include "vsgCs/Config.h"
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/CRS.h"
++
++#include "geostudio/native/tiles3d/Config.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <vsg/maths/transform.h>
+ #include <vsg/io/Logger.h>
+@@ -46,7 +46,7 @@
+ 
+ #include <cstdlib>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     void redirect_proj_log(void*, int, const char* msg)
+     {
+@@ -536,7 +536,7 @@
+         return {result->longitude, result->latitude, result->height};
+     }
+     
+-    // The meat of vsgCs::CRS: conversion operations implemented by PROJ. The actual PROJ operation
++    // The meat of geostudio::native::tiles3d::CRS: conversion operations implemented by PROJ. The actual PROJ operation
+     // will need a thread context.
+ #ifdef VSGCS_USE_PROJ
+     class ProjConversion : public CRS::ConversionOperation
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CRS.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CRS.h
+@@ -37,7 +37,7 @@
+    TILESET_CRS_GEOCENTRIC, if any.
+  */
+ 
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/Export.h"
+ 
+ #include <vsg/maths/vec3.h>
+ #include <vsg/maths/mat4.h>
+@@ -45,7 +45,7 @@
+ #include <memory>
+ #include <string>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class VSGCS_EXPORT CRS
+     {
+--- a/src/tiles3d/runtime/CesiumGltfBuilder.cpp
++++ b/src/tiles3d/runtime/CesiumGltfBuilder.cpp
+@@ -22,13 +22,13 @@
+ 
+ </editor-fold> */
+ 
+-#include "accessor_traits.h"
+-#include "CesiumGltfBuilder.h"
+-#include "pbr.h"
+-
+-#include "LoadGltfResult.h"
+-#include "runtimeSupport.h"
+-#include "Tracing.h"
++#include "geostudio/native/tiles3d/accessor_traits.h"
++#include "geostudio/native/tiles3d/CesiumGltfBuilder.h"
++#include "geostudio/native/tiles3d/pbr.h"
++
++#include "geostudio/native/tiles3d/LoadGltfResult.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/Tracing.h"
+ 
+ #include <CesiumGltf/AccessorView.h>
+ #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
+@@ -49,7 +49,7 @@
+ #include <exception>
+ 
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ using namespace CesiumGltf;
+ 
+ // Translate from a Cesium3dTilesSelection::BoundingVolume to a bounding sphere. Inspired by
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CesiumGltfBuilder.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CesiumGltfBuilder.h
+@@ -33,18 +33,18 @@
+ #include <vsg/io/Options.h>
+ #include <vsg/state/DescriptorSetLayout.h>
+ 
+-#include "vsgCs/Export.h"
+-#include "GraphicsEnvironment.h"
+-#include "ModelBuilder.h"
+-#include "RuntimeEnvironment.h"
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/GraphicsEnvironment.h"
++#include "geostudio/native/tiles3d/ModelBuilder.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ 
+ #include <array>
+ 
+ // Build a VSG scenegraph from a Cesium Gltf Model object.
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // The functions for attaching and detaching rasters return objects that need to be compiled and
+     // may replace objects that should then eventually be freed. I don't think the tile-building
+--- a/src/tiles3d/runtime/CompilableImage.cpp
++++ b/src/tiles3d/runtime/CompilableImage.cpp
+@@ -22,10 +22,10 @@
+ 
+ </editor-fold> */
+ 
+-#include "CompilableImage.h"
++#include "geostudio/native/tiles3d/CompilableImage.h"
+ #include <vsg/all.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ // Copied from DescriptorImage
+ void CompilableImage::compile(vsg::Context &context)
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CompilableImage.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CompilableImage.h
+@@ -27,7 +27,7 @@
+ #include <vsg/commands/Command.h>
+ #include <vsg/state/ImageInfo.h>
+ 
+-namespace vsgCs {
++namespace geostudio::native::tiles3d {
+     class CompilableImage : public vsg::Inherit<vsg::Command, CompilableImage>
+     {
+         public:
+--- a/src/tiles3d/runtime/CppAllocator.cpp
++++ b/src/tiles3d/runtime/CppAllocator.cpp
+@@ -26,11 +26,11 @@
+ 
+ </editor-fold> */
+ 
+-#include "CppAllocator.h"
++#include "geostudio/native/tiles3d/CppAllocator.h"
+ 
+ #include <cstdlib>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     void* CppAllocator::allocate(std::size_t size, vsg::AllocatorAffinity allocatorAffinity)
+     {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CppAllocator.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CppAllocator.h
+@@ -38,7 +38,7 @@
+ // aligned_alloc and free. This is useful for use with valgrind and
+ // other leak detection tools that track malloc() and free().
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class CppAllocator : public vsg::Allocator
+     {
+--- a/src/tiles3d/runtime/CsDebugColorizeTilesOverlay.cpp
++++ b/src/tiles3d/runtime/CsDebugColorizeTilesOverlay.cpp
+@@ -22,13 +22,13 @@
+ 
+ </editor-fold> */
+ 
+-#include "CsDebugColorizeTilesOverlay.h"
++#include "geostudio/native/tiles3d/CsDebugColorizeTilesOverlay.h"
+ 
+-#include "jsonUtils.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
+ #include <CesiumRasterOverlays/DebugColorizeTilesRasterOverlay.h>
+ #include <CesiumUtility/JsonHelpers.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ CsOverlay::PointerType CsDebugColorizeTilesOverlay::createOverlay(
+     const CesiumRasterOverlays::RasterOverlayOptions& options)
+@@ -36,7 +36,7 @@
+     return PointerType(new CesiumRasterOverlays::DebugColorizeTilesRasterOverlay(MaterialLayerKey, options));
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::Object> buildCsDebugColorizeTilesOverlay(const rapidjson::Value& json,
+                                                                JSONObjectFactory* factory,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CsDebugColorizeTilesOverlay.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CsDebugColorizeTilesOverlay.h
+@@ -24,9 +24,9 @@
+ 
+ #pragma once
+ 
+-#include "CsOverlay.h"
++#include "geostudio/native/tiles3d/CsOverlay.h"
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class VSGCS_EXPORT CsDebugColorizeTilesOverlay : public vsg::Inherit<CsOverlay,
+                                                                          CsDebugColorizeTilesOverlay>
+--- a/src/tiles3d/runtime/CsOverlay.cpp
++++ b/src/tiles3d/runtime/CsOverlay.cpp
+@@ -22,17 +22,17 @@
+ 
+ </editor-fold> */
+ 
+-#include "CsOverlay.h"
+-#include "jsonUtils.h"
+-#include "OpThreadTaskProcessor.h"
+-#include "RuntimeEnvironment.h"
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/CsOverlay.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
++#include "geostudio/native/tiles3d/OpThreadTaskProcessor.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <CesiumRasterOverlays/IonRasterOverlay.h>
+ #include <CesiumUtility/JsonHelpers.h>
+ #include <vsg/all.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ void CsOverlay::addToTileset(const vsg::ref_ptr<TilesetNode>& tilesetNode)
+ {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CsOverlay.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CsOverlay.h
+@@ -27,10 +27,10 @@
+ #include <vsg/core/Inherit.h>
+ 
+ #include "CesiumRasterOverlays/RasterOverlay.h"
+-#include "vsgCs/Export.h"
+-#include "TilesetNode.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/TilesetNode.h"
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class VSGCS_EXPORT CsOverlay : public vsg::Inherit<vsg::Object, CsOverlay>
+     {
+--- a/src/tiles3d/runtime/CsTileMapServiceRasterOverlay.cpp
++++ b/src/tiles3d/runtime/CsTileMapServiceRasterOverlay.cpp
+@@ -22,13 +22,13 @@
+ 
+ </editor-fold> */
+ 
+-#include "CsTileMapServiceRasterOverlay.h"
++#include "geostudio/native/tiles3d/CsTileMapServiceRasterOverlay.h"
+ 
+-#include "jsonUtils.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
+ #include <CesiumRasterOverlays/TileMapServiceRasterOverlay.h>
+ #include <CesiumUtility/JsonHelpers.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ CsOverlay::PointerType CsTileMapServiceRasterOverlay::createOverlay(
+     const CesiumRasterOverlays::RasterOverlayOptions& options)
+@@ -63,7 +63,7 @@
+         options));
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::Object> buildCsTileMapServiceRasterOverlay(const rapidjson::Value& json,
+         JSONObjectFactory* factory,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CsTileMapServiceRasterOverlay.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CsTileMapServiceRasterOverlay.h
+@@ -24,9 +24,9 @@
+ 
+ #pragma once
+ 
+-#include "CsOverlay.h"
++#include "geostudio/native/tiles3d/CsOverlay.h"
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class VSGCS_EXPORT CsTileMapServiceRasterOverlay : public vsg::Inherit<CsOverlay,
+         CsTileMapServiceRasterOverlay>
+--- a/src/tiles3d/runtime/CsUrlTemplateRasterOverlay.cpp
++++ b/src/tiles3d/runtime/CsUrlTemplateRasterOverlay.cpp
+@@ -22,13 +22,13 @@
+ 
+ </editor-fold> */
+ 
+-#include "CsUrlTemplateRasterOverlay.h"
++#include "geostudio/native/tiles3d/CsUrlTemplateRasterOverlay.h"
+ 
+-#include "jsonUtils.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
+ #include <CesiumRasterOverlays/UrlTemplateRasterOverlay.h>
+ #include <CesiumUtility/JsonHelpers.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ CsOverlay::PointerType CsUrlTemplateRasterOverlay::createOverlay(
+     const CesiumRasterOverlays::RasterOverlayOptions& options)
+@@ -97,7 +97,7 @@
+         options));
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::Object> buildCsUrlTemplateRasterOverlay(const rapidjson::Value& json,
+         JSONObjectFactory* factory,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CsUrlTemplateRasterOverlay.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CsUrlTemplateRasterOverlay.h
+@@ -24,9 +24,9 @@
+ 
+ #pragma once
+ 
+-#include "CsOverlay.h"
++#include "geostudio/native/tiles3d/CsOverlay.h"
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     /**
+      * Specifies the type of projection used for projecting a URL template
+--- a/src/tiles3d/runtime/CsWebMapServiceRasterOverlay.cpp
++++ b/src/tiles3d/runtime/CsWebMapServiceRasterOverlay.cpp
+@@ -22,13 +22,13 @@
+ 
+ </editor-fold> */
+ 
+-#include "CsWebMapServiceRasterOverlay.h"
++#include "geostudio/native/tiles3d/CsWebMapServiceRasterOverlay.h"
+ 
+-#include "jsonUtils.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
+ #include <CesiumRasterOverlays/WebMapServiceRasterOverlay.h>
+ #include <CesiumUtility/JsonHelpers.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ CsOverlay::PointerType CsWebMapServiceRasterOverlay::createOverlay(
+     const CesiumRasterOverlays::RasterOverlayOptions& options)
+@@ -66,7 +66,7 @@
+         options));
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::Object> buildCsWebMapServiceRasterOverlay(const rapidjson::Value& json,
+         JSONObjectFactory* factory,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CsWebMapServiceRasterOverlay.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CsWebMapServiceRasterOverlay.h
+@@ -24,9 +24,9 @@
+ 
+ #pragma once
+ 
+-#include "CsOverlay.h"
++#include "geostudio/native/tiles3d/CsOverlay.h"
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class VSGCS_EXPORT CsWebMapServiceRasterOverlay : public vsg::Inherit<CsOverlay,
+         CsWebMapServiceRasterOverlay>
+--- a/src/tiles3d/runtime/CsWebMapTileServiceRasterOverlay.cpp
++++ b/src/tiles3d/runtime/CsWebMapTileServiceRasterOverlay.cpp
+@@ -22,13 +22,13 @@
+ 
+ </editor-fold> */
+ 
+-#include "CsWebMapTileServiceRasterOverlay.h"
++#include "geostudio/native/tiles3d/CsWebMapTileServiceRasterOverlay.h"
+ 
+-#include "jsonUtils.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
+ #include <CesiumRasterOverlays/WebMapTileServiceRasterOverlay.h>
+ #include <CesiumUtility/JsonHelpers.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ CsOverlay::PointerType CsWebMapTileServiceRasterOverlay::createOverlay(
+     const CesiumRasterOverlays::RasterOverlayOptions& options)
+@@ -141,7 +141,7 @@
+         options));
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::Object> buildCsWebMapTileServiceRasterOverlay(const rapidjson::Value& json,
+         JSONObjectFactory* factory,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/CsWebMapTileServiceRasterOverlay.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/CsWebMapTileServiceRasterOverlay.h
+@@ -24,9 +24,9 @@
+ 
+ #pragma once
+ 
+-#include "CsOverlay.h"
+-
+-namespace vsgCs
++#include "geostudio/native/tiles3d/CsOverlay.h"
++
++namespace geostudio::native::tiles3d
+ {
+     /**
+      * Specifies the type of projection used for projecting a Web Map Tile Service
+--- a/src/tiles3d/runtime/GeoNode.cpp
++++ b/src/tiles3d/runtime/GeoNode.cpp
+@@ -22,12 +22,12 @@
+ 
+ </editor-fold> */
+ 
+-#include "GeoNode.h"
+-
+-#include "jsonUtils.h"
+-#include "runtimeSupport.h"
+-#include "RuntimeEnvironment.h"
+-#include "pbr.h"
++#include "geostudio/native/tiles3d/GeoNode.h"
++
++#include "geostudio/native/tiles3d/jsonUtils.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/pbr.h"
+ 
+ #include <CesiumUtility/JsonHelpers.h>
+ #include <CesiumGeospatial/LocalHorizontalCoordinateSystem.h>
+@@ -37,7 +37,7 @@
+ 
+ #include <map>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ GeoNode::GeoNode(const std::string& crs, const vsg::ref_ptr<WorldAnchor>& worldAnchor)
+     : _worldAnchor(worldAnchor)
+@@ -76,7 +76,7 @@
+ // descriptor sets bound via state groups. Only the view / lighting / shadow descriptor set is
+ // bound; the world and tile parameters are of course not relevant.
+ 
+-vsg::ref_ptr<vsg::StateGroup> vsgCs::createModelRoot(const vsg::ref_ptr<RuntimeEnvironment>& env)
++vsg::ref_ptr<vsg::StateGroup> geostudio::native::tiles3d::createModelRoot(const vsg::ref_ptr<RuntimeEnvironment>& env)
+ {
+     std::set<std::string> shaderDefines;
+     shaderDefines.insert("VSG_TWO_SIDED_LIGHTING");
+--- a/src/tiles3d/include/geostudio/native/tiles3d/GeoNode.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/GeoNode.h
+@@ -24,10 +24,10 @@
+ 
+ #pragma once
+ 
+-#include "CRS.h"
+-#include "vsgCs/Export.h"
+-#include "RuntimeEnvironment.h"
+-#include "WorldAnchor.h"
++#include "geostudio/native/tiles3d/CRS.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/WorldAnchor.h"
+ 
+ #include <vsg/core/observer_ptr.h>
+ #include <vsg/maths/vec3.h>
+@@ -37,7 +37,7 @@
+ #include <memory>
+ #include <string>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class VSGCS_EXPORT GeoNode : public vsg::Inherit<vsg::MatrixTransform, GeoNode>
+     {
+--- a/src/tiles3d/runtime/GeospatialServices.cpp
++++ b/src/tiles3d/runtime/GeospatialServices.cpp
+@@ -22,14 +22,14 @@
+ 
+ </editor-fold> */
+ 
+-#include "GeospatialServices.h"
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/GeospatialServices.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <CesiumGeospatial/LocalHorizontalCoordinateSystem.h>
+ 
+ #include <vsg/maths/transform.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ CsGeospatialServices::CsGeospatialServices(const vsg::ref_ptr<vsg::Node>& worldNode)
+     : _worldNode(worldNode)
+@@ -154,7 +154,7 @@
+ 
+ vsg::dvec3 CsGeospatialServices::toCartographic(const vsg::dvec3 &worldPos)
+ {
+-    auto csResult = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(vsgCs::vsg2glm(worldPos));
++    auto csResult = CesiumGeospatial::Ellipsoid::WGS84.cartesianToCartographic(geostudio::native::tiles3d::vsg2glm(worldPos));
+     if (csResult)
+     {
+         return {csResult->longitude, csResult->latitude, csResult->height};
+--- a/src/tiles3d/include/geostudio/native/tiles3d/GeospatialServices.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/GeospatialServices.h
+@@ -24,7 +24,7 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/Export.h"
+ 
+ #include <vsg/core/Inherit.h>
+ #include <vsg/maths/box.h>
+@@ -32,7 +32,7 @@
+ 
+ #include <optional>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class IGeospatialServices : public vsg::Inherit<vsg::Object, IGeospatialServices>
+     {
+--- a/src/tiles3d/runtime/GltfLoader.cpp
++++ b/src/tiles3d/runtime/GltfLoader.cpp
+@@ -22,13 +22,13 @@
+ 
+ </editor-fold> */
+ 
+-#include "GltfLoader.h"
++#include "geostudio/native/tiles3d/GltfLoader.h"
+ 
+-#include "ModelBuilder.h"
+-#include "OpThreadTaskProcessor.h"
+-#include "RuntimeEnvironment.h"
+-#include "runtimeSupport.h"
+-#include "Styling.h"
++#include "geostudio/native/tiles3d/ModelBuilder.h"
++#include "geostudio/native/tiles3d/OpThreadTaskProcessor.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/Styling.h"
+ 
+ 
+ #include <CesiumAsync/IAssetAccessor.h>
+@@ -37,7 +37,7 @@
+ 
+ #include <filesystem>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ GltfLoader::GltfLoader(const vsg::ref_ptr<RuntimeEnvironment>& in_env)
+     : env(in_env)
+--- a/src/tiles3d/include/geostudio/native/tiles3d/GltfLoader.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/GltfLoader.h
+@@ -24,15 +24,15 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
+-#include "RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
+ 
+ #include <CesiumAsync/Future.h>
+ #include <CesiumGltfReader/GltfReader.h>
+ 
+ #include <vsg/io/ReaderWriter.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+ 
+     class VSGCS_EXPORT GltfLoader : public vsg::Inherit<vsg::ReaderWriter, GltfLoader>
+--- a/src/tiles3d/runtime/GraphicsEnvironment.cpp
++++ b/src/tiles3d/runtime/GraphicsEnvironment.cpp
+@@ -22,11 +22,11 @@
+ 
+ </editor-fold> */
+ 
+-#include "GraphicsEnvironment.h"
+-#include "pbr.h"
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/GraphicsEnvironment.h"
++#include "geostudio/native/tiles3d/pbr.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ namespace
+ {
+@@ -134,7 +134,7 @@
+     return result;
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::DescriptorSet>
+     getDescriptorSet(const vsg::ref_ptr<vsg::DescriptorConfigurator>& config, unsigned set)
+--- a/src/tiles3d/include/geostudio/native/tiles3d/GraphicsEnvironment.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/GraphicsEnvironment.h
+@@ -24,8 +24,8 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
+-#include "ShaderFactory.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/ShaderFactory.h"
+ 
+ #include <CesiumGltf/Ktx2TranscodeTargets.h>
+ 
+@@ -35,7 +35,7 @@
+ #include <vsg/utils/SharedObjects.h>
+ #include <vsg/vk/Context.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     /**
+      * @brief A compact representation of supported Vulkan features that are important to vsgCs.
+--- a/src/tiles3d/include/geostudio/native/tiles3d/LoadGltfResult.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/LoadGltfResult.h
+@@ -17,7 +17,7 @@
+ // Cesium Unreal has all sorts of extra cruft in model results, primitive results, etc., but I think
+ // that's needed because of the strong load thread / game thread split in Unreal.
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     struct LoadModelResult
+     {
+--- a/src/tiles3d/runtime/ModelBuilder.cpp
++++ b/src/tiles3d/runtime/ModelBuilder.cpp
+@@ -22,14 +22,14 @@
+ 
+ </editor-fold> */
+ 
+-#include "ModelBuilder.h"
+-
+-#include "accessor_traits.h"
+-#include "accessorUtils.h"
+-#include "LoadGltfResult.h"
+-#include "pbr.h"
+-#include "Styling.h"
+-#include "TracingCommandGraph.h"
++#include "geostudio/native/tiles3d/ModelBuilder.h"
++
++#include "geostudio/native/tiles3d/accessor_traits.h"
++#include "geostudio/native/tiles3d/accessorUtils.h"
++#include "geostudio/native/tiles3d/LoadGltfResult.h"
++#include "geostudio/native/tiles3d/pbr.h"
++#include "geostudio/native/tiles3d/Styling.h"
++#include "geostudio/native/tiles3d/TracingCommandGraph.h"
+ 
+ #include <CesiumGltf/ExtensionKhrTextureBasisu.h>
+ #include <CesiumGltf/ExtensionExtMeshGpuInstancing.h>
+@@ -46,7 +46,7 @@
+ #include <vsg/state/Sampler.h>
+ #include <vulkan/vulkan_core.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ using namespace CesiumGltf;
+ 
+ std::array<vsg::ref_ptr<vsg::vec4Array>, 3> makeInstanceData(const Model& model,
+@@ -526,7 +526,7 @@
+ // is in template functions, but there is a kind of conservation of hair going
+ // on here.
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // Helper function for getting an attribute accessor by name.
+     const Accessor* getAccessor(const Model* model, const MeshPrimitive* primitive, const std::string& name)
+@@ -825,7 +825,7 @@
+     }
+ }
+ 
+-ModelStateBuilder::ModelStateBuilder(ModelBuilder *in_modelBuilder, vsg::ref_ptr<vsgCs::GraphicsEnvironment> in_genv)
++ModelStateBuilder::ModelStateBuilder(ModelBuilder *in_modelBuilder, vsg::ref_ptr<geostudio::native::tiles3d::GraphicsEnvironment> in_genv)
+     : modelBuilder(in_modelBuilder), genv(std::move(in_genv))
+ {
+     csMaterials.resize(modelBuilder->_model->materials.size());
+@@ -845,7 +845,7 @@
+ 
+ PrimitiveStateBuilder::PrimitiveStateBuilder(
+     vsg::ref_ptr<CsMaterial> in_material, VkPrimitiveTopology topology,
+-    vsg::ref_ptr<vsgCs::GraphicsEnvironment> in_genv)
++    vsg::ref_ptr<geostudio::native::tiles3d::GraphicsEnvironment> in_genv)
+     : material(std::move(in_material)), genv(std::move(in_genv)), _topology(topology)
+ {
+     const auto& descConf = material->descriptorConfig;
+@@ -1195,7 +1195,7 @@
+     {
+         return imageData.image;
+     }
+-    auto data = vsgCs::loadImage(image, useMipMaps, sRGB);
++    auto data = geostudio::native::tiles3d::loadImage(image, useMipMaps, sRGB);
+     imageData.sRGB = sRGB;
+     if (useMipMaps)
+     {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/ModelBuilder.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/ModelBuilder.h
+@@ -24,9 +24,9 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
+-#include "GraphicsEnvironment.h"
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/GraphicsEnvironment.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <CesiumGltf/TextureInfo.h>
+ #include <vsg/core/Inherit.h>
+@@ -40,7 +40,7 @@
+ #include <utility>
+ #include <string>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class Styling;
+     class Stylist;
+@@ -184,7 +184,7 @@
+     class ModelStateBuilder : public IModelStateBuilder
+     {
+     public:
+-        ModelStateBuilder(ModelBuilder* in_modelBuilder, vsg::ref_ptr<vsgCs::GraphicsEnvironment> in_genv);
++        ModelStateBuilder(ModelBuilder* in_modelBuilder, vsg::ref_ptr<geostudio::native::tiles3d::GraphicsEnvironment> in_genv);
+         std::unique_ptr<IPrimitiveStateBuilder> create(const CesiumGltf::MeshPrimitive *primitive) override;
+         vsg::ref_ptr<CsMaterial> loadMaterial(int i, VkPrimitiveTopology topology);
+ 
+@@ -192,7 +192,7 @@
+         vsg::ref_ptr<CsMaterial> baseMaterial[2];
+       protected:
+         ModelBuilder *modelBuilder;
+-        vsg::ref_ptr<vsgCs::GraphicsEnvironment> genv;
++        vsg::ref_ptr<geostudio::native::tiles3d::GraphicsEnvironment> genv;
+     };
+ 
+     class PrimitiveStateBuilder : public IPrimitiveStateBuilder
+@@ -202,7 +202,7 @@
+         PrimitiveStateBuilder(
+             vsg::ref_ptr<CsMaterial> in_material,
+             VkPrimitiveTopology topology,
+-            vsg::ref_ptr<vsgCs::GraphicsEnvironment> in_genv);
++            vsg::ref_ptr<geostudio::native::tiles3d::GraphicsEnvironment> in_genv);
+ 
+         void assignArray(const std::string& name,
+                          const vsg::ref_ptr<vsg::Data> &array,
+@@ -229,7 +229,7 @@
+         vsg::ref_ptr<CsMaterial> material;
+         vsg::DataList vertexArrays;
+         vsg::ref_ptr<vsg::GraphicsPipelineConfigurator> pipelineConf;
+-        vsg::ref_ptr<vsgCs::GraphicsEnvironment> genv;
++        vsg::ref_ptr<geostudio::native::tiles3d::GraphicsEnvironment> genv;
+     protected:
+         VkPrimitiveTopology _topology;
+     };
+--- a/src/tiles3d/runtime/OpThreadTaskProcessor.cpp
++++ b/src/tiles3d/runtime/OpThreadTaskProcessor.cpp
+@@ -22,9 +22,9 @@
+ 
+ </editor-fold> */
+ 
+-#include "OpThreadTaskProcessor.h"
++#include "geostudio/native/tiles3d/OpThreadTaskProcessor.h"
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     AsyncSystemWrapper& getAsyncSystemWrapper()
+     {
+@@ -33,7 +33,7 @@
+     }
+ }
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ AsyncSystemWrapper::AsyncSystemWrapper()
+     : taskProcessor(std::make_shared<OpThreadTaskProcessor>(4)),
+--- a/src/tiles3d/include/geostudio/native/tiles3d/OpThreadTaskProcessor.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/OpThreadTaskProcessor.h
+@@ -24,12 +24,12 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/Export.h"
+ #include <CesiumAsync/ITaskProcessor.h>
+ #include <CesiumAsync/AsyncSystem.h>
+ #include <vsg/all.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // Implement Cesium's ITaskprocessor interface, the basis for its AsyncSystem.
+     class VSGCS_EXPORT OpThreadTaskProcessor : public CesiumAsync::ITaskProcessor
+--- a/src/tiles3d/runtime/RuntimeEnvironment.cpp
++++ b/src/tiles3d/runtime/RuntimeEnvironment.cpp
+@@ -22,14 +22,14 @@
+ 
+ </editor-fold> */
+ 
+-#include "RuntimeEnvironment.h"
+-
+-#include "OpThreadTaskProcessor.h"
+-#include "Tracing.h"
+-#include "vsgResourcePreparer.h"
+-
+-#include "vsgCs/Config.h"
+-#include "vsgCs/Version.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++
++#include "geostudio/native/tiles3d/OpThreadTaskProcessor.h"
++#include "geostudio/native/tiles3d/Tracing.h"
++#include "geostudio/native/tiles3d/vsgResourcePreparer.h"
++
++#include "geostudio/native/tiles3d/Config.h"
++#include "geostudio/native/tiles3d/Version.h"
+ 
+ #include <vsg/all.h>
+ 
+@@ -43,7 +43,7 @@
+ #include <memory>
+ #include <stdlib.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ namespace
+ {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/RuntimeEnvironment.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/RuntimeEnvironment.h
+@@ -24,8 +24,8 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
+-#include "GraphicsEnvironment.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/GraphicsEnvironment.h"
+ #include <Cesium3DTilesSelection/TilesetExternals.h>
+ #include <vsg/app/WindowTraits.h>
+ #include <vsg/core/Inherit.h>
+@@ -33,7 +33,7 @@
+ 
+ #include <openssl/ssl.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+ 
+     class TracyContextValue;
+--- a/src/tiles3d/runtime/ShaderFactory.cpp
++++ b/src/tiles3d/runtime/ShaderFactory.cpp
+@@ -22,11 +22,11 @@
+ 
+ </editor-fold> */
+ 
+-#include "ShaderFactory.h"
++#include "geostudio/native/tiles3d/ShaderFactory.h"
+ 
+-#include "pbr.h"
++#include "geostudio/native/tiles3d/pbr.h"
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ ShaderFactory::ShaderFactory(const vsg::ref_ptr<vsg::Options>& vsgOptions)
+     : _vsgOptions(vsgOptions) 
+--- a/src/tiles3d/include/geostudio/native/tiles3d/ShaderFactory.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/ShaderFactory.h
+@@ -31,7 +31,7 @@
+ #include <mutex>
+ 
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     enum ShaderDomain
+     {
+--- a/src/tiles3d/runtime/Styling.cpp
++++ b/src/tiles3d/runtime/Styling.cpp
+@@ -22,11 +22,11 @@
+ 
+ </editor-fold> */
+ 
+-#include "Styling.h"
+-
+-#include "accessorUtils.h"
+-#include "jsonUtils.h"
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/Styling.h"
++
++#include "geostudio/native/tiles3d/accessorUtils.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <vsg/maths/vec4.h>
+ 
+@@ -41,12 +41,12 @@
+ #include <map>
+ #include <string>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ // XXX I really want to put this in an anonymous namespace, but then it isn't visible in the member
+-// functions! Really need to move away from "using namespace vsgCs" and put all these definitions
++// functions! Really need to move away from "using namespace geostudio::native::tiles3d" and put all these definitions
+ // explicitly in the vsgCs namespace.
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+ 
+     const CesiumGltf::Accessor* getAccessor(const CesiumGltf::Model* model,
+@@ -55,7 +55,7 @@
+     {
+         std::string featureAttributeName("_FEATURE_ID_");
+         featureAttributeName += std::to_string(featureAttribute);
+-        return vsgCs::getAccessor(model, primitive, featureAttributeName);
++        return geostudio::native::tiles3d::getAccessor(model, primitive, featureAttributeName);
+     }
+ }
+ 
+@@ -404,7 +404,7 @@
+     return Stylist::create(this, in_modelBuilder);
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::Object> buildStyling(const rapidjson::Value& json,
+                                            JSONObjectFactory*,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/Styling.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/Styling.h
+@@ -26,13 +26,13 @@
+ // A very preliminary implementation of 3D Tiles styling. No JavaScript
+ // expressions yet.
+ 
+-#include "ModelBuilder.h"
++#include "geostudio/native/tiles3d/ModelBuilder.h"
+ 
+ #include <vsg/core/Object.h>
+ #include <vsg/core/Inherit.h>
+ 
+ #include <optional>
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+ 
+     class Stylist;
+--- a/src/tiles3d/runtime/TilesetNode.cpp
++++ b/src/tiles3d/runtime/TilesetNode.cpp
+@@ -22,15 +22,15 @@
+ 
+ </editor-fold> */
+ 
+-#include "TilesetNode.h"
+-
+-#include "CsOverlay.h"
+-#include "jsonUtils.h"
+-#include "OpThreadTaskProcessor.h"
+-#include "pbr.h"
+-#include "RuntimeEnvironment.h"
+-#include "Tracing.h"
+-#include "UrlAssetAccessor.h"
++#include "geostudio/native/tiles3d/TilesetNode.h"
++
++#include "geostudio/native/tiles3d/CsOverlay.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
++#include "geostudio/native/tiles3d/OpThreadTaskProcessor.h"
++#include "geostudio/native/tiles3d/pbr.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/Tracing.h"
++#include "geostudio/native/tiles3d/UrlAssetAccessor.h"
+ 
+ #include <CesiumUtility/JsonHelpers.h>
+ #include <Cesium3DTilesSelection/TilesetMetadata.h>
+@@ -44,7 +44,7 @@
+ #include <vsg/io/Logger.h>
+ #include <vsg/io/Options.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ using namespace CesiumGltf;
+ 
+ template<typename F>
+@@ -85,7 +85,7 @@
+     options.mainThreadLoadingTimeLimit = 5.0;
+     options.tileCacheUnloadTimeLimit = 5.0;
+     options.contentOptions.enableWaterMask = false;
+-    options.loadErrorCallback =
++    if (!options.loadErrorCallback) options.loadErrorCallback =
+         [](const Cesium3DTilesSelection::TilesetLoadFailureDetails& details)
+         {
+             if (details.statusCode != 200)
+@@ -428,7 +428,7 @@
+         auto tilesetUrl = CesiumUtility::JsonHelpers::getStringOrDefault(json, "tilesetUrl", "");
+         auto ionAccessToken = CesiumUtility::JsonHelpers::getStringOrDefault(json, "ionAccessToken", "");
+         auto ionEndpointUrl = CesiumUtility::JsonHelpers::getStringOrDefault(json, "ionEndpointUrl", "");
+-        vsgCs::TilesetSource source;
++        geostudio::native::tiles3d::TilesetSource source;
+         if (!tilesetUrl.empty())
+         {
+             source.url = tilesetUrl;
+@@ -464,7 +464,7 @@
+         {
+             tileOptions.rendererOptions = Styling::create();
+         }
+-        auto tilesetNode = vsgCs::TilesetNode::create(env->features, source, tileOptions, env->options);
++        auto tilesetNode = geostudio::native::tiles3d::TilesetNode::create(env->features, source, tileOptions, env->options);
+         const auto itr = json.FindMember("overlays");
+         if (itr != json.MemberEnd() && itr->value.IsArray())
+         {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/TilesetNode.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/TilesetNode.h
+@@ -15,11 +15,11 @@
+ #include <vsg/all.h>
+ #include "Cesium3DTilesSelection/Tileset.h"
+ #include "Cesium3DTilesSelection/ViewUpdateResult.h"
+-#include "vsgCs/Export.h"
+-#include "RuntimeEnvironment.h"
+-#include "Styling.h"
+-#include "runtimeSupport.h"
+-#include "vsgResourcePreparer.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/Styling.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/vsgResourcePreparer.h"
+ 
+ #include <memory>
+ #include <optional>
+@@ -29,7 +29,7 @@
+ #include <vsg/io/Options.h>
+ #include <vsg/ui/FrameStamp.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class CsOverlay;
+ 
+--- a/src/tiles3d/include/geostudio/native/tiles3d/Tracing.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/Tracing.h
+@@ -45,7 +45,7 @@
+ 
+ #include <cstdint>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class TracyContextValue : public vsg::Inherit<vsg::Object, TracyContextValue>
+     {
+--- a/src/tiles3d/runtime/TracingCommandGraph.cpp
++++ b/src/tiles3d/runtime/TracingCommandGraph.cpp
+@@ -1,13 +1,13 @@
+-#include "TracingCommandGraph.h"
++#include "geostudio/native/tiles3d/TracingCommandGraph.h"
+ 
+-#include "RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
+ 
+ #include <vsg/app/View.h>
+ #include <vsg/io/DatabasePager.h>
+ #include <vsg/ui/FrameStamp.h>
+ #include <vsg/vk/State.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     TracingCollectCommand::TracingCollectCommand(const vsg::ref_ptr<TracyContextValue>& in_tracyCtx)
+         : tracyCtx(in_tracyCtx)
+--- a/src/tiles3d/include/geostudio/native/tiles3d/TracingCommandGraph.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/TracingCommandGraph.h
+@@ -1,7 +1,7 @@
+ #pragma once
+ 
+-#include "vsgCs/Tracing.h"
+-#include "vsgCs/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/Tracing.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
+ 
+ #include <vsg/app/CommandGraph.h>
+ #include <vsg/app/RenderGraph.h>
+@@ -9,7 +9,7 @@
+ #include <vsg/nodes/VertexDraw.h>
+ #include <vsg/nodes/VertexIndexDraw.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class TracingCollectCommand : public vsg::Inherit<vsg::Command, TracingCollectCommand>
+     {
+--- a/src/tiles3d/runtime/UrlAssetAccessor.cpp
++++ b/src/tiles3d/runtime/UrlAssetAccessor.cpp
+@@ -22,10 +22,10 @@
+ 
+ </editor-fold> */
+ 
+-#include "UrlAssetAccessor.h"
+-
+-#include "Tracing.h"
+-#include "vsgCs/Version.h"
++#include "geostudio/native/tiles3d/UrlAssetAccessor.h"
++
++#include "geostudio/native/tiles3d/Tracing.h"
++#include "geostudio/native/tiles3d/Version.h"
+ 
+ #include <CesiumAsync/IAssetResponse.h>
+ 
+@@ -34,7 +34,7 @@
+ #include <curl/curl.h>
+ 
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ class UrlAssetResponse : public CesiumAsync::IAssetResponse
+ {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/UrlAssetAccessor.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/UrlAssetAccessor.h
+@@ -24,7 +24,7 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/Export.h"
+ 
+ #include "CesiumAsync/AsyncSystem.h"
+ #include "CesiumAsync/IAssetAccessor.h"
+@@ -38,7 +38,7 @@
+ 
+ #include <cstddef>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // A cache that permits reuse of CURL handles. This is extremely important for performance
+     // because libcurl will keep existing connections open if a curl handle is not destroyed
+--- a/src/tiles3d/runtime/Version.cpp.in
++++ b/src/tiles3d/runtime/Version.cpp.in
+@@ -22,7 +22,7 @@
+ 
+ </editor-fold> */
+ 
+-#include "vsgCs/Version.h"
++#include "geostudio/native/tiles3d/Version.h"
+ 
+ #include <vsg/core/Version.h>
+ 
+@@ -64,7 +64,7 @@
+ }
+ #endif
+ 
+-namespace vsgCs::Version
++namespace geostudio::native::tiles3d::Version
+ {
+     const std::string& get()
+     {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/Version.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/Version.h
+@@ -24,12 +24,12 @@
+ 
+ #pragma once
+ 
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/Export.h"
+ 
+ #include <string>
+ 
+ 
+-namespace vsgCs::Version
++namespace geostudio::native::tiles3d::Version
+ {
+     const std::string& VSGCS_EXPORT get();
+     unsigned VSGCS_EXPORT getMajor();
+--- a/src/tiles3d/runtime/WorldAnchor.cpp
++++ b/src/tiles3d/runtime/WorldAnchor.cpp
+@@ -22,11 +22,11 @@
+ 
+ </editor-fold> */
+ 
+-#include "WorldAnchor.h"
++#include "geostudio/native/tiles3d/WorldAnchor.h"
+ 
+ #include <vsg/maths/transform.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     WorldAnchor::WorldAnchor(const std::string& in_crs,
+                              const vsg::dvec3& in_worldOrigin,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/WorldAnchor.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/WorldAnchor.h
+@@ -24,15 +24,15 @@
+ 
+ #pragma once
+ 
+-#include "CRS.h"
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/CRS.h"
++#include "geostudio/native/tiles3d/Export.h"
+ 
+ #include <vsg/maths/vec3.h>
+ #include <vsg/nodes/MatrixTransform.h>
+ 
+ #include <string>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // A node that serves as a parent to the world node, in order to bring the world into an
+     // application's coordinate system.
+--- a/src/tiles3d/runtime/WorldNode.cpp
++++ b/src/tiles3d/runtime/WorldNode.cpp
+@@ -1,11 +1,11 @@
+-#include "WorldNode.h"
++#include "geostudio/native/tiles3d/WorldNode.h"
+ 
+-#include "CsOverlay.h"
+-#include "jsonUtils.h"
+-#include "pbr.h"
+-#include "RuntimeEnvironment.h"
+-#include "Styling.h"
+-#include "TilesetNode.h"
++#include "geostudio/native/tiles3d/CsOverlay.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
++#include "geostudio/native/tiles3d/pbr.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/Styling.h"
++#include "geostudio/native/tiles3d/TilesetNode.h"
+ 
+ 
+ #include <vsg/all.h>
+@@ -15,7 +15,7 @@
+ #include <stdexcept>
+ #include <algorithm>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ WorldNode::WorldNode()
+ {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/WorldNode.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/WorldNode.h
+@@ -28,11 +28,11 @@
+ #include <Cesium3DTilesSelection/Tileset.h>
+ #include <gsl/span>
+ 
+-#include "vsgCs/Export.h"
+-#include "runtimeSupport.h"
+-#include "jsonUtils.h"
++#include "geostudio/native/tiles3d/Export.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     class VSGCS_EXPORT WorldNode : public vsg::Inherit<vsg::Group, WorldNode>
+     {
+--- a/src/tiles3d/include/geostudio/native/tiles3d/accessorUtils.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/accessorUtils.h
+@@ -24,14 +24,14 @@
+ 
+ #pragma once
+ 
+-#include "accessor_traits.h"
++#include "geostudio/native/tiles3d/accessor_traits.h"
+ 
+ #include <vsg/io/Logger.h>
+ 
+ #include <limits>
+ #include <type_traits>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // Convenience functions for accessing the elements of values in a vsg::Array, whether they are
+     // scalar or vector
+--- a/src/tiles3d/include/geostudio/native/tiles3d/accessor_traits.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/accessor_traits.h
+@@ -29,7 +29,7 @@
+ #include <vsg/maths/mat3.h>
+ #include <vsg/maths/mat4.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // Helpers for writing templates that take Cesium Accessors as arguments.
+ 
+--- a/src/tiles3d/runtime/jsonUtils.cpp
++++ b/src/tiles3d/runtime/jsonUtils.cpp
+@@ -22,14 +22,14 @@
+ 
+ </editor-fold> */
+ 
+-#include "jsonUtils.h"
++#include "geostudio/native/tiles3d/jsonUtils.h"
+ 
+-#include "runtimeSupport.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
+ 
+ #include <exception>
+ #include <CesiumUtility/JsonHelpers.h>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ 
+ vsg::ref_ptr<vsg::Object> JSONObjectFactory::build(const rapidjson::Value& value,
+                                                    const std::string& typeOverride,
+@@ -66,7 +66,7 @@
+     return factory;
+ }
+ 
+-std::string vsgCs::getStringOrError(const rapidjson::Value& json, const std::string& key,
++std::string geostudio::native::tiles3d::getStringOrError(const rapidjson::Value& json, const std::string& key,
+                                     const char* errorMsg)
+ {
+     const auto it = json.FindMember(key.c_str());
+@@ -77,7 +77,7 @@
+     throw std::runtime_error(errorMsg);
+ }
+ 
+-bool vsgCs::isTilesetJson(std::span<char> data)
++bool geostudio::native::tiles3d::isTilesetJson(std::span<char> data)
+ {
+     rapidjson::Document document;
+     document.Parse(data.data(), data.size());
+@@ -96,16 +96,16 @@
+     return !versionString.empty();
+ }
+ 
+-bool vsgCs::isTilesetJson(const vsg::Path &path,
++bool geostudio::native::tiles3d::isTilesetJson(const vsg::Path &path,
+                           const vsg::ref_ptr<const vsg::Options>& options)
+ {
+-    auto jsonSource = vsgCs::readFile(path, options);
++    auto jsonSource = geostudio::native::tiles3d::readFile(path, options);
+     return isTilesetJson(jsonSource);
+ }
+ 
+ // XXX Very gross workaround to static library problems...
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     vsg::ref_ptr<vsg::Object> buildCsDebugColorizeTilesOverlay(const rapidjson::Value&,
+                                                                JSONObjectFactory*,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/jsonUtils.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/jsonUtils.h
+@@ -33,7 +33,7 @@
+ #include <span>
+ #include <string>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // This was written with a parameter TDest so that the definition of rapidjson::Document
+     // wouldn't have to be visible, but in practice any user of this function will need to include
+--- a/src/tiles3d/runtime/pbr.cpp
++++ b/src/tiles3d/runtime/pbr.cpp
+@@ -10,9 +10,9 @@
+ 
+ </editor-fold> */
+ 
+-#include "pbr.h"
+-#include "runtimeSupport.h"
+-#include "RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/pbr.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
+ 
+ #include <vsg/core/Array.h>
+ #include <vsg/core/Array2D.h>
+@@ -30,7 +30,7 @@
+ #include <vsg/utils/ShaderSet.h>
+ #include <vulkan/vulkan_core.h>
+ 
+-namespace vsgCs::pbr
++namespace geostudio::native::tiles3d::pbr
+ {
+     vsg::ref_ptr<vsg::Data> makeTileData(float geometricError, float maxPointSize,
+                                          const std::span<OverlayParams> overlayUniformMem,
+--- a/src/tiles3d/include/geostudio/native/tiles3d/pbr.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/pbr.h
+@@ -11,7 +11,7 @@
+ 
+ #include <utility>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     namespace pbr
+     {
+--- a/src/tiles3d/runtime/runtimeSupport.cpp
++++ b/src/tiles3d/runtime/runtimeSupport.cpp
+@@ -22,12 +22,12 @@
+ 
+ </editor-fold> */
+ 
+-#include "CesiumGltfBuilder.h"
+-#include "CompilableImage.h"
+-#include "OpThreadTaskProcessor.h"
+-#include "Tracing.h"
+-#include "runtimeSupport.h"
+-#include "RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/CesiumGltfBuilder.h"
++#include "geostudio/native/tiles3d/CompilableImage.h"
++#include "geostudio/native/tiles3d/OpThreadTaskProcessor.h"
++#include "geostudio/native/tiles3d/Tracing.h"
++#include "geostudio/native/tiles3d/runtimeSupport.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
+ 
+ #include <Cesium3DTilesContent/registerAllTileContentTypes.h>
+ #include <Cesium3DTilesSelection/BoundingVolume.h>
+@@ -45,7 +45,7 @@
+ #include <vsg/maths/vec2.h>
+ #include <vsg/maths/vec4.h>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     using namespace Cesium3DTilesSelection;
+ 
+@@ -277,6 +277,7 @@
+                 });
+     }
+ 
++#ifdef VSGCS_WITH_IMGUI
+     CesiumAsync::Future<ReadImGuiTextureResult> readRemoteTexture(const std::string &url, bool compile)
+     {
+         return readRemoteImage(url, false)
+@@ -304,7 +305,8 @@
+             });
+     }
+ 
+-} // namespace vsgCs
++#endif
++} // namespace geostudio::native::tiles3d
+ 
+ namespace
+ {
+@@ -467,7 +469,7 @@
+     }
+ }
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+ 
+ vsg::ref_ptr<vsg::Data> loadImage(CesiumUtility::IntrusivePointer<CesiumGltf::ImageAsset> image, bool useMipMaps, bool sRGB)
+--- a/src/tiles3d/include/geostudio/native/tiles3d/runtimeSupport.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/runtimeSupport.h
+@@ -27,12 +27,14 @@
+ #include <glm/gtc/type_ptr.hpp>
+ 
+ #include <vsg/all.h>
++#ifdef VSGCS_WITH_IMGUI
+ #include <vsgImGui/Texture.h>
++#endif
+ 
+ #include <Cesium3DTilesSelection/Tile.h>
+ #include <CesiumUtility/IntrusivePointer.h>
+ 
+-#include "vsgCs/Export.h"
++#include "geostudio/native/tiles3d/Export.h"
+ 
+ #include <algorithm>
+ #include <iterator>
+@@ -40,7 +42,7 @@
+ 
+ // Various random helper functions
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     void VSGCS_EXPORT startup();
+     void VSGCS_EXPORT shutdown();
+@@ -221,6 +223,7 @@
+     CesiumAsync::Future<ReadRemoteImageResult> VSGCS_EXPORT
+     readRemoteImage(const std::string& url, bool compile = true);
+ 
++#ifdef VSGCS_WITH_IMGUI
+     struct ReadImGuiTextureResult
+     {
+         vsg::ref_ptr<vsgImGui::Texture> texture;
+@@ -232,6 +235,7 @@
+      */
+     CesiumAsync::Future<ReadImGuiTextureResult> VSGCS_EXPORT
+     readRemoteTexture(const std::string& url, bool compile = true);
++#endif
+ 
+     /**
+      * @brief Creates a vsg::ref_ptr to a subclass using dynamic_cast from another ref_ptr.
+--- a/src/tiles3d/runtime/vsgResourcePreparer.cpp
++++ b/src/tiles3d/runtime/vsgResourcePreparer.cpp
+@@ -22,12 +22,12 @@
+ 
+ </editor-fold> */
+ 
+-#include "vsgResourcePreparer.h"
+-
+-#include "CompilableImage.h"
+-#include "RuntimeEnvironment.h"
+-#include "Styling.h"
+-#include "Tracing.h"
++#include "geostudio/native/tiles3d/vsgResourcePreparer.h"
++
++#include "geostudio/native/tiles3d/CompilableImage.h"
++#include "geostudio/native/tiles3d/RuntimeEnvironment.h"
++#include "geostudio/native/tiles3d/Styling.h"
++#include "geostudio/native/tiles3d/Tracing.h"
+ 
+ #include <CesiumGltfContent/GltfUtilities.h>
+ #include <Cesium3DTilesSelection/Tile.h>
+@@ -37,7 +37,7 @@
+ 
+ #include <limits>
+ 
+-using namespace vsgCs;
++using namespace geostudio::native::tiles3d;
+ using namespace CesiumGltf;
+ 
+ // This deletion queue is a hack to not delete VSG objects (like buffers) while
+--- a/src/tiles3d/include/geostudio/native/tiles3d/vsgResourcePreparer.h
++++ b/src/tiles3d/include/geostudio/native/tiles3d/vsgResourcePreparer.h
+@@ -29,13 +29,13 @@
+ #include <vsg/core/ref_ptr.h>
+ #include <vsg/io/Options.h>
+ 
+-#include "GraphicsEnvironment.h"
+-#include "LoadGltfResult.h"
+-#include "CesiumGltfBuilder.h"
++#include "geostudio/native/tiles3d/GraphicsEnvironment.h"
++#include "geostudio/native/tiles3d/LoadGltfResult.h"
++#include "geostudio/native/tiles3d/CesiumGltfBuilder.h"
+ 
+ #include <deque>
+ 
+-namespace vsgCs
++namespace geostudio::native::tiles3d
+ {
+     // Sort of a hack to delay deletion of vsg::Objects for 2 frames, in order to not delete Vulkan
+     // objects that are still referenced by active command buffers.
+--- a/vendor/vsgCs/src/vsgCsConfig.cmake
++++ /dev/null
+@@ -1,6 +0,0 @@
+-include(CMakeFindDependencyMacro)
+-
+-find_dependency(CURL)
+-
+-include("${CMAKE_CURRENT_LIST_DIR}/vsgCsTargets.cmake")
+-include("${CMAKE_CURRENT_LIST_DIR}/vsgMacros.cmake")
+--- a/vendor/vsgCs/vcpkg-configuration.json
++++ /dev/null
+@@ -1,19 +0,0 @@
+-{
+-  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg-configuration.schema.json",
+-  "default-registry": {
+-    "kind": "git",
+-    "baseline": "62159a45e18f3a9ac0548628dcaf74fcb60c6ff9",
+-    "repository": "https://github.com/microsoft/vcpkg"
+-  },
+-  "registries": [
+-    {
+-      "kind": "artifact",
+-      "location": "https://github.com/microsoft/vcpkg-ce-catalog/archive/refs/heads/main.zip",
+-      "name": "microsoft"
+-    }
+-  ],
+-  "overlay-ports": [
+-    "extern/vcpkg-overlays"
+-  ],
+-  "overlay-triplets": [ "extern/vcpkg-triplets" ]
+-}
+--- a/vendor/vsgCs/vcpkg.json
++++ /dev/null
+@@ -1,67 +0,0 @@
+-{
+-  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+-  "name": "vsgcs",
+-  "version": "0.9.0",
+-  "$comment": "proj is added by CMakeLists.txt if VSGCS_USE_PROJ is true",
+-  "default-features": [
+-    "cesium-native-port"
+-  ],
+-  "features": {
+-    "cesium-native-port": {
+-      "description": "Use vckpg overlay for Cesium Native",
+-      "dependencies": [
+-        {
+-          "name": "cesium-native"
+-        }
+-      ]
+-    },
+-    "cesium-native-local": {
+-      "description": "Use local source for Cesium Native",
+-      "dependencies": [
+-        {
+-          "name": "cesium-native",
+-          "features": ["dependencies-only"]
+-        }
+-      ]
+-    },
+-    "proj": {
+-      "description": ["Include Proj library for geodetic conversions",
+-                      "selected from CMake by VSGCS_USE_PROJ"],
+-
+-      "dependencies": [
+-        "proj"
+-      ]
+-    }
+-  },
+-  "dependencies": [
+-    "vcpkg-cmake",
+-    "vcpkg-cmake-config",
+-    "cesium-native",
+-    "curl",
+-    {
+-      "name": "imgui",
+-      "features": [
+-        "vulkan-binding"
+-      ]
+-    },
+-    "ms-gsl",
+-    "openssl",
+-    "spdlog",
+-    "tinyxml2",
+-    {
+-      "name": "vsg",
+-      "features": [
+-        "shader-optimizer",
+-        "windowing"
+-      ]
+-    },
+-    {
+-      "name": "vsgxchange",
+-      "features": [
+-        "assimp"
+-      ]
+-    },
+-    "vsgimgui"
+-  ]
+-}
+-

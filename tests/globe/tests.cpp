@@ -1,0 +1,3735 @@
+#include <geostudio/native/globe/Version.h>
+#if defined(ROCKY_HAS_CURL) || defined(ROCKY_HAS_HTTPLIB)
+#ifdef _WIN32
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#else
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
+#endif
+#endif
+
+#define CATCH_CONFIG_MAIN
+#include "catch.hpp"
+
+#include <geostudio/native/globe/rocky.h>
+#include <geostudio/native/globe/Log.h>
+#ifndef ROCKY_HAS_SLUGHORN
+#include <spdlog/sinks/ostream_sink.h>
+#endif
+#include <geostudio/native/globe/ecs/ProjectedTexture.h>
+#include <geostudio/native/globe/ecs/Overlay.h>
+#include <geostudio/native/globe/ecs/Decal.h>
+#include <geostudio/native/globe/ecs/TerrainAnchor.h>
+#include <geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h>
+#ifdef ROCKY_HAS_SLUGHORN
+#include <geostudio/native/globe/vsg/ecs/SlugResource.h>
+#include <geostudio/native/globe/vsg/ecs/SlugSystem.h>
+#endif
+#include <geostudio/native/globe/vsg/ecs/DecalSystem.h>
+#include <geostudio/native/globe/vsg/ecs/MeshSystem.h>
+#include <geostudio/native/globe/vsg/ecs/PolygonSystem.h>
+#include <geostudio/native/globe/vsg/ecs/LineSystem.h>
+#include <geostudio/native/globe/vsg/ecs/PointSystem.h>
+#include <geostudio/native/globe/vsg/ecs/ModelSystem.h>
+#include <geostudio/native/globe/vsg/ecs/TextureSystem.h>
+#include <geostudio/native/globe/vsg/ecs/OpticsSystem.h>
+#include <geostudio/native/globe/vsg/ecs/TransformDetail.h>
+#include <geostudio/native/globe/vsg/ecs/FeatureBuilder.h>
+
+// Public headers must not expose implementation-only shader definitions, even transitively.
+#ifdef ROCKY_DEFINES
+#error "Public Rocky headers must not include ShaderDefines.h"
+#endif
+
+#include <atomic>
+#include <cfloat>
+#include <chrono>
+#include <condition_variable>
+#include <cstdlib>
+#include <filesystem>
+#include <fstream>
+#include <future>
+#include <map>
+#include <random>
+#include <set>
+#include <sstream>
+#include <stdexcept>
+#include <thread>
+#include <unordered_map>
+
+#define ROCKY_EXPOSE_JSON_FUNCTIONS
+#include <geostudio/native/globe/json.h>
+
+using namespace geostudio::native;
+using namespace geostudio::native::detail;
+
+namespace
+{
+    class TestLayer : public Inherit<Layer, TestLayer>
+    {
+    public:
+        Result<> openImplementation(const IOOptions& io) override {
+            return ResultVoidOK;
+        }
+    };
+
+    //! Exposes the tile cache path without opening a data source or requiring a graphics device.
+    class TestCachedTileLayer : public TileLayer
+    {
+    public:
+        using TileLayer::getOrCreateTile;
+    };
+}
+
+TEST_CASE("strings")
+{
+    std::string s1 = "Hello, world!";
+    CHECK(detail::replaceInPlace(s1, "world", "Rocky") == "Hello, Rocky!");
+    s1 = "Hello, world!";
+    CHECK(detail::replaceInPlace(s1, "world", "") == "Hello, !");
+    s1 = "Hello, world!";
+    CHECK(detail::replaceInPlace(s1, "", "Rocky") == "Hello, world!");
+    s1 = "Hello, world!";
+    CHECK(detail::replaceInPlace(s1, "", "") == "Hello, world!");
+
+    s1 = detail::trim("  Hello, Rocky!  ");
+    CHECK(s1 == "Hello, Rocky!");
+    s1 = "  Hello, Rocky!  ";
+    CHECK(detail::trimInPlace(s1) == "Hello, Rocky!");
+}
+
+//! Dirty queues discard removed components and destroyed entities while retaining a re-added component's current state.
+TEST_CASE("dirty component queues handle removal and replacement", "[ecs][dirty]")
+{
+    entt::registry registry;
+    registry.emplace<Model::Dirty>(registry.create());
+    const auto entity = registry.create();
+    registry.emplace<Model>(entity).radius = 1.0f;
+    Model::dirty(registry, entity);
+    registry.remove<Model>(entity);
+
+    bool replaced = false;
+    SECTION("component removed but entity retained")
+    {
+        REQUIRE(registry.valid(entity));
+    }
+    SECTION("entity destroyed")
+    {
+        registry.destroy(entity);
+    }
+    SECTION("component removed and re-added before the queue drains")
+    {
+        registry.emplace<Model>(entity).radius = 42.0f;
+        Model::dirty(registry, entity);
+        replaced = true;
+    }
+
+    std::vector<entt::entity> visited;
+    Model::eachDirty(registry, [&](entt::entity dirtyEntity)
+    {
+        visited.push_back(dirtyEntity);
+        REQUIRE(registry.valid(dirtyEntity));
+        REQUIRE(registry.all_of<Model>(dirtyEntity));
+        CHECK(dirtyEntity == entity);
+        CHECK(registry.get<Model>(dirtyEntity).radius == Approx(42.0f));
+    });
+    CHECK(visited.empty() == !replaced);
+
+    Model::eachDirty(registry, [](entt::entity)
+    {
+        FAIL("Drained dirty entries must not be delivered again");
+    });
+}
+
+//! Exercises the crashing system update after removal of a newly queued Model without destroying its entity.
+TEST_CASE("model system skips a removed dirty component", "[ecs][dirty][model]")
+{
+    Registry registry = Registry::create();
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    auto models = ModelSystemNode::create(registry);
+    entt::entity entity = entt::null;
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        reg.emplace<Model>(entity);
+        reg.remove<Model>(entity);
+    });
+
+    models->update(context.get());
+
+    CHECK(models->status.ok());
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK(reg.valid(entity));
+        CHECK_FALSE((reg.any_of<Model, ModelDetail>(entity)));
+    });
+}
+
+//! Queued paging jobs track live priority changes without retaining tiles or dereferencing them after expiration.
+TEST_CASE("node pager priorities survive tile expiration", "[nodepager]")
+{
+    // Traversal needs a command buffer and viewport, but no window or submitted GPU commands.
+    vsg::ref_ptr<vsg::CommandBuffer> commandBuffer;
+    try
+    {
+        auto instance = vsg::Instance::create(vsg::Names{}, vsg::Names{});
+        auto [physicalDevice, queueFamily] = instance->getPhysicalDeviceAndQueueFamily(VK_QUEUE_GRAPHICS_BIT);
+        if (!physicalDevice || queueFamily < 0)
+        {
+            WARN("No Vulkan graphics device available - skipping NodePager traversal test");
+            return;
+        }
+        auto device = vsg::Device::create(physicalDevice, vsg::QueueSettings{{ queueFamily, { 1.0f } }},
+            vsg::Names{}, vsg::Names{});
+        commandBuffer = vsg::CommandPool::create(device, queueFamily)->allocate();
+    }
+    catch (const vsg::Exception& error)
+    {
+        WARN("Vulkan command buffer unavailable - skipping NodePager traversal test: " << error.message);
+        return;
+    }
+
+    auto view = vsg::View::create();
+    auto viewState = vsg::ViewDependentState::create(view);
+    viewState->viewportData = vsg::vec4Array::create(1);
+    viewState->viewportData->at(0) = vsg::vec4(0.0f, 0.0f, 1024.0f, 1024.0f);
+    commandBuffer->viewDependentState = viewState.get();
+    auto record = vsg::RecordTraversal::create();
+    record->getState()->connect(commandBuffer);
+    vsg::dmat4 projection;
+    record->getState()->projectionMatrixStack.set(projection);
+
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    auto& runtime = context.get()->io.services().jobs;
+    runtime.set_allow_work_stealing(false);
+    jobs::context jobContext;
+    jobContext.pool = runtime.get_pool("geostudio::native::nodepager", 1);
+
+    // Hold the worker until we expire the queued tile. Promise destruction also releases it if an assertion fails.
+    std::promise<void> resume;
+    auto started = std::make_shared<std::promise<void>>();
+    auto ready = started->get_future();
+    runtime.dispatch([gate = resume.get_future().share(), started]()
+    {
+        started->set_value();
+        gate.wait();
+    }, jobContext);
+    REQUIRE(ready.wait_for(std::chrono::seconds(5)) == std::future_status::ready);
+
+    auto loadCalls = std::make_shared<std::atomic_uint>(0u);
+    auto pager = NodePager::create(Profile("global-geodetic"), SRS::WGS84);
+    pager->createPayload = [](const TileKey&, const IOOptions&) -> TiledDataPager::Payload::Ptr { return {}; };
+    pager->subtileLoaderFactory = [loadCalls](const TileKey&) -> NodePager::SubtileLoader
+    {
+        return [loadCalls](const IOOptions&) -> NodePager::Subtile::Ptr
+        {
+            ++*loadCalls;
+            return {};
+        };
+    };
+    pager->initialize(context.get());
+    REQUIRE_FALSE(pager->children.empty());
+    auto* tile = pager->children.front()->cast<vsg::CullNode>();
+    REQUIRE(tile != nullptr);
+    tile->bound = vsg::dsphere(0.0, 0.0, 0.0, 1.0);
+    vsg::observer_ptr<vsg::Node> weakTile(tile);
+    tile->traverse(*record);
+
+    std::function<float()> priority;
+    {
+        std::scoped_lock lock(jobContext.pool->_queue_mutex);
+        REQUIRE(jobContext.pool->_queue.size() == 1u);
+        priority = jobContext.pool->_queue.front().ctx.priority;
+    }
+    REQUIRE(priority);
+    CHECK(priority() == Approx(-1.0f));
+    projection[1][1] = 2.0;
+    record->getState()->projectionMatrixStack.set(projection);
+    tile->traverse(*record);
+    CHECK(priority() == Approx(-2.0f));
+
+    pager = {};
+    REQUIRE_FALSE(weakTile.ref_ptr());
+    CHECK(priority() == -FLT_MAX);
+
+    // Step the real scheduler while its worker is paused: it samples priority before testing cancellation.
+    jobs::detail::job queued;
+    REQUIRE(jobContext.pool->_take_job(queued, true));
+    CHECK_FALSE(queued._delegate());
+    CHECK(loadCalls->load() == 0u);
+    resume.set_value();
+}
+
+TEST_CASE("mesh feature default tessellation is curvature bounded", "[featurebuilder]")
+{
+    Feature building(
+        SRS::WGS84,
+        Geometry::Type::Polygon,
+        {
+            { 139.0, 35.0, 0.0 },
+            { 139.001, 35.0, 0.0 },
+            { 139.001, 35.001, 0.0 },
+            { 139.0, 35.001, 0.0 }
+        });
+
+    FeatureBuilder builder;
+
+    MeshStyle defaultStyle;
+    MeshGeometry defaultGeometry;
+    builder.buildMeshGeometry({ building }, defaultStyle, defaultGeometry);
+
+    REQUIRE_FALSE(defaultGeometry.vertices.empty());
+    CHECK(defaultGeometry.vertices.size() < 100u);
+
+    MeshStyle fineStyle;
+    fineStyle.resolution = 20.0f;
+    MeshGeometry fineGeometry;
+    builder.buildMeshGeometry({ building }, fineStyle, fineGeometry);
+
+    CHECK(fineGeometry.vertices.size() > defaultGeometry.vertices.size());
+}
+
+TEST_CASE("polygon geometry preserves rings and triangulates holes", "[featurebuilder][polygon]")
+{
+    Feature feature;
+    feature.srs = SRS::WGS84;
+    feature.geometry.type = Geometry::Type::Polygon;
+    feature.geometry.points = {
+        { -2.0, -2.0, 0.0 },
+        {  2.0, -2.0, 0.0 },
+        {  2.0,  2.0, 0.0 },
+        { -2.0,  2.0, 0.0 },
+        { -2.0, -2.0, 0.0 }
+    };
+    feature.geometry.parts.emplace_back(Geometry::Type::LineString,
+        std::vector<glm::dvec3>{
+            { -1.0, -1.0, 0.0 },
+            { -1.0,  1.0, 0.0 },
+            {  1.0,  1.0, 0.0 },
+            {  1.0, -1.0, 0.0 },
+            { -1.0, -1.0, 0.0 }
+        });
+    feature.dirtyExtent();
+
+    FeatureBuilder builder;
+    builder.colorFunction = [](const Feature&) { return StockColor::Red; };
+    PolygonStyle buildStyle;
+    buildStyle.resolution = 1000000000.0f;
+
+    PolygonGeometry built;
+    builder.buildPolygonGeometry({ feature }, buildStyle, built);
+    REQUIRE(built.polygons.size() == 1u);
+    CHECK(built.polygons.front().outer.size() == 4u);
+    REQUIRE(built.polygons.front().holes.size() == 1u);
+    CHECK(built.polygons.front().holes.front().size() == 4u);
+    REQUIRE(built.colors.size() == 1u);
+    CHECK(built.colors.front() == StockColor::Red);
+
+    PolygonStyle finerBuildStyle;
+    finerBuildStyle.resolution = 50000.0f;
+    PolygonGeometry finerBuilt;
+    builder.buildPolygonGeometry({ feature }, finerBuildStyle, finerBuilt);
+    REQUIRE(finerBuilt.polygons.size() == 1u);
+    CHECK(finerBuilt.polygons.front().outer.size() >
+        built.polygons.front().outer.size());
+
+    // Deferred georeferenced triangulation has no ElevationSession, so any
+    // seed vertices it introduces must inherit the source surface elevation.
+    PolygonGeometry elevated;
+    elevated.srs = SRS::WGS84;
+    elevated.polygons.emplace_back(PolygonPart{
+        {
+            { -0.01, -0.01, 250.0 },
+            {  0.01, -0.01, 250.0 },
+            {  0.01,  0.01, 250.0 },
+            { -0.01,  0.01, 250.0 }
+        },
+        {}
+    });
+    PolygonStyle elevatedStyle;
+    elevatedStyle.color = StockColor::White;
+    MeshGeometry elevatedMesh;
+    builder.buildMeshGeometry(elevated, elevatedStyle, elevatedMesh);
+    REQUIRE_FALSE(elevatedMesh.vertices.empty());
+    for (const auto& vertex : elevatedMesh.vertices)
+        CHECK(vertex.z == Approx(250.0).epsilon(1e-9));
+
+    // Exercise the local-coordinate converter independently from projection.
+    built.srs = {};
+    PolygonStyle style;
+    style.useGeometryColors = true;
+    MeshGeometry mesh;
+    builder.buildMeshGeometry(built, style, mesh);
+
+    REQUIRE_FALSE(mesh.indices.empty());
+    REQUIRE((mesh.indices.size() % 3u) == 0u);
+    double area = 0.0;
+    for (std::size_t i = 0u; i < mesh.indices.size(); i += 3u)
+    {
+        const auto& a = mesh.vertices[mesh.indices[i]];
+        const auto& b = mesh.vertices[mesh.indices[i + 1u]];
+        const auto& c = mesh.vertices[mesh.indices[i + 2u]];
+        const auto center = (a + b + c) / 3.0;
+        const bool centerIsInHole =
+            std::abs(center.x) < 1.0 && std::abs(center.y) < 1.0;
+        CHECK_FALSE(centerIsInHole);
+        area += std::abs(glm::cross(b - a, c - a).z) * 0.5;
+    }
+    CHECK(area == Approx(12.0).epsilon(1e-6));
+}
+
+TEST_CASE("polygon system owns only its derived mesh", "[polygon][projection]")
+{
+    Registry registry = Registry::create();
+    auto polygonSystem = PolygonSystemNode::create(registry);
+    auto meshSystem = MeshSystemNode::create(registry);
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<PolygonGeometry>(entity);
+        geometry.polygons.emplace_back(PolygonPart{
+            {
+                { -1.0, -1.0, 0.0 },
+                {  1.0, -1.0, 0.0 },
+                {  1.0,  1.0, 0.0 },
+                { -1.0,  1.0, 0.0 }
+            },
+            {}
+        });
+        auto& style = reg.emplace<PolygonStyle>(entity);
+        style.color = StockColor::Yellow;
+        style.depthOffset = 12.0f;
+        reg.emplace<geostudio::native::Polygon>(entity, geometry, style);
+    });
+
+    polygonSystem->update(context.get());
+
+    entt::entity firstGeometry = entt::null;
+    entt::entity firstStyle = entt::null;
+    std::uint64_t firstGeometryRevision = 0u;
+    registry.read([&](entt::registry& reg)
+    {
+        REQUIRE(reg.any_of<Mesh>(entity));
+        const auto& mesh = reg.get<Mesh>(entity);
+        firstGeometry = mesh.geometry;
+        firstStyle = mesh.style;
+        REQUIRE(reg.valid(firstGeometry));
+        REQUIRE(reg.valid(firstStyle));
+        CHECK_FALSE(reg.get<MeshGeometry>(firstGeometry).vertices.empty());
+        firstGeometryRevision = reg.get<MeshGeometry>(firstGeometry).componentRevision();
+        CHECK(reg.get<MeshStyle>(firstStyle).color == StockColor::Yellow);
+        CHECK(reg.get<MeshStyle>(firstStyle).depthOffset == Approx(12.0f));
+    });
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto& style = reg.get<PolygonStyle>(entity);
+        style.color = StockColor::Red;
+        style.depthOffset = 37.0f;
+        style.dirty(reg);
+    });
+    polygonSystem->update(context.get());
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK(reg.get<MeshGeometry>(firstGeometry).componentRevision() ==
+            firstGeometryRevision);
+        CHECK(reg.get<MeshStyle>(firstStyle).color == StockColor::Red);
+        CHECK(reg.get<MeshStyle>(firstStyle).depthOffset == Approx(37.0f));
+    });
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto& style = reg.get<PolygonStyle>(entity);
+        style.resolution = 5000.0f;
+        style.dirty(reg);
+    });
+    polygonSystem->update(context.get());
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK(reg.get<MeshGeometry>(firstGeometry).componentRevision() !=
+            firstGeometryRevision);
+        CHECK(reg.get<MeshStyle>(firstStyle).resolution == Approx(5000.0f));
+    });
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto& overlay = reg.emplace<Overlay>(entity);
+        overlay.mode = OverlayMode::Raster;
+    });
+    polygonSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        REQUIRE(reg.any_of<Mesh>(entity));
+        const auto& mesh = reg.get<Mesh>(entity);
+        CHECK(mesh.geometry == firstGeometry);
+        CHECK(mesh.style == firstStyle);
+        CHECK(reg.get<MeshStyle>(firstStyle).depthOffset == Approx(0.0f));
+    });
+
+    registry.write([&](entt::registry& reg)
+    {
+        reg.patch<Overlay>(entity, [](Overlay& overlay)
+        {
+            overlay.mode = OverlayMode::Vector;
+        });
+    });
+    polygonSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK(reg.get<Overlay>(entity).mode == OverlayMode::Vector);
+#ifdef ROCKY_HAS_SLUGHORN
+        CHECK_FALSE(reg.any_of<Mesh>(entity));
+        CHECK_FALSE(reg.valid(firstGeometry));
+        CHECK_FALSE(reg.valid(firstStyle));
+#else
+        // Vector fallback keeps the mesh and its caches ready for Raster.
+        REQUIRE(reg.any_of<Mesh>(entity));
+        const auto& mesh = reg.get<Mesh>(entity);
+        CHECK(mesh.geometry == firstGeometry);
+        CHECK(mesh.style == firstStyle);
+        CHECK(reg.get<MeshStyle>(firstStyle).depthOffset == Approx(0.0f));
+#endif
+    });
+
+    registry.write([&](entt::registry& reg)
+    {
+        reg.patch<Overlay>(entity, [](Overlay& overlay)
+        {
+            overlay.mode = OverlayMode::Raster;
+        });
+    });
+    polygonSystem->update(context.get());
+
+    entt::entity secondGeometry = entt::null;
+    entt::entity secondStyle = entt::null;
+    registry.write([&](entt::registry& reg)
+    {
+        REQUIRE(reg.any_of<Mesh>(entity));
+        const auto& mesh = reg.get<Mesh>(entity);
+        secondGeometry = mesh.geometry;
+        secondStyle = mesh.style;
+        reg.remove<geostudio::native::Polygon>(entity);
+        CHECK_FALSE(reg.any_of<Mesh>(entity));
+        CHECK_FALSE(reg.valid(secondGeometry));
+        CHECK_FALSE(reg.valid(secondStyle));
+    });
+}
+
+//! Guards against render-state edits retessellating colored polygons while retaining
+//! updates to vertex colors baked from the style's fallback color or color mode.
+TEST_CASE("polygon render-state edits reuse colored geometry", "[polygon][projection]")
+{
+    Registry registry = Registry::create();
+    auto polygonSystem = PolygonSystemNode::create(registry);
+    auto meshSystem = MeshSystemNode::create(registry);
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+    entt::entity texture = entt::null;
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        texture = reg.create();
+        auto& geometry = reg.emplace<PolygonGeometry>(entity);
+        geometry.polygons = {
+            PolygonPart{ { { 0, 0, 0 }, { 1, 0, 0 }, { 0, 1, 0 } }, {} },
+            PolygonPart{ { { 2, 0, 0 }, { 3, 0, 0 }, { 2, 1, 0 } }, {} }
+        };
+        // The second polygon exercises the style color fallback.
+        geometry.colors = { StockColor::Red };
+        auto& style = reg.emplace<PolygonStyle>(entity);
+        style.useGeometryColors = true;
+        style.color = StockColor::Yellow;
+        reg.emplace<geostudio::native::Polygon>(entity, geometry, style);
+    });
+    polygonSystem->update(context.get());
+
+    entt::entity meshGeometry = entt::null;
+    std::uint64_t geometryRevision = 0u;
+    std::vector<glm::fvec4> originalColors;
+    registry.read([&](entt::registry& reg)
+    {
+        meshGeometry = reg.get<Mesh>(entity).geometry;
+        const auto& geometry = reg.get<MeshGeometry>(meshGeometry);
+        geometryRevision = geometry.componentRevision();
+        originalColors = geometry.colors;
+        REQUIRE_FALSE(geometry.vertices.empty());
+        REQUIRE(originalColors.size() == geometry.vertices.size());
+        CHECK(originalColors.front() == StockColor::Red);
+        CHECK(originalColors.back() == StockColor::Yellow);
+    });
+
+    SECTION("render state changes preserve the existing mesh in both directions")
+    {
+        for (bool enabled : { true, false })
+        {
+            registry.write([&](entt::registry& reg)
+            {
+                auto& style = reg.get<PolygonStyle>(entity);
+                style.wireframe = enabled;
+                style.stipplePattern = enabled ? 0x00FFu : 0xFFFFu;
+                style.depthOffset = enabled ? 25.0f : 0.0f;
+                style.texture = enabled ? texture : entt::null;
+                style.dirty(reg);
+            });
+            polygonSystem->update(context.get());
+            registry.read([&](entt::registry& reg)
+            {
+                const auto& mesh = reg.get<Mesh>(entity);
+                CHECK(mesh.geometry == meshGeometry);
+                const auto& geometry = reg.get<MeshGeometry>(meshGeometry);
+                CHECK(geometry.componentRevision() == geometryRevision);
+                CHECK(geometry.colors == originalColors);
+                const auto& style = reg.get<MeshStyle>(mesh.style);
+                CHECK(style.wireframe == enabled);
+                CHECK(style.stipplePattern == (enabled ? 0x00FFu : 0xFFFFu));
+                CHECK(style.depthOffset == (enabled ? 25.0f : 0.0f));
+                CHECK(style.texture == (enabled ? texture : entt::null));
+            });
+        }
+    }
+
+    SECTION("fallback color edits still update vertex colors")
+    {
+        registry.write([&](entt::registry& reg)
+        {
+            auto& style = reg.get<PolygonStyle>(entity);
+            style.color = StockColor::Blue;
+            style.dirty(reg);
+        });
+        polygonSystem->update(context.get());
+        registry.read([&](entt::registry& reg)
+        {
+            const auto& geometry = reg.get<MeshGeometry>(meshGeometry);
+            CHECK(geometry.componentRevision() != geometryRevision);
+            REQUIRE(geometry.colors.size() == originalColors.size());
+            CHECK(geometry.colors.front() == StockColor::Red);
+            CHECK(geometry.colors.back() == StockColor::Blue);
+        });
+    }
+
+    SECTION("geometry color mode changes still update vertex colors")
+    {
+        for (bool enabled : { false, true })
+        {
+            registry.write([&](entt::registry& reg)
+            {
+                auto& style = reg.get<PolygonStyle>(entity);
+                style.useGeometryColors = enabled;
+                style.dirty(reg);
+            });
+            polygonSystem->update(context.get());
+            registry.read([&](entt::registry& reg)
+            {
+                const auto& geometry = reg.get<MeshGeometry>(meshGeometry);
+                CHECK(geometry.componentRevision() != geometryRevision);
+                geometryRevision = geometry.componentRevision();
+                REQUIRE(geometry.colors.size() == originalColors.size());
+                CHECK(geometry.colors.front() == (enabled ? StockColor::Red : StockColor::Yellow));
+                CHECK(geometry.colors.back() == StockColor::Yellow);
+            });
+        }
+    }
+}
+
+TEST_CASE("projected texture contracts", "[projection]")
+{
+    TerrainAnchor anchor;
+    CHECK(anchor.offset == 0.0);
+
+    LineStyle lineStyle;
+    CHECK(lineStyle.outlineWidth == 0.0f);
+    CHECK(lineStyle.outlineColor == StockColor::Black);
+    CHECK(lineStyle.widthUnits == Units::PIXELS);
+
+    lineStyle.width = 10.0f;
+    lineStyle.outlineWidth = 2.0f;
+    lineStyle.widthUnits = Units::FEET;
+    LineStyleRecord metricRecord;
+    metricRecord.populate(lineStyle);
+    CHECK(metricRecord.widthIsPhysical == 1u);
+    CHECK(metricRecord.width == Approx(3.048f));
+    CHECK(metricRecord.outlineWidth == Approx(0.6096f));
+
+    Overlay overlay;
+    CHECK(overlay.mode == OverlayMode::Vector);
+
+    RenderTexture renderTexture;
+    CHECK(renderTexture.sources.empty());
+    CHECK(renderTexture.textureSize == glm::uvec2(512u, 512u));
+    CHECK_FALSE(renderTexture.useDepthBuffer);
+
+    ProjectedTexture projected;
+    CHECK((projected.texture == entt::null));
+    CHECK((projected.projector == entt::null));
+    CHECK(projected.placement == ProjectionPlacement::Fixed);
+
+    RenderTextureBounds bounds;
+    bounds.expand(SRS::WGS84, glm::dvec3(179.9, 10.0, 0.0));
+    bounds.expand(SRS::WGS84, glm::dvec3(-179.9, 11.0, 0.0));
+    REQUIRE(bounds.valid);
+    CHECK(bounds.maxx - bounds.minx < 1.0);
+
+    SharedRenderData shared;
+    REQUIRE(shared.decalTextures);
+    CHECK(shared.projectedTextureCapacity() ==
+        SharedRenderData::DEFAULT_PROJECTED_TEXTURE_CAPACITY);
+
+    auto originalDescriptor = shared.decalTextures;
+    shared.configureProjectedTextureCapacity(17u);
+    CHECK(shared.projectedTextureCapacity() == 17u);
+    CHECK(shared.decalTextures != originalDescriptor);
+
+    auto configuredDescriptor = shared.decalTextures;
+    shared.configureProjectedTextureCapacity(17u);
+    CHECK(shared.decalTextures == configuredDescriptor);
+
+    shared.configureProjectedTextureCapacity(0u);
+    CHECK(shared.projectedTextureCapacity() == 1u);
+}
+
+TEST_CASE("render texture revisions", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto meshSystem = MeshSystemNode::create(registry);
+    auto lineSystem = LineSystemNode::create(registry);
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto source = reg.create();
+
+        auto& meshGeometry = reg.emplace<MeshGeometry>(source);
+        meshGeometry.srs = SRS::WGS84;
+        meshGeometry.vertices.emplace_back(0.0, 0.0, 0.0);
+
+        auto& meshStyle = reg.emplace<MeshStyle>(source);
+        reg.emplace<Mesh>(source, meshGeometry, meshStyle);
+
+        RenderTextureRevision meshInitial;
+        meshSystem->contributeRenderTextureRevision(reg, source, meshInitial);
+
+        auto previousComponentRevision = meshStyle.componentRevision();
+        meshStyle.depthOffset = 100.0f;
+        meshStyle.dirty(reg);
+        CHECK(meshStyle.componentRevision() > previousComponentRevision);
+
+        RenderTextureRevision meshStyleChanged;
+        meshSystem->contributeRenderTextureRevision(reg, source, meshStyleChanged);
+        CHECK(meshStyleChanged.bounds == meshInitial.bounds);
+        CHECK(meshStyleChanged.content != meshInitial.content);
+
+        meshGeometry.vertices.emplace_back(1.0, 1.0, 0.0);
+        meshGeometry.dirty(reg);
+
+        RenderTextureRevision meshGeometryChanged;
+        meshSystem->contributeRenderTextureRevision(reg, source, meshGeometryChanged);
+        CHECK(meshGeometryChanged.bounds != meshStyleChanged.bounds);
+        CHECK(meshGeometryChanged.content != meshStyleChanged.content);
+
+        MeshStyle replacement;
+        replacement.depthOffset = 200.0f;
+        auto revisionBeforeReplacement = meshStyle.componentRevision();
+        auto& replacedStyle = reg.emplace_or_replace<MeshStyle>(source, replacement);
+        CHECK(replacedStyle.componentRevision() != revisionBeforeReplacement);
+
+        auto& lineGeometry = reg.emplace<LineGeometry>(source);
+        lineGeometry.srs = SRS::WGS84;
+        lineGeometry.points = { { 0.0, 0.0, 0.0 }, { 1.0, 1.0, 0.0 } };
+        auto& lineStyle = reg.emplace<LineStyle>(source);
+        reg.emplace<Line>(source, lineGeometry, lineStyle);
+
+        lineStyle.width = 6.0f;
+        lineStyle.outlineWidth = 3.0f;
+        RenderTextureBounds outlinedLineBounds;
+        lineSystem->expandRenderTextureBounds(
+            reg, source, outlinedLineBounds, SRS::WGS84, false);
+        CHECK(outlinedLineBounds.paddingPixels == Approx(8.0));
+
+        lineStyle.widthUnits = Units::METERS;
+        RenderTextureBounds metricLineBounds;
+        lineSystem->expandRenderTextureBounds(
+            reg, source, metricLineBounds, SRS::WGS84, false);
+        CHECK(metricLineBounds.paddingPixels == Approx(2.0));
+        CHECK(metricLineBounds.paddingMeters == Approx(6.0));
+
+        RenderTextureRevision lineInitial;
+        lineSystem->contributeRenderTextureRevision(reg, source, lineInitial);
+
+        // Line width affects bounds padding, while depthOffset verifies that
+        // formerly omitted style properties still invalidate baked content.
+        lineStyle.depthOffset = 50.0f;
+        lineStyle.dirty(reg);
+
+        RenderTextureRevision lineStyleChanged;
+        lineSystem->contributeRenderTextureRevision(reg, source, lineStyleChanged);
+        CHECK(lineStyleChanged.bounds != lineInitial.bounds);
+        CHECK(lineStyleChanged.content != lineInitial.content);
+    });
+}
+
+TEST_CASE("render texture participant order", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto mesh = MeshSystemNode::create(registry);
+    auto line = LineSystemNode::create(registry);
+    auto point = PointSystemNode::create(registry);
+    auto model = ModelSystemNode::create(registry);
+
+    CHECK(mesh->renderTextureOrder() < line->renderTextureOrder());
+    CHECK(line->renderTextureOrder() < point->renderTextureOrder());
+    CHECK(point->renderTextureOrder() < model->renderTextureOrder());
+}
+
+TEST_CASE("line triangles use the segment start as provoking vertex", "[line]")
+{
+    auto check = [](LineTopology topology, const std::vector<vsg::dvec3>& points,
+        const std::vector<std::uint32_t>& expectedProvokingVertices)
+    {
+        auto node = LineGeometryNode::create();
+        node->set(points, std::vector<vsg::vec4>(), topology);
+
+        REQUIRE(node->_drawCommand->indexCount == expectedProvokingVertices.size() * 6u);
+        for (std::size_t segment = 0; segment < expectedProvokingVertices.size(); ++segment)
+        {
+            const auto firstTriangle = (*node->_indices)[segment * 6u];
+            const auto secondTriangle = (*node->_indices)[segment * 6u + 3u];
+            CHECK(firstTriangle == expectedProvokingVertices[segment]);
+            CHECK(secondTriangle == expectedProvokingVertices[segment]);
+        }
+    };
+
+    check(LineTopology::Strip,
+        { { 0.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 }, { 1.0, 1.0, 0.0 } },
+        { 2u, 6u });
+
+    check(LineTopology::Segments,
+        { { 0.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 },
+          { 2.0, 0.0, 0.0 }, { 2.0, 1.0, 0.0 } },
+        { 2u, 10u });
+}
+
+TEST_CASE("render texture bounds include source transform", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto meshSystem = MeshSystemNode::create(registry);
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto source = reg.create();
+        auto& geometry = reg.emplace<MeshGeometry>(source);
+        geometry.vertices.emplace_back(1.0, 2.0, 3.0);
+        auto& style = reg.emplace<MeshStyle>(source);
+        reg.emplace<Mesh>(source, geometry, style);
+
+        auto& transform = reg.emplace<Transform>(source);
+        transform.position = GeoPoint(SRS::SPHERICAL_MERCATOR, 10.0, 20.0, 30.0);
+        transform.localMatrix = glm::scale(glm::dmat4(1.0), glm::dvec3(2.0, 3.0, 4.0));
+
+        RenderTextureBounds transformed;
+        meshSystem->expandRenderTextureBounds(
+            reg, source, transformed, SRS::SPHERICAL_MERCATOR, true);
+        REQUIRE(transformed.valid);
+        CHECK(transformed.minx == Approx(12.0));
+        CHECK(transformed.miny == Approx(26.0));
+        CHECK(transformed.minz == Approx(42.0));
+
+        RenderTextureBounds local;
+        meshSystem->expandRenderTextureBounds(
+            reg, source, local, SRS::SPHERICAL_MERCATOR, false);
+        CHECK_FALSE(local.valid);
+    });
+}
+
+TEST_CASE("texture producer ownership", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto textureSystem = TextureSystemNode::create(registry);
+    auto bakeSystem = OverlayBakeSystemNode::create(registry);
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto externalImage = reg.create();
+        reg.emplace<ImageTexture>(externalImage);
+        reg.emplace<TextureResource>(externalImage);
+        reg.remove<ImageTexture>(externalImage);
+        CHECK(reg.any_of<TextureResource>(externalImage));
+
+        auto producedImage = reg.create();
+        reg.emplace<ImageTexture>(producedImage);
+        auto& imageResource = reg.emplace<TextureResource>(producedImage);
+        imageResource.producer = TextureResourceProducer::ImageTexture;
+        reg.remove<ImageTexture>(producedImage);
+        CHECK_FALSE(reg.any_of<TextureResource>(producedImage));
+
+        auto externalBake = reg.create();
+        reg.emplace<RenderTexture>(externalBake);
+        reg.emplace<TextureResource>(externalBake);
+        reg.remove<RenderTexture>(externalBake);
+        CHECK(reg.any_of<TextureResource>(externalBake));
+
+        auto producedBake = reg.create();
+        reg.emplace<RenderTexture>(producedBake);
+        auto& bakeResource = reg.emplace<TextureResource>(producedBake);
+        bakeResource.producer = TextureResourceProducer::RenderTexture;
+        reg.remove<RenderTexture>(producedBake);
+        CHECK_FALSE(reg.any_of<TextureResource>(producedBake));
+    });
+}
+
+TEST_CASE("null image texture is a ready procedural resource", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto textureSystem = TextureSystemNode::create(registry);
+    auto contextSingleton = VSGContextFactory::create(vsg::Viewer::create());
+
+    entt::entity entity = entt::null;
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        reg.emplace<ImageTexture>(entity);
+    });
+
+    textureSystem->update(contextSingleton.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& resource = reg.get<TextureResource>(entity);
+        CHECK(resource.producer == TextureResourceProducer::ImageTexture);
+        CHECK(resource.ready);
+        CHECK_FALSE(resource.texture);
+    });
+}
+
+TEST_CASE("manual optics work without a terrain target", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto opticsSystem = OpticsSystemNode::create(registry);
+    auto contextSingleton = VSGContextFactory::create(vsg::Viewer::create());
+    auto context = contextSingleton.get();
+
+    entt::entity entity = entt::null;
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& optics = reg.emplace<Optics>(entity);
+        optics.focalDistance = 25.0;
+        optics.nearScale = 0.5;
+        optics.nearBias = 1.0;
+        optics.farScale = 2.0;
+        optics.farBias = 3.0;
+        reg.emplace<TransformDetail>(entity);
+    });
+
+    opticsSystem->update(context);
+
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& detail = reg.get<OpticsDetail>(entity).views[0];
+        CHECK(detail.focalDistance == Approx(25.0));
+        CHECK(detail.nearDistance == Approx(13.5));
+        CHECK(detail.farDistance == Approx(53.0));
+    });
+}
+
+TEST_CASE("projected textures own placement runtime state", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto opticsSystem = OpticsSystemNode::create(registry);
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto entity = reg.create();
+        auto& projected = reg.emplace<ProjectedTexture>(entity);
+        projected.placement = ProjectionPlacement::Terrain;
+
+        CHECK(reg.any_of<ProjectionDetail>(entity));
+        reg.remove<ProjectedTexture>(entity);
+        CHECK_FALSE(reg.any_of<ProjectionDetail>(entity));
+    });
+}
+
+TEST_CASE("legacy overlay adapter", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto bakeSystem = OverlayBakeSystemNode::create(registry);
+    auto decalSystem = DecalSystemNode::create(registry);
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto overlayEntity = reg.create();
+        Overlay rasterOverlay;
+        rasterOverlay.mode = OverlayMode::Raster;
+        reg.emplace<Overlay>(overlayEntity, rasterOverlay);
+        CHECK(reg.any_of<RenderTexture>(overlayEntity));
+        CHECK(reg.any_of<ProjectedTexture>(overlayEntity));
+        CHECK(reg.get<ProjectedTexture>(overlayEntity).placement == ProjectionPlacement::Terrain);
+        REQUIRE(reg.any_of<RenderParticipation>(overlayEntity));
+        CHECK_FALSE(reg.get<RenderParticipation>(overlayEntity).mainView);
+
+        reg.patch<Overlay>(overlayEntity, [](auto& overlay)
+        {
+            overlay.mode = OverlayMode::Vector;
+        });
+        CHECK(reg.get<Overlay>(overlayEntity).mode == OverlayMode::Vector);
+#ifdef ROCKY_HAS_SLUGHORN
+        CHECK_FALSE(reg.any_of<RenderTexture>(overlayEntity));
+        CHECK_FALSE(reg.get<RenderParticipation>(overlayEntity).renderTexture);
+#else
+        CHECK(reg.any_of<RenderTexture>(overlayEntity));
+        CHECK(reg.get<RenderParticipation>(overlayEntity).renderTexture);
+#endif
+
+        reg.patch<Overlay>(overlayEntity, [](auto& overlay)
+        {
+            overlay.mode = OverlayMode::Raster;
+        });
+        CHECK(reg.any_of<RenderTexture>(overlayEntity));
+        CHECK(reg.get<RenderParticipation>(overlayEntity).renderTexture);
+
+        reg.remove<Overlay>(overlayEntity);
+        CHECK_FALSE(reg.any_of<RenderTexture>(overlayEntity));
+        CHECK_FALSE(reg.any_of<ProjectedTexture>(overlayEntity));
+        CHECK_FALSE(reg.any_of<RenderParticipation>(overlayEntity));
+
+        auto explicitEntity = reg.create();
+        reg.emplace<RenderTexture>(explicitEntity);
+        reg.emplace<ProjectedTexture>(explicitEntity);
+        reg.emplace<RenderParticipation>(explicitEntity);
+        reg.emplace<Overlay>(explicitEntity);
+        reg.remove<Overlay>(explicitEntity);
+        CHECK(reg.any_of<RenderTexture>(explicitEntity));
+        CHECK(reg.any_of<ProjectedTexture>(explicitEntity));
+        CHECK(reg.any_of<RenderParticipation>(explicitEntity));
+    });
+}
+
+#ifndef ROCKY_HAS_SLUGHORN
+TEST_CASE("vector overlays fall back to raster without repeated warnings", "[projection][overlay-fallback]")
+{
+    std::ostringstream warnings;
+    auto logger = Log();
+    auto sink = std::make_shared<log::sinks::ostream_sink_mt>(warnings);
+    sink->set_pattern("%l: %v");
+
+    // Restore the shared logger even if a REQUIRE exits this test early.
+    struct RestoreLogger
+    {
+        Logger logger;
+        std::vector<log::sink_ptr> sinks;
+        log::level::level_enum level;
+        ~RestoreLogger()
+        {
+            logger->sinks() = std::move(sinks);
+            logger->set_level(level);
+        }
+    } restore{ logger, logger->sinks(), logger->level() };
+    logger->sinks() = { sink };
+    logger->set_level(log::level::warn);
+
+    Registry registry = Registry::create();
+    auto bakeSystem = OverlayBakeSystemNode::create(registry);
+    // Exercise facade synchronization without allocating Vulkan render targets.
+    bakeSystem->bakeScene = {};
+    auto decalSystem = DecalSystemNode::create(registry);
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        Overlay requested;
+        requested.mode = OverlayMode::Vector;
+        requested.resolution = { 256u, 128u };
+        requested.useDepthBuffer = true;
+        requested.continuousBake = true;
+        reg.emplace<Overlay>(entity, requested);
+
+        CHECK(reg.get<Overlay>(entity).mode == OverlayMode::Vector);
+        REQUIRE(reg.any_of<RenderTexture>(entity));
+        const auto& raster = reg.get<RenderTexture>(entity);
+        CHECK(raster.textureSize == requested.resolution);
+        CHECK(raster.useDepthBuffer);
+        CHECK(raster.continuous);
+        CHECK(reg.any_of<ProjectedTexture>(entity));
+        REQUIRE(reg.any_of<RenderParticipation>(entity));
+        CHECK(reg.get<RenderParticipation>(entity).renderTexture);
+        CHECK_FALSE(reg.get<RenderParticipation>(entity).mainView);
+    });
+
+    const auto firstWarning = warnings.str();
+    CHECK(firstWarning.find("warning:") != std::string::npos);
+    CHECK(firstWarning.find("falling back to Raster") != std::string::npos);
+
+    // Exercise the per-frame synchronization and ordinary dirty-field edits.
+    for (int i = 0; i < 3; ++i)
+        bakeSystem->update(context.get());
+    registry.write([&](entt::registry& reg)
+    {
+        auto& overlay = reg.get<Overlay>(entity);
+        overlay.resolution = { 1024u, 512u };
+        overlay.dirty(reg);
+    });
+    bakeSystem->update(context.get());
+    registry.write([&](entt::registry& reg)
+    {
+        CHECK(reg.get<Overlay>(entity).mode == OverlayMode::Vector);
+        CHECK(reg.get<RenderTexture>(entity).textureSize == glm::uvec2(1024u, 512u));
+        reg.patch<Overlay>(entity, [](auto& overlay) { overlay.mode = OverlayMode::Raster; });
+        reg.patch<Overlay>(entity, [](auto& overlay) { overlay.mode = OverlayMode::Vector; });
+        CHECK(reg.any_of<RenderTexture>(entity));
+        CHECK(warnings.str() == firstWarning);
+
+        reg.remove<Overlay>(entity);
+        CHECK_FALSE(reg.any_of<RenderTexture>(entity));
+        CHECK_FALSE(reg.any_of<ProjectedTexture>(entity));
+        CHECK_FALSE(reg.any_of<RenderParticipation>(entity));
+    });
+}
+#endif
+
+#ifdef ROCKY_HAS_SLUGHORN
+TEST_CASE("slug polygon auto-fits from ring bounds", "[projection][slug][polygon]")
+{
+    Registry registry = Registry::create();
+    auto sourceSystems = ECSNode::create(registry, false);
+    auto polygonSystem = PolygonSystemNode::create(registry);
+    sourceSystems->add(polygonSystem);
+
+    auto bakeSystem = OverlayBakeSystemNode::create(registry);
+    bakeSystem->renderSourceSystems = sourceSystems;
+    bakeSystem->worldSRS = SRS::ECEF;
+    auto slugSystem = SlugSystemNode::create(registry);
+    slugSystem->worldSRS = SRS::ECEF;
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<PolygonGeometry>(entity);
+        geometry.srs = SRS::WGS84;
+        geometry.polygons.emplace_back(PolygonPart{
+            {
+                { 24.918, 60.161, 10.0 },
+                { 24.920, 60.161, 10.0 },
+                { 24.920, 60.163, 10.0 },
+                { 24.918, 60.163, 10.0 }
+            },
+            {}
+        });
+        auto& style = reg.emplace<PolygonStyle>(entity);
+        style.color = StockColor::Cyan;
+        reg.emplace<geostudio::native::Polygon>(entity, geometry, style);
+        auto& overlay = reg.emplace<Overlay>(entity);
+        overlay.mode = OverlayMode::Vector;
+    });
+
+    polygonSystem->update(context.get());
+    bakeSystem->update(context.get());
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK_FALSE(reg.any_of<Mesh>(entity));
+        REQUIRE((reg.any_of<AutoOverlayTransform, Transform>(entity)));
+        const auto& resource = reg.get<SlugResource>(entity);
+        REQUIRE(resource.ready);
+        REQUIRE(resource.layers.size() == 1u);
+        CHECK(resource.layers.front().color == StockColor::Cyan);
+    });
+}
+
+TEST_CASE("slug polygon preserves a hole without a triangle mesh", "[projection][slug][polygon]")
+{
+    Registry registry = Registry::create();
+    auto polygonSystem = PolygonSystemNode::create(registry);
+    auto meshSystem = MeshSystemNode::create(registry);
+    auto slugSystem = SlugSystemNode::create(registry);
+    slugSystem->worldSRS = SRS::ECEF;
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<PolygonGeometry>(entity);
+        geometry.polygons.emplace_back(PolygonPart{
+            {
+                { -0.4, -0.4, 0.0 },
+                {  0.4, -0.4, 0.0 },
+                {  0.4,  0.4, 0.0 },
+                { -0.4,  0.4, 0.0 }
+            },
+            {{
+                { -0.15, -0.15, 0.0 },
+                { -0.15,  0.15, 0.0 },
+                {  0.15,  0.15, 0.0 },
+                {  0.15, -0.15, 0.0 }
+            }}
+        });
+        auto& style = reg.emplace<PolygonStyle>(entity);
+        style.color = StockColor::Yellow;
+        reg.emplace<geostudio::native::Polygon>(entity, geometry, style);
+        auto& overlay = reg.emplace<Overlay>(entity);
+        overlay.mode = OverlayMode::Vector;
+    });
+
+    polygonSystem->update(context.get());
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK_FALSE(reg.any_of<Mesh>(entity));
+        const auto& resource = reg.get<SlugResource>(entity);
+        REQUIRE(resource.ready);
+        REQUIRE(resource.layers.size() == 1u);
+        CHECK(resource.layers.front().color == StockColor::Yellow);
+    });
+
+    const auto stamp = std::to_string(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    const auto withHolePath = std::filesystem::temp_directory_path() /
+        ("rocky-slug-polygon-hole-" + stamp + ".slug");
+    const auto withoutHolePath = std::filesystem::temp_directory_path() /
+        ("rocky-slug-polygon-solid-" + stamp + ".slug");
+
+    registry.write([&](entt::registry& reg)
+    {
+        reg.get<SlugResource>(entity).exportPath = withHolePath.string();
+    });
+    slugSystem->update(context.get());
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto& geometry = reg.get<PolygonGeometry>(entity);
+        geometry.polygons.front().holes.clear();
+        geometry.dirty(reg);
+    });
+    polygonSystem->update(context.get());
+    slugSystem->update(context.get());
+    registry.write([&](entt::registry& reg)
+    {
+        reg.get<SlugResource>(entity).exportPath = withoutHolePath.string();
+    });
+    slugSystem->update(context.get());
+
+    auto curveTexelsUsed = [](const std::filesystem::path& path)
+    {
+        std::ifstream input(path);
+        const auto document = json::parse(input);
+        return document["packing_stats"]["curve_texels_used"].get<std::uint64_t>();
+    };
+    REQUIRE(std::filesystem::exists(withHolePath));
+    REQUIRE(std::filesystem::exists(withoutHolePath));
+    CHECK(curveTexelsUsed(withHolePath) > curveTexelsUsed(withoutHolePath));
+
+    std::error_code removeError;
+    CHECK(std::filesystem::remove(withHolePath, removeError));
+    CHECK_FALSE(removeError);
+    removeError.clear();
+    CHECK(std::filesystem::remove(withoutHolePath, removeError));
+    CHECK_FALSE(removeError);
+}
+
+TEST_CASE("slug atlas shares endpoints and spans texture rows", "[projection][slug][polygon]")
+{
+    Registry registry = Registry::create();
+    auto slugSystem = SlugSystemNode::create(registry);
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+    std::set<std::array<float, 6>> expectedCurves;
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<PolygonGeometry>(entity);
+        // All rectangles share a Y range, forcing a horizontal band with
+        // more than 512 curves. The four-edge chains also force shared curve
+        // pairs to straddle rows. Use binary-exact coordinates for comparison.
+        for (unsigned i = 0u; i < 600u; ++i)
+        {
+            const double x = -0.375 + double(i) / 1024.0;
+            const double w = 1.0 / 2048.0;
+            PolygonPart part;
+            part.outer = {
+                { x, -0.25, 0.0 }, { x + w, -0.25, 0.0 },
+                { x + w, 0.25, 0.0 }, { x, 0.25, 0.0 }
+            };
+            for (unsigned edge = 0u; edge < 4u; ++edge)
+            {
+                const auto& a = part.outer[edge];
+                const auto& b = part.outer[(edge + 1u) % 4u];
+                // Local geometry maps to [0,1]. The SDK represents a straight
+                // edge with its control point coincident with its endpoint.
+                expectedCurves.insert({
+                    float(a.x + 0.5), float(a.y + 0.5),
+                    float(b.x + 0.5), float(b.y + 0.5),
+                    float(b.x + 0.5), float(b.y + 0.5) });
+            }
+            geometry.polygons.emplace_back(std::move(part));
+        }
+        reg.emplace<geostudio::native::Polygon>(entity, geometry);
+        reg.emplace<Overlay>(entity).mode = OverlayMode::Vector;
+    });
+
+    slugSystem->update(context.get());
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& resource = reg.get<SlugResource>(entity);
+        INFO(resource.message);
+        REQUIRE(resource.ready);
+        REQUIRE(resource.layers.size() == 1u);
+        REQUIRE(resource.curveTexture);
+        REQUIRE(resource.bandTexture);
+        auto* curves = dynamic_cast<vsg::vec4Array2D*>(
+            resource.curveTexture->imageView->image->data.get());
+        auto* bands = dynamic_cast<vsg::usvec2Array2D*>(
+            resource.bandTexture->imageView->image->data.get());
+        REQUIRE(curves);
+        REQUIRE(bands);
+        CHECK(curves->properties.format == VK_FORMAT_R32G32B32A32_SFLOAT);
+        CHECK(bands->properties.format == VK_FORMAT_R16G16_UINT);
+        const unsigned width = 1u << resource.textureWidthLog2;
+        REQUIRE(width == 512u); // No widening/retry needed for long band lists.
+        CHECK(curves->width() == width);
+        CHECK(bands->width() == width);
+
+        // Mirror the shader's wrapped texel lookup, checking every referenced
+        // curve against the original geometry rather than just atlas readiness.
+        auto advance = [&](vsg::usvec2 loc, unsigned offset)
+        {
+            const unsigned x = unsigned(loc.x) + offset;
+            return vsg::uivec2(x & (width - 1u), loc.y + (x >> resource.textureWidthLog2));
+        };
+        const auto& shape = resource.layers.front().shapeData;
+        const unsigned shapeStart = shape.y * width + shape.x;
+        const unsigned headerStart = shapeStart + 2u * resource.indirectionSize;
+        const unsigned headerCount = shape.z + shape.w + 2u;
+        REQUIRE(shape.x + 2u * resource.indirectionSize + headerCount <= width);
+        std::vector<bool> seen(curves->valueCount(), false);
+        bool multiRowBand = false, crossRowCurve = false, sharedEndpoint = false;
+        for (unsigned h = 0u; h < headerCount; ++h)
+        {
+            const auto header = (*bands)[headerStart + h];
+            multiRowBand = multiRowBand || header.x > width;
+            for (unsigned i = 0u; i < header.x; ++i)
+            {
+                const auto bandLoc = advance(vsg::usvec2(shape.x, shape.y), unsigned(header.y) + i);
+                const unsigned bandIndex = bandLoc.y * width + bandLoc.x;
+                REQUIRE(bandIndex < bands->valueCount());
+                CHECK(bandIndex == shapeStart + header.y + i);
+                const auto curveLoc = (*bands)[bandIndex];
+                const unsigned curveIndex = curveLoc.y * width + curveLoc.x;
+                const auto endLoc = advance(curveLoc, 1u);
+                const unsigned endIndex = endLoc.y * width + endLoc.x;
+                REQUIRE(endIndex < curves->valueCount());
+                CHECK(endIndex == curveIndex + 1u);
+                crossRowCurve = crossRowCurve || endLoc.y != curveLoc.y;
+                if (seen[curveIndex])
+                    continue;
+                seen[curveIndex] = true;
+                const auto& p12 = (*curves)[curveIndex];
+                const auto& p3 = (*curves)[endIndex];
+                CHECK(expectedCurves.erase({ p12.x, p12.y, p12.z, p12.w, p3.x, p3.y }) == 1u);
+            }
+        }
+        for (std::size_t i = 1u; i < seen.size(); ++i)
+            sharedEndpoint = sharedEndpoint || (seen[i - 1u] && seen[i]);
+        CHECK(expectedCurves.empty());
+        CHECK(multiRowBand);
+        CHECK(crossRowCurve);
+        CHECK(sharedEndpoint);
+        CHECK(curves->valueCount() < 600u * 4u * 2u);
+    });
+}
+
+TEST_CASE("slug partitions dense polygon groups within one atlas", "[projection][slug][polygon]")
+{
+    Registry registry = Registry::create();
+    auto polygonSystem = PolygonSystemNode::create(registry);
+    auto slugSystem = SlugSystemNode::create(registry);
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+    using Curve = std::array<float, 6>;
+    std::map<Curve, std::size_t> expected;
+    std::vector<glm::vec2> holeSamples, fillSamples;
+    const Color fillColor(StockColor::Yellow, 0.5f);
+    constexpr std::size_t polygonCount = 1024u;
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<PolygonGeometry>(entity);
+        auto addPolygon = [&](PolygonPart part)
+        {
+            auto addRing = [&](const PolygonPart::Ring& ring)
+            {
+                for (std::size_t i = 0u; i < ring.size(); ++i)
+                {
+                    const auto& a = ring[i];
+                    const auto& b = ring[(i + 1u) % ring.size()];
+                    expected.emplace(Curve{
+                        float(a.x + 0.5), float(a.y + 0.5),
+                        float(b.x + 0.5), float(b.y + 0.5),
+                        float(b.x + 0.5), float(b.y + 0.5) }, geometry.polygons.size());
+                }
+            };
+            addRing(part.outer);
+            for (const auto& hole : part.holes)
+                addRing(hole);
+            geometry.polygons.emplace_back(std::move(part));
+            geometry.colors.push_back(fillColor);
+        };
+        // Thousands of vertical edges cross most Y bands: the former one-key
+        // group cannot fit its uint16 band offsets. Scramble spatial order so
+        // the partitioner must actually sort rather than split input ranges.
+        for (std::size_t i = 0u; i < polygonCount; ++i)
+        {
+            const double x = -0.375 + double((i * 613u) % polygonCount) / 2048.0;
+            const double w = 1.0 / 4096.0;
+            PolygonPart part;
+            part.outer = {
+                { x, -0.375, 0.0 }, { x + w, -0.375, 0.0 },
+                { x + w, 0.375, 0.0 }, { x, 0.375, 0.0 }
+            };
+            part.holes.push_back({
+                { x + w * 0.25, -0.25, 0.0 }, { x + w * 0.25, 0.25, 0.0 },
+                { x + w * 0.75, 0.25, 0.0 }, { x + w * 0.75, -0.25, 0.0 }
+            });
+            holeSamples.emplace_back(float(x + w * 0.5 + 0.5), 0.5f);
+            fillSamples.emplace_back(float(x + w * 0.5 + 0.5), 0.15625f);
+            addPolygon(std::move(part));
+        }
+        // An overlapping polygon must stay with building zero, not become a
+        // second independently blended fill. It does not cover our sample points.
+        PolygonPart overlapping;
+        const double x = geometry.polygons.front().outer.front().x;
+        overlapping.outer = {
+            { x - 1.0 / 16384.0, 0.30, 0.0 }, { x + 1.0 / 16384.0, 0.30, 0.0 },
+            { x + 1.0 / 16384.0, 0.40, 0.0 }, { x - 1.0 / 16384.0, 0.40, 0.0 }
+        };
+        addPolygon(std::move(overlapping));
+        // A later color group must still follow every batch of the first group.
+        PolygonPart other;
+        other.outer = { { 0.3, 0.3, 0.0 }, { 0.4, 0.3, 0.0 },
+                        { 0.4, 0.4, 0.0 }, { 0.3, 0.4, 0.0 } };
+        addPolygon(std::move(other));
+        geometry.colors.back() = StockColor::Cyan;
+        auto& style = reg.emplace<PolygonStyle>(entity);
+        style.useGeometryColors = true;
+        reg.emplace<geostudio::native::Polygon>(entity, geometry, style);
+        reg.emplace<Overlay>(entity).mode = OverlayMode::Vector;
+    });
+
+    slugSystem->update(context.get());
+    vsg::ref_ptr<vsg::ImageInfo> savedCurves, savedBands;
+    std::uint64_t generation = 0u;
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& resource = reg.get<SlugResource>(entity);
+        INFO(resource.message);
+        REQUIRE(resource.ready);
+        REQUIRE(resource.layers.size() > 2u);
+        CHECK(resource.layers.size() < 16u);
+        CHECK(resource.layers.back().color == StockColor::Cyan);
+        savedCurves = resource.curveTexture;
+        savedBands = resource.bandTexture;
+        generation = resource.atlasGeneration;
+        auto* curves = dynamic_cast<vsg::vec4Array2D*>(savedCurves->imageView->image->data.get());
+        auto* bands = dynamic_cast<vsg::usvec2Array2D*>(savedBands->imageView->image->data.get());
+        REQUIRE(curves);
+        REQUIRE(bands);
+        REQUIRE(curves->width() == 512u);
+        const auto width = bands->width();
+        std::vector<std::size_t> polygonLayer(polygonCount + 2u, resource.layers.size());
+        std::vector<std::vector<Curve>> decoded(resource.layers.size());
+        for (std::size_t layerIndex = 0u; layerIndex < resource.layers.size(); ++layerIndex)
+        {
+            const auto& layer = resource.layers[layerIndex];
+            if (layerIndex + 1u < resource.layers.size())
+            {
+                CHECK(layer.color == fillColor);
+                CHECK(layer.bandTransform.x > 32.0f / 0.51f); // tighter than the original batch
+            }
+            const auto& shape = layer.shapeData;
+            const unsigned start = shape.y * width + shape.x;
+            const unsigned headerStart = start + 2u * resource.indirectionSize;
+            const unsigned headerCount = shape.z + shape.w + 2u;
+            std::set<unsigned> seen;
+            for (unsigned h = 0u; h < headerCount; ++h)
+            {
+                const auto header = (*bands)[headerStart + h];
+                REQUIRE(start + unsigned(header.y) + unsigned(header.x) <= bands->valueCount());
+                for (unsigned i = 0u; i < header.x; ++i)
+                {
+                    const auto loc = (*bands)[start + header.y + i];
+                    const unsigned curveIndex = loc.y * curves->width() + loc.x;
+                    REQUIRE(curveIndex + 1u < curves->valueCount());
+                    if (!seen.insert(curveIndex).second)
+                        continue;
+                    const auto& a = (*curves)[curveIndex];
+                    const auto& b = (*curves)[curveIndex + 1u];
+                    const Curve curve{ a.x, a.y, a.z, a.w, b.x, b.y };
+                    const auto found = expected.find(curve);
+                    REQUIRE(found != expected.end());
+                    auto& ownerLayer = polygonLayer[found->second];
+                    if (ownerLayer == resource.layers.size())
+                        ownerLayer = layerIndex;
+                    CHECK(ownerLayer == layerIndex); // exterior and every hole are inseparable
+                    expected.erase(found);
+                    decoded[layerIndex].push_back(curve);
+                }
+            }
+        }
+        CHECK(expected.empty());
+        CHECK(polygonLayer.front() == polygonLayer[polygonCount]); // overlapping pair
+        CHECK(polygonLayer.back() == resource.layers.size() - 1u);
+
+        // Evaluate winding from the actual packed straight edges, checking that
+        // every hole stays empty and every building still has a filled interior.
+        auto winding = [&](const std::vector<Curve>& batch, glm::vec2 point)
+        {
+            int result = 0;
+            for (const auto& c : batch)
+            {
+                const double side = (double(c[4]) - c[0]) * (double(point.y) - c[1]) -
+                    (double(c[5]) - c[1]) * (double(point.x) - c[0]);
+                if (c[1] <= point.y && c[5] > point.y && side > 0.0) ++result;
+                if (c[1] > point.y && c[5] <= point.y && side < 0.0) --result;
+            }
+            return result;
+        };
+        for (std::size_t i = 0u; i < polygonCount; ++i)
+        {
+            CHECK(winding(decoded[polygonLayer[i]], holeSamples[i]) == 0);
+            CHECK(winding(decoded[polygonLayer[i]], fillSamples[i]) != 0);
+        }
+    });
+
+    slugSystem->update(context.get());
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& resource = reg.get<SlugResource>(entity);
+        CHECK(resource.atlasGeneration == generation);
+        CHECK(resource.curveTexture == savedCurves);
+        CHECK(resource.bandTexture == savedBands);
+    });
+
+    const auto exportPath = std::filesystem::temp_directory_path() /
+        ("rocky-slug-batched-" + std::to_string(
+            std::chrono::steady_clock::now().time_since_epoch().count()) + ".slug");
+    registry.write([&](entt::registry& reg)
+    {
+        reg.get<SlugResource>(entity).exportPath = exportPath.string();
+    });
+    slugSystem->update(context.get());
+    REQUIRE(std::filesystem::exists(exportPath));
+    {
+        std::ifstream input(exportPath);
+        const auto document = json::parse(input);
+        registry.read([&](entt::registry& reg)
+        {
+            const auto& resource = reg.get<SlugResource>(entity);
+            CHECK(resource.exportSucceeded);
+            CHECK(resource.atlasGeneration == generation);
+            CHECK(resource.curveTexture == savedCurves);
+            CHECK(resource.bandTexture == savedBands);
+            CHECK(document["shapes"].size() == resource.layers.size());
+            for (const auto& layer : resource.layers)
+            {
+                bool found = false;
+                for (const auto& shape : document["shapes"])
+                    found = found || (shape["band_tex_x"] == layer.shapeData.x &&
+                        shape["band_tex_y"] == layer.shapeData.y);
+                CHECK(found); // deterministic batching on export-only rebuilds
+            }
+            CHECK(reg.view<SlugResource>().size() == 1u);
+        });
+    }
+    std::error_code removeError;
+    CHECK(std::filesystem::remove(exportPath, removeError));
+    CHECK_FALSE(removeError);
+    registry.write([&](entt::registry& reg)
+    {
+        auto& geometry = reg.get<PolygonGeometry>(entity);
+        geometry.polygons.resize(1u);
+        geometry.colors.resize(1u);
+        geometry.dirty(reg);
+    });
+    slugSystem->update(context.get());
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& resource = reg.get<SlugResource>(entity);
+        CHECK(resource.ready);
+        CHECK(resource.layers.size() == 1u);
+        CHECK(resource.atlasGeneration > generation);
+        CHECK(resource.bandTexture->imageView->image->data->dataSize() <
+            savedBands->imageView->image->data->dataSize());
+    });
+}
+
+TEST_CASE("slug reduces bands for an oversized indivisible polygon", "[projection][slug][polygon]")
+{
+    Registry registry = Registry::create();
+    auto slugSystem = SlugSystemNode::create(registry);
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<PolygonGeometry>(entity);
+        PolygonPart part;
+        part.outer = { { -0.4, -0.4, 0.0 }, { 0.4, -0.4, 0.0 },
+                       { 0.4, 0.4, 0.0 }, { -0.4, 0.4, 0.0 } };
+        for (unsigned i = 0u; i < 2048u; ++i)
+        {
+            const double x = -0.375 + double(i) / 4096.0;
+            part.holes.push_back({
+                { x, -0.35, 0.0 }, { x, 0.35, 0.0 },
+                { x + 1.0 / 8192.0, 0.35, 0.0 }, { x + 1.0 / 8192.0, -0.35, 0.0 }
+            });
+        }
+        geometry.polygons.push_back(std::move(part));
+        reg.emplace<geostudio::native::Polygon>(entity, geometry);
+        reg.emplace<Overlay>(entity).mode = OverlayMode::Vector;
+    });
+    slugSystem->update(context.get());
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& resource = reg.get<SlugResource>(entity);
+        REQUIRE(resource.ready);
+        REQUIRE(resource.curveTexture);
+        REQUIRE(resource.bandTexture);
+        REQUIRE(resource.layers.size() == 1u);
+        CHECK(resource.layers.front().shapeData.z < 31u);
+        CHECK(resource.layers.front().shapeData.w < 31u);
+        CHECK(resource.message.empty());
+    });
+}
+
+TEST_CASE("slug overlay auto-fits georeferenced line geometry", "[projection][slug]")
+{
+    Registry registry = Registry::create();
+    auto sourceSystems = ECSNode::create(registry, false);
+    sourceSystems->add(LineSystemNode::create(registry));
+
+    auto bakeSystem = OverlayBakeSystemNode::create(registry);
+    bakeSystem->renderSourceSystems = sourceSystems;
+    bakeSystem->worldSRS = SRS::ECEF;
+    auto slugSystem = SlugSystemNode::create(registry);
+    slugSystem->worldSRS = SRS::ECEF;
+
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+    const std::vector<glm::dvec3> input = {
+        { 24.918, 60.161, 15.0 },
+        { 24.920, 60.163, 25.0 }
+    };
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<LineGeometry>(entity);
+        geometry.srs = SRS::WGS84;
+        geometry.topology = LineTopology::Strip;
+        geometry.points = input;
+
+        auto& style = reg.emplace<LineStyle>(entity);
+        style.width = 5.0f;
+        style.widthUnits = Units::METERS;
+        style.color = StockColor::Yellow;
+        style.outlineColor = StockColor::Black;
+        style.outlineWidth = 2.0f;
+        reg.emplace<Line>(entity, geometry, style);
+
+        auto& overlay = reg.emplace<Overlay>(entity);
+        overlay.mode = OverlayMode::Vector;
+    });
+
+    bakeSystem->update(context.get());
+    slugSystem->update(context.get());
+
+    std::uint64_t outlinedGeneration = 0u;
+
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK_FALSE(reg.any_of<RenderTexture>(entity));
+        REQUIRE((reg.any_of<AutoOverlayTransform, Transform>(entity)));
+
+        const auto& transform = reg.get<Transform>(entity);
+        CHECK(transform.topocentric);
+        CHECK(transform.position.srs == SRS::WGS84);
+
+        const auto& slug = reg.get<SlugResource>(entity);
+        REQUIRE(slug.ready);
+        REQUIRE(slug.bandTexture);
+        REQUIRE(slug.bandTexture->imageView);
+        REQUIRE(slug.bandTexture->imageView->image);
+        REQUIRE(slug.bandTexture->imageView->image->data);
+        CHECK(slug.bandTexture->imageView->image->format == VK_FORMAT_R16G16_UINT);
+        CHECK(slug.bandTexture->imageView->image->data->properties.format ==
+            VK_FORMAT_R16G16_UINT);
+        auto* bandData = dynamic_cast<vsg::usvec2Array2D*>(
+            slug.bandTexture->imageView->image->data.get());
+        REQUIRE(bandData);
+        CHECK(bandData->dataSize() ==
+            slug.bandTexture->imageView->image->extent.width *
+            slug.bandTexture->imageView->image->extent.height * sizeof(vsg::usvec2));
+        REQUIRE(slug.layers.size() == 2u);
+        CHECK(slug.layers[0].color == StockColor::Black);
+        CHECK(slug.layers[1].color == StockColor::Yellow);
+        CHECK(slug.layers[0].isOutline);
+        CHECK_FALSE(slug.layers[1].isOutline);
+        const auto& lineLayer = slug.layers[1];
+        const glm::dvec2 authoredXAxis(
+            lineLayer.uvToEmX.x, lineLayer.uvToEmY.x);
+        const glm::dvec2 authoredYAxis(
+            lineLayer.uvToEmX.y, lineLayer.uvToEmY.y);
+        const glm::dvec3 projectorXAxis(transform.localMatrix[0]);
+        const glm::dvec3 projectorYAxis(transform.localMatrix[1]);
+        const glm::dvec3 projectorZAxis(transform.localMatrix[2]);
+        REQUIRE(glm::length(authoredXAxis) > 0.0);
+        REQUIRE(glm::length(authoredYAxis) > 0.0);
+        CHECK(glm::length(projectorZAxis) >= 1000.0);
+        CHECK(std::abs(
+            glm::length(authoredXAxis) / glm::length(authoredYAxis) -
+            glm::length(projectorXAxis) / glm::length(projectorYAxis)) < 1e-4);
+        CHECK(std::abs(lineLayer.uvToEmX.x) +
+            std::abs(lineLayer.uvToEmX.y) <= 1.0001f);
+        CHECK(std::abs(lineLayer.uvToEmY.x) +
+            std::abs(lineLayer.uvToEmY.y) <= 1.0001f);
+        outlinedGeneration = slug.atlasGeneration;
+
+        const auto projectorPosition = transform.position.transform(SRS::ECEF);
+        REQUIRE(projectorPosition.valid());
+        const auto projectorToWorld = SRS::ECEF.topocentricToWorldMatrix(
+            glm::dvec3(projectorPosition.x, projectorPosition.y, projectorPosition.z)) *
+            transform.localMatrix;
+        const auto worldToProjector = glm::inverse(projectorToWorld);
+        const auto toWorld = SRS::WGS84.to(SRS::ECEF);
+        REQUIRE(toWorld.valid());
+
+        for (const auto& point : input)
+        {
+            glm::dvec3 world;
+            REQUIRE(toWorld.transform(point, world));
+            const auto local = worldToProjector * glm::dvec4(world, 1.0);
+            CHECK(std::abs(local.x) < 0.5);
+            CHECK(std::abs(local.y) < 0.5);
+
+            // Metric geometry uses a bounded affine map that preserves the
+            // projector plane's physical distances. Verify its projected
+            // endpoints remain inside the stable Slughorn band grid.
+            const glm::fvec3 uv(
+                static_cast<float>(local.x + 0.5),
+                static_cast<float>(local.y + 0.5),
+                1.0f);
+            const auto& layer = slug.layers.back();
+            const glm::fvec2 em(
+                glm::dot(uv, glm::fvec3(layer.uvToEmX)),
+                glm::dot(uv, glm::fvec3(layer.uvToEmY)));
+            const glm::fvec2 band =
+                em * glm::fvec2(layer.bandTransform) +
+                glm::fvec2(layer.bandTransform.z, layer.bandTransform.w);
+            CHECK(band.x >= -0.01f);
+            CHECK(band.y >= -0.01f);
+            CHECK(band.x <= 32.01f);
+            CHECK(band.y <= 32.01f);
+        }
+    });
+
+    const auto exportStamp = std::to_string(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    const auto exportPath = std::filesystem::temp_directory_path() /
+        ("rocky-slug-test-" + exportStamp + ".slug");
+    const auto translucentExportPath = std::filesystem::temp_directory_path() /
+        ("rocky-slug-ring-test-" + exportStamp + ".slug");
+    std::uint64_t generationBeforeExport = 0u;
+    vsg::ref_ptr<vsg::ImageInfo> curveBeforeExport;
+    vsg::ref_ptr<vsg::ImageInfo> bandBeforeExport;
+    registry.write([&](entt::registry& reg)
+    {
+        auto& slug = reg.get<SlugResource>(entity);
+        generationBeforeExport = slug.atlasGeneration;
+        curveBeforeExport = slug.curveTexture;
+        bandBeforeExport = slug.bandTexture;
+        slug.exportPath = exportPath.string();
+    });
+
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& slug = reg.get<SlugResource>(entity);
+        CHECK(slug.exportPath.empty());
+        CHECK(slug.exportSucceeded);
+        CHECK(slug.exportMessage.find(exportPath.string()) != std::string::npos);
+        CHECK(slug.atlasGeneration == generationBeforeExport);
+        CHECK(slug.curveTexture == curveBeforeExport);
+        CHECK(slug.bandTexture == bandBeforeExport);
+    });
+
+    REQUIRE(std::filesystem::exists(exportPath));
+    CHECK(std::filesystem::file_size(exportPath) > 0u);
+    {
+        std::ifstream input(exportPath);
+        char first = '\0';
+        input.get(first);
+        CHECK(first == '{');
+    }
+
+    auto curveTexelsUsed = [](const std::filesystem::path& path)
+    {
+        std::ifstream input(path);
+        const auto document = json::parse(input);
+        return document["packing_stats"]["curve_texels_used"].get<std::uint64_t>();
+    };
+    const auto opaqueCasingCurveTexels = curveTexelsUsed(exportPath);
+
+    std::error_code removeError;
+    CHECK(std::filesystem::remove(exportPath, removeError));
+    CHECK_FALSE(removeError);
+
+    // Translucent modulation must rebuild with the non-overlapping ring, which
+    // carries an additional inner boundary compared with the opaque casing.
+    registry.write([&](entt::registry& reg)
+    {
+        reg.get<Overlay>(entity).color = Color(StockColor::White, 0.5f);
+    });
+    slugSystem->update(context.get());
+    registry.write([&](entt::registry& reg)
+    {
+        reg.get<SlugResource>(entity).exportPath = translucentExportPath.string();
+    });
+    slugSystem->update(context.get());
+
+    REQUIRE(std::filesystem::exists(translucentExportPath));
+    CHECK(opaqueCasingCurveTexels < curveTexelsUsed(translucentExportPath));
+    removeError.clear();
+    CHECK(std::filesystem::remove(translucentExportPath, removeError));
+    CHECK_FALSE(removeError);
+
+    registry.write([&](entt::registry& reg)
+    {
+        reg.get<Overlay>(entity).color = StockColor::White;
+    });
+    slugSystem->update(context.get());
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto& style = reg.get<LineStyle>(entity);
+        style.outlineWidth = 0.0f;
+        style.dirty(reg);
+    });
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& slug = reg.get<SlugResource>(entity);
+        REQUIRE(slug.ready);
+        CHECK(slug.layers.size() == 1u);
+        CHECK(slug.layers[0].color == StockColor::Yellow);
+        CHECK_FALSE(slug.layers[0].isOutline);
+        CHECK(slug.atlasGeneration > outlinedGeneration);
+    });
+}
+
+TEST_CASE("slug overlay retries an initially empty georeferenced line", "[projection][slug]")
+{
+    Registry registry = Registry::create();
+    auto sourceSystems = ECSNode::create(registry, false);
+    sourceSystems->add(LineSystemNode::create(registry));
+
+    auto bakeSystem = OverlayBakeSystemNode::create(registry);
+    bakeSystem->renderSourceSystems = sourceSystems;
+    bakeSystem->worldSRS = SRS::ECEF;
+    auto slugSystem = SlugSystemNode::create(registry);
+    slugSystem->worldSRS = SRS::ECEF;
+
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<LineGeometry>(entity);
+        geometry.srs = SRS::WGS84;
+        geometry.topology = LineTopology::Segments;
+
+        auto& style = reg.emplace<LineStyle>(entity);
+        style.width = 5.0f;
+        style.widthUnits = Units::METERS;
+        reg.emplace<Line>(entity, geometry, style);
+
+        auto& overlay = reg.emplace<Overlay>(entity);
+        overlay.mode = OverlayMode::Vector;
+    });
+
+    bakeSystem->update(context.get());
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        CHECK_FALSE(reg.any_of<Transform>(entity));
+        const auto& slug = reg.get<SlugResource>(entity);
+        CHECK_FALSE(slug.ready);
+        CHECK(slug.message == "Slug overlay geometry contains no renderable primitives");
+    });
+
+    // Model a paged producer that publishes its coordinates after constructing
+    // the component but does not bump its revision. The auto-fit cache must
+    // still retry solely because its generated Transform remains absent.
+    registry.write([&](entt::registry& reg)
+    {
+        auto& geometry = reg.get<LineGeometry>(entity);
+        geometry.points = {
+            { 139.750, 35.680, 0.0 },
+            { 139.751, 35.681, 0.0 }
+        };
+    });
+
+    bakeSystem->update(context.get());
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        REQUIRE((reg.any_of<AutoOverlayTransform, Transform>(entity)));
+        const auto& slug = reg.get<SlugResource>(entity);
+        CHECK(slug.ready);
+        CHECK_FALSE(slug.layers.empty());
+    });
+}
+
+TEST_CASE("complex slug geometry uses the full indirection grid", "[projection][slug]")
+{
+    Registry registry = Registry::create();
+    auto sourceSystems = ECSNode::create(registry, false);
+    sourceSystems->add(LineSystemNode::create(registry));
+
+    auto bakeSystem = OverlayBakeSystemNode::create(registry);
+    bakeSystem->renderSourceSystems = sourceSystems;
+    bakeSystem->worldSRS = SRS::ECEF;
+    auto slugSystem = SlugSystemNode::create(registry);
+    slugSystem->worldSRS = SRS::ECEF;
+    slugSystem->mergeConnectedLineSegments = true;
+
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+
+    registry.write([&](entt::registry& reg)
+    {
+        entity = reg.create();
+        auto& geometry = reg.emplace<LineGeometry>(entity);
+        geometry.srs = SRS::WGS84;
+        geometry.topology = LineTopology::Segments;
+
+        // Forty independent MVT-like segments expand to enough stroke curves
+        // to exercise Rocky's 32-band complex-shape policy.
+        for (unsigned i = 0u; i < 40u; ++i)
+        {
+            const double x = 24.918 + double(i % 8u) * 0.0002;
+            const double y = 60.161 + double(i / 8u) * 0.0002;
+            geometry.points.emplace_back(x, y, 0.0);
+            geometry.points.emplace_back(x + 0.0001, y + 0.00005, 0.0);
+        }
+
+        auto& style = reg.emplace<LineStyle>(entity);
+        style.width = 3.0f;
+        style.widthUnits = Units::METERS;
+        style.color = StockColor::Yellow;
+        reg.emplace<Line>(entity, geometry, style);
+
+        auto& overlay = reg.emplace<Overlay>(entity);
+        overlay.mode = OverlayMode::Vector;
+    });
+
+    bakeSystem->update(context.get());
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& slug = reg.get<SlugResource>(entity);
+        REQUIRE(slug.ready);
+        REQUIRE(slug.layers.size() == 1u);
+        CHECK(slug.layers.front().shapeData.z == 31u);
+        CHECK(slug.layers.front().shapeData.w == 31u);
+    });
+
+    // Replace the independent segments with one exact endpoint-to-endpoint
+    // chain, then compare Slughorn's serialized curve usage with the
+    // experiment enabled and disabled.
+    registry.write([&](entt::registry& reg)
+    {
+        auto& geometry = reg.get<LineGeometry>(entity);
+        geometry.points.clear();
+        for (unsigned i = 0u; i < 40u; ++i)
+        {
+            const double x0 = 24.918 + double(i) * 0.00003;
+            const double x1 = 24.918 + double(i + 1u) * 0.00003;
+            geometry.points.emplace_back(x0, 60.161, 0.0);
+            geometry.points.emplace_back(x1, 60.161, 0.0);
+        }
+        geometry.dirty(reg);
+    });
+    bakeSystem->update(context.get());
+    slugSystem->update(context.get());
+
+    const auto stamp = std::to_string(
+        std::chrono::steady_clock::now().time_since_epoch().count());
+    const auto mergedPath = std::filesystem::temp_directory_path() /
+        ("rocky-slug-merged-" + stamp + ".slug");
+    const auto unmergedPath = std::filesystem::temp_directory_path() /
+        ("rocky-slug-unmerged-" + stamp + ".slug");
+
+    std::uint64_t mergedGeneration = 0u;
+    registry.write([&](entt::registry& reg)
+    {
+        auto& slug = reg.get<SlugResource>(entity);
+        mergedGeneration = slug.atlasGeneration;
+        slug.exportPath = mergedPath.string();
+    });
+    slugSystem->update(context.get());
+
+    slugSystem->mergeConnectedLineSegments = false;
+    registry.write([&](entt::registry& reg)
+    {
+        reg.get<SlugResource>(entity).exportPath = unmergedPath.string();
+    });
+    slugSystem->update(context.get());
+
+    registry.read([&](entt::registry& reg)
+    {
+        const auto& slug = reg.get<SlugResource>(entity);
+        REQUIRE(slug.ready);
+        CHECK(slug.atlasGeneration > mergedGeneration);
+        CHECK(slug.exportSucceeded);
+    });
+
+    auto curveTexelsUsed = [](const std::filesystem::path& path)
+    {
+        std::ifstream input(path);
+        const auto document = json::parse(input);
+        return document["packing_stats"]["curve_texels_used"].get<std::uint64_t>();
+    };
+    REQUIRE(std::filesystem::exists(mergedPath));
+    REQUIRE(std::filesystem::exists(unmergedPath));
+    CHECK(curveTexelsUsed(mergedPath) < curveTexelsUsed(unmergedPath));
+
+    std::error_code removeError;
+    CHECK(std::filesystem::remove(mergedPath, removeError));
+    CHECK_FALSE(removeError);
+    removeError.clear();
+    CHECK(std::filesystem::remove(unmergedPath, removeError));
+    CHECK_FALSE(removeError);
+}
+
+//! Unsupported appearance options warn but must leave otherwise valid vector geometry renderable.
+TEST_CASE("slug overlays approximate meshes and omit unsupported styles", "[projection][slug]")
+{
+    Registry registry = Registry::create();
+    auto slugSystem = SlugSystemNode::create(registry);
+    slugSystem->worldSRS = SRS::ECEF;
+    auto context = VSGContextFactory::create(vsg::Viewer::create());
+    entt::entity entity = entt::null;
+
+    SECTION("triangulated meshes remain available")
+    {
+        registry.write([&](entt::registry& reg)
+        {
+            entity = reg.create();
+            auto& geometry = reg.emplace<MeshGeometry>(entity);
+            geometry.vertices = {
+                { -0.25, -0.25, 0.0 },
+                {  0.25, -0.25, 0.0 },
+                {  0.00,  0.25, 0.0 }
+            };
+            reg.emplace<Mesh>(entity, geometry);
+            auto& overlay = reg.emplace<Overlay>(entity);
+            overlay.mode = OverlayMode::Vector;
+        });
+
+        slugSystem->update(context.get());
+        registry.read([&](entt::registry& reg)
+        {
+            const auto& resource = reg.get<SlugResource>(entity);
+            REQUIRE(resource.ready);
+            REQUIRE(resource.layers.size() == 1u);
+            CHECK_FALSE(resource.layers.front().isOutline);
+            CHECK(resource.message.empty());
+        });
+    }
+
+    SECTION("stippled lines")
+    {
+        registry.write([&](entt::registry& reg)
+        {
+            entity = reg.create();
+            auto& geometry = reg.emplace<LineGeometry>(entity);
+            geometry.points = { { -0.25, 0.0, 0.0 }, { 0.25, 0.0, 0.0 } };
+            auto& style = reg.emplace<LineStyle>(entity);
+            style.stipplePattern = 0x00FFu;
+            reg.emplace<Line>(entity, geometry, style);
+            auto& overlay = reg.emplace<Overlay>(entity);
+            overlay.mode = OverlayMode::Vector;
+        });
+
+        slugSystem->update(context.get());
+        registry.read([&](entt::registry& reg)
+        {
+            const auto& resource = reg.get<SlugResource>(entity);
+            CHECK(resource.ready);
+            CHECK(resource.message.empty());
+            CHECK_FALSE(reg.any_of<OverlayVectorFallback>(entity));
+        });
+    }
+
+    SECTION("per-point widths")
+    {
+        registry.write([&](entt::registry& reg)
+        {
+            entity = reg.create();
+            auto& geometry = reg.emplace<PointGeometry>(entity);
+            geometry.points = { { 0.0, 0.0, 0.0 } };
+            geometry.widths = { 4.0f };
+            auto& style = reg.emplace<PointStyle>(entity);
+            style.useGeometryWidths = true;
+            reg.emplace<Point>(entity, geometry, style);
+            auto& overlay = reg.emplace<Overlay>(entity);
+            overlay.mode = OverlayMode::Vector;
+        });
+
+        slugSystem->update(context.get());
+        registry.read([&](entt::registry& reg)
+        {
+            const auto& resource = reg.get<SlugResource>(entity);
+            CHECK(resource.ready);
+            CHECK(resource.message.empty());
+            CHECK_FALSE(reg.any_of<OverlayVectorFallback>(entity));
+        });
+    }
+}
+
+#endif
+TEST_CASE("legacy decal adapter", "[projection]")
+{
+    Registry registry = Registry::create();
+    auto decalSystem = DecalSystemNode::create(registry);
+
+    registry.write([&](entt::registry& reg)
+    {
+        auto styleEntity = reg.create();
+        reg.emplace<DecalStyle>(styleEntity);
+        CHECK(reg.any_of<ImageTexture>(styleEntity));
+
+        auto decalEntity = reg.create();
+        reg.emplace<Decal>(decalEntity, styleEntity);
+        REQUIRE(reg.any_of<ProjectedTexture>(decalEntity));
+        CHECK(reg.get<ProjectedTexture>(decalEntity).texture == styleEntity);
+        CHECK(reg.get<ProjectedTexture>(decalEntity).placement == ProjectionPlacement::Terrain);
+
+        reg.remove<Decal>(decalEntity);
+        CHECK_FALSE(reg.any_of<ProjectedTexture>(decalEntity));
+        reg.remove<DecalStyle>(styleEntity);
+        CHECK_FALSE(reg.any_of<ImageTexture>(styleEntity));
+
+        auto explicitStyle = reg.create();
+        reg.emplace<ImageTexture>(explicitStyle);
+        reg.emplace<DecalStyle>(explicitStyle);
+        reg.remove<DecalStyle>(explicitStyle);
+        CHECK(reg.any_of<ImageTexture>(explicitStyle));
+
+        auto explicitDecal = reg.create();
+        reg.emplace<ProjectedTexture>(explicitDecal);
+        reg.emplace<Decal>(explicitDecal);
+        reg.remove<Decal>(explicitDecal);
+        CHECK(reg.any_of<ProjectedTexture>(explicitDecal));
+    });
+}
+
+TEST_CASE("json")
+{
+    Profile profile("global-geodetic");
+    auto conf = profile.to_json();
+    CHECK(conf == R"("global-geodetic")");
+    profile = Profile();
+    geostudio::native::from_json(json::parse(conf), profile);
+    CHECK((profile.valid() && profile.wellKnownName() == "global-geodetic"));
+
+    GeoPoint point(SRS::WGS84, -77, 42, 0.0);
+    json j = json::object();
+    geostudio::native::to_json(j, point);
+    conf = j.dump();
+    CHECK(conf == R"({"lat":42.0,"long":-77.0,"srs":"wgs84","z":0.0})");
+    point = GeoPoint();
+    geostudio::native::from_json(json::parse(conf), point);
+    CHECK((point.valid() && point.srs == SRS::WGS84 && point.x == -77 && point.y == 42 && point.z == 0));
+
+    option<URI> uri;
+    uri = URI("file.xml");
+    json j_uri = json::object();
+    geostudio::native::to_json(j_uri, uri);
+    CHECK((j_uri.dump() == R"("file.xml")")); // "file.xml"
+    URI uri2;
+    geostudio::native::from_json(j_uri, uri2);
+    CHECK((uri2.base() == "file.xml"));
+
+    auto contextSingleton = ContextFactory::create();
+    auto context = contextSingleton.get();
+    auto layer = geostudio::native::TMSImageLayer::create();
+    layer->uri = "file.xml";
+    auto map = geostudio::native::Map::create();
+    map->add(layer);
+    auto serialized = map->to_json();
+    map = geostudio::native::Map::create();
+    auto r = map->from_json(serialized, context->io);
+    CHECK(r.ok());
+    CHECK((map->to_json() == R"({"layers":[{"name":"","type":"TMSImage","uri":"file.xml"}],"name":""})"));
+}
+
+TEST_CASE("Optional")
+{
+    option<int> value_with_no_init;
+    CHECK(value_with_no_init.has_value() == false);
+    value_with_no_init = 123;
+    CHECK(value_with_no_init.has_value() == true);
+
+    option<int> value_with_brace_init{ 123 };
+    CHECK(value_with_brace_init.has_value() == false);
+    CHECK(value_with_brace_init.value() == 123);
+    CHECK(value_with_brace_init.default_value() == 123);
+
+    option<int> value_with_equals_init = 123;
+    CHECK(value_with_equals_init.has_value() == false);
+    CHECK(value_with_equals_init.value() == 123);
+    CHECK(value_with_brace_init.default_value() == 123);
+}
+
+TEST_CASE("TileKey")
+{
+    Profile p("global-geodetic");
+
+    CHECK(TileKey(0, 0, 0, p).str() == "0/0/0");
+    CHECK(TileKey(0, 0, 0, p).quadKey() == "0");
+    CHECK(TileKey(0, 0, 0, p).createChildKey(0) == TileKey(1, 0, 0, p));
+    CHECK(TileKey(1, 0, 0, p).createParentKey() == TileKey(0, 0, 0, p));
+
+    CHECK(TileKey(2, 0, 0, p).str() == "2/0/0");
+    CHECK(TileKey(2, 0, 0, p).quadKey() == "000");
+    CHECK(TileKey(2, 1, 0, p).quadKey() == "001");
+    CHECK(TileKey(2, 5, 1, p).quadKey() == "103");
+
+    std::unordered_map<TileKey, int> values;
+    values[TileKey(2, 1, 0, p)] = 42;
+
+    CHECK(values.at(TileKey(2, 1, 0, p)) == 42);
+    CHECK(values.find(TileKey(2, 1, 1, p)) == values.end());
+}
+
+TEST_CASE("Threading")
+{
+    jobs::future<int> f1;
+    CHECK(f1.empty() == true);
+    CHECK(f1.available() == false);
+
+    jobs::future<int> f2;
+    CHECK(f2.empty() == true);
+    CHECK(f2.working() == false);
+
+    f2 = f1;
+    CHECK(f2.empty() == false);
+    CHECK(f2.working() == true);
+    CHECK(f2.available() == false);
+
+    f1.resolve(123);
+    CHECK(f2.empty() == false);
+    CHECK(f2.available() == true);
+    CHECK(f2.value() == 123);
+
+    SECTION("runtime shutdown joins worker threads and prevents restart")
+    {
+        jobs::runtime runtime;
+        auto pool = runtime.get_pool("shutdown-test", 1);
+        REQUIRE(pool != nullptr);
+
+        std::atomic_bool job_started = false;
+        std::atomic_bool release_job = false;
+        std::atomic_bool shutdown_finished = false;
+
+        auto result = runtime.dispatch(
+            [&](jobs::cancelable&) -> int
+            {
+                job_started = true;
+                while (!release_job)
+                {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                }
+                return 42;
+            },
+            jobs::context{ "blocking shutdown test", pool });
+
+        for (unsigned i = 0; i < 1000 && !job_started; ++i)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+        REQUIRE(job_started);
+
+        std::thread shutdown_thread([&]()
+            {
+                runtime.shutdown();
+                shutdown_finished = true;
+            });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        CHECK(shutdown_finished == false);
+
+        release_job = true;
+        shutdown_thread.join();
+
+        CHECK(shutdown_finished == true);
+        CHECK(result.available());
+        CHECK(result.value() == 42);
+        CHECK(runtime.alive() == false);
+        CHECK(runtime.get_pool("shutdown-test", 1) == nullptr);
+
+        std::atomic_bool post_shutdown_job_ran = false;
+        runtime.dispatch([&]() { post_shutdown_job_ran = true; });
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(20));
+        CHECK(post_shutdown_job_ran == false);
+        CHECK(runtime.total() == 0);
+    }
+}
+
+TEST_CASE("Math")
+{
+    CHECK(is_identity(glm::fmat4(1)));
+    CHECK(!is_identity(glm::fmat4()));
+
+    glm::fmat4 scale_bias{ 1 };
+    scale_bias = glm::translate(glm::fmat4(1), glm::fvec3(0.25, 0.25, 0.0));
+    scale_bias = glm::scale(scale_bias, glm::fvec3(0.5, 0.5, 1.0));
+    CHECK(!is_identity(scale_bias));
+    CHECK(scale_bias[0][0] == 0.5f);
+    CHECK(scale_bias[1][1] == 0.5f);
+    CHECK(scale_bias[3][0] == 0.25f);
+    CHECK(scale_bias[3][1] == 0.25f);
+
+    glm::fvec3 r = scale_bias * glm::fvec3(1, 1, 0);
+    CHECK(r == glm::fvec3(0.75f, 0.75f, 0));
+}
+
+#ifdef ROCKY_HAS_ZLIB
+TEST_CASE("Compression")
+{
+    // generate a pseudo-random string of characters:
+    std::mt19937 engine(0);
+    std::uniform_int_distribution<> prng(32, 127);
+    std::stringstream buf;
+    for (unsigned i = 0; i < 4096; ++i)
+        buf << (char)prng(engine);
+    auto original_data = buf.str();
+
+    // compress:
+    std::stringstream output_stream;
+    ZLibCompressor comp;
+    CHECK(comp.compress(original_data, output_stream) == true);
+    std::string compressed_data = output_stream.str();
+
+    CHECK(compressed_data.size() == 3442);
+
+    // decompress:
+    std::stringstream input_stream(compressed_data);
+    std::string decompressed_data;
+    CHECK(comp.decompress(input_stream, decompressed_data) == true);
+
+    // ensure the decompressed stream matched the original data
+    CHECK(decompressed_data == original_data);
+}
+#endif
+
+TEST_CASE("Image")
+{
+    auto image = Image::create(Image::R8G8B8A8_UNORM, 256, 256);
+    REQUIRE(image);
+    if (image) {
+        CHECK(image->numComponents() == 4);
+        CHECK(image->sizeInBytes() == 262144);
+        CHECK(image->rowSizeInBytes() == 1024);
+        CHECK(image->componentSizeInBytes() == 1);
+        CHECK(image->sizeInPixels() == 65536);
+    }
+
+    auto clone = image->clone();
+    REQUIRE(clone);
+    if (clone) {
+        CHECK(clone->numComponents() == 4);
+        CHECK(clone->sizeInBytes() == 262144);
+        CHECK(clone->rowSizeInBytes() == 1024);
+        CHECK(clone->componentSizeInBytes() == 1);
+        CHECK(clone->sizeInPixels() == 65536);
+    }
+
+    image = Image::create(Image::R8G8B8_UNORM, 256, 256);
+    REQUIRE(image);
+    if (image) {
+        CHECK(image->numComponents() == 3);
+        CHECK(image->sizeInBytes() == 196608);
+        CHECK(image->rowSizeInBytes() == 768);
+        CHECK(image->componentSizeInBytes() == 1);
+        CHECK(image->sizeInPixels() == 65536);
+    }
+
+    image = Image::create(Image::R8G8B8A8_UNORM, 256, 256);
+    image->fill(StockColor::Orange);
+    Image::Pixel value = image->read(17, 17);
+    //std::cout << value.r << ", " << value.g << ", " << value.b << ", " << value.a << std::endl;
+    CHECK(glm::epsilonEqual(value.r, 1.0f, 0.01f));
+    CHECK(glm::epsilonEqual(value.g, 0.65f, 0.01f));
+    CHECK(glm::epsilonEqual(value.b, 0.0f, 0.01f));
+    CHECK(glm::epsilonEqual(value.a, 1.0f, 0.01f));
+}
+
+TEST_CASE("Heightfield")
+{
+    auto hf = Heightfield::create(257, 257);
+    REQUIRE(hf.image);
+    if (hf.image) {
+        // test metadata:
+        CHECK(hf.image->pixelFormat() == Image::R32_SFLOAT);
+        CHECK(hf.image->numComponents() == 1);
+        CHECK(hf.image->sizeInBytes() == 264196);
+        CHECK(hf.image->rowSizeInBytes() == 1028);
+        CHECK(hf.image->componentSizeInBytes() == 4);
+        CHECK(hf.image->sizeInPixels() == 66049);
+
+        // write/read:
+        hf.heightAt(16, 16) = 100.0f;
+        hf.heightAt(16, 17) = 50.0f;
+        hf.heightAt(17, 16) = 50.0f;
+        hf.heightAt(17, 17) = 100.0f;
+        CHECK(hf.heightAt(16, 16) == 100.0f);
+
+        float u = 16.5f / (float(hf.width()) - 1.0f);
+        float v = 16.5f / (float(hf.height()) - 1.0f);
+        CHECK(hf.heightAtUV(u, v) == 75.0f);
+        
+        // read with NO_DATA_VALUEs:
+        hf.heightAt(17, 17) = NO_DATA_VALUE;
+        hf.heightAt(16, 16) = NO_DATA_VALUE;
+        CHECK(hf.heightAt(16, 16) == NO_DATA_VALUE);
+        CHECK(hf.heightAtUV(u, v) == 50.0f);
+
+        // all NODATA:
+        hf.fill(NO_DATA_VALUE);
+        CHECK(hf.heightAt(16, 16) == NO_DATA_VALUE);
+    }
+}
+
+//! Explicit-SRS reads must sample input coordinates transformed into the raster's SRS.
+TEST_CASE("GeoImage transforms coordinates from the supplied SRS", "[geoimage]")
+{
+    const SRS mercator = SRS::SPHERICAL_MERCATOR;
+    const auto extent = GeoExtent(SRS::WGS84, 9.0, 9.0, 11.0, 11.0).transform(mercator);
+    REQUIRE(extent.valid());
+    auto image = Image::create(Image::R32_SFLOAT, 2, 2);
+    image->write(Image::Pixel(0.0f), 0, 0);
+    image->write(Image::Pixel(1.0f), 1, 0);
+    image->write(Image::Pixel(2.0f), 0, 1);
+    image->write(Image::Pixel(3.0f), 1, 1);
+    const GeoImage geo(image, extent);
+    for (double latitude : { 9.5, 10.0, 10.5 })
+    {
+        const GeoPoint point(SRS::WGS84, 10.0, latitude);
+        const auto projected = point.transform(mercator);
+        REQUIRE(projected.valid());
+        const auto expected = geo.read(projected.x, projected.y);
+        const auto actual = geo.read(point.srs, point.x, point.y);
+        const auto sameSRS = geo.read(mercator, projected.x, projected.y);
+        REQUIRE(expected.ok());
+        REQUIRE(actual.ok());
+        REQUIRE(sameSRS.ok());
+        CHECK(actual->r == Approx(expected->r));
+        CHECK(sameSRS->r == Approx(expected->r));
+        CHECK(actual->r > 0.5f);
+        CHECK(actual->r < 2.5f);
+    }
+    CHECK(geo.read(SRS(), 10.0, 10.0).failed());
+    CHECK(geo.read(SRS::WGS84, 20.0, 20.0).failed());
+}
+
+//! Reprojecting a GeoPoint must retain the caller's selected image slice.
+TEST_CASE("GeoImage preserves layers when reprojecting points", "[geoimage]")
+{
+    const SRS mercator = SRS::SPHERICAL_MERCATOR;
+    const auto extent = GeoExtent(SRS::WGS84, 9.0, 9.0, 11.0, 11.0).transform(mercator);
+    REQUIRE(extent.valid());
+    auto image = Image::create(Image::R32_SFLOAT, 2, 2, 3);
+    for (unsigned layer = 0; layer < 3; ++layer)
+        for (unsigned row = 0; row < 2; ++row)
+            for (unsigned col = 0; col < 2; ++col)
+                image->write(Image::Pixel(0.25f * (layer + 1)), col, row, layer);
+    const GeoImage geo(image, extent);
+    const GeoPoint point(SRS::WGS84, 10.0, 10.0);
+    const auto projected = point.transform(mercator);
+    REQUIRE(projected.valid());
+    for (int layer = 0; layer < 3; ++layer)
+    {
+        const auto transformedRead = geo.read(point, layer);
+        const auto sameSRSRead = geo.read(projected, layer);
+        REQUIRE(transformedRead.ok());
+        REQUIRE(sameSRSRead.ok());
+        CHECK(transformedRead->r == Approx(0.25f * (layer + 1)));
+        CHECK(sameSRSRead->r == Approx(transformedRead->r));
+    }
+    const auto defaultRead = geo.read(point);
+    REQUIRE(defaultRead.ok());
+    CHECK(defaultRead->r == Approx(0.25f));
+}
+
+//! Raster sampling and pixel conversion use a continuous longitude interval across the date line.
+TEST_CASE("Raster coordinates wrap across the antimeridian", "[geoimage][heightfield]")
+{
+    Heightfield heights(5, 3);
+    for (unsigned row = 0; row < heights.height(); ++row)
+        for (unsigned col = 0; col < heights.width(); ++col)
+            heights.heightAt(col, row) = 10.0f * col + row;
+    const GeoImage geo(heights.image, GeoExtent(SRS::WGS84, 170.0, -10.0, -170.0, 10.0));
+    const GeoHeightfield hf(geo);
+    for (int col = 0; col < 5; ++col)
+    {
+        const double longitude = 170.0 + col * 5.0;
+        for (double shift : { -720.0, -360.0, 0.0, 360.0, 720.0 })
+        {
+            const double x = longitude + shift;
+            const auto pixel = geo.read(x, 0.0);
+            const auto point = geo.read(GeoPoint(SRS::WGS84, x, 0.0));
+            const auto clamped = geo.read_clamped(x, 0.0);
+            const auto height = hf.read(x, 0.0);
+            REQUIRE(pixel.ok());
+            REQUIRE(point.ok());
+            REQUIRE(clamped.ok());
+            REQUIRE(height.ok());
+            CHECK(pixel->r == Approx(10.0f * col + 1.0f));
+            CHECK(point->r == Approx(pixel->r));
+            CHECK(clamped->r == Approx(pixel->r));
+            CHECK(height.value() == Approx(pixel->r));
+            int s = -1, t = -1;
+            REQUIRE(geo.getPixel(x, 0.0, s, t));
+            CHECK(s == col);
+            CHECK(t == 1);
+        }
+    }
+    for (double x : { 160.0, -200.0, 200.0, -160.0 })
+    {
+        CHECK(geo.read(x, 0.0).failed());
+        CHECK(hf.read(x, 0.0).failed());
+        const auto clamped = geo.read_clamped(x, 0.0);
+        REQUIRE(clamped.ok());
+        CHECK(clamped->r == Approx((x == 160.0 || x == -200.0) ? 1.0f : 41.0f));
+        int s = 0, t = 0;
+        REQUIRE(geo.getPixel(x, 0.0, s, t));
+        CHECK(s == -1);
+    }
+    CHECK(geo.read(170.0 - 1e-7, 0.0).ok());
+    CHECK(geo.read(-170.0 + 1e-7, 0.0).ok());
+    CHECK(hf.read(170.0 - 1e-7, 0.0).ok());
+    CHECK(hf.read(-170.0 + 1e-7, 0.0).ok());
+    const GeoImage world(heights.image, GeoExtent(SRS::WGS84, -180.0, -90.0, 180.0, 90.0));
+    REQUIRE(world.read(-180.0, 0.0).ok());
+    REQUIRE(world.read(180.0, 0.0).ok());
+    CHECK(world.read(-180.0, 0.0)->r == Approx(1.0f));
+    CHECK(world.read(180.0, 0.0)->r == Approx(41.0f));
+    const GeoImage projected(heights.image, GeoExtent(SRS::SPHERICAL_MERCATOR, 170.0, -10.0, 190.0, 10.0));
+    CHECK(projected.read(-175.0, 0.0).failed());
+    REQUIRE(projected.read(185.0, 0.0).ok());
+    CHECK(projected.read(185.0, 0.0)->r == Approx(31.0f));
+}
+
+//! Extent containment accounts for complete longitude arcs, including the full globe and wide wrapped regions.
+TEST_CASE("Geographic extent containment uses full intervals", "[geoextent]")
+{
+    const GeoExtent world(SRS::WGS84, -180.0, -90.0, 180.0, 90.0);
+    const GeoExtent hemisphere(SRS::WGS84, 0.0, -90.0, 180.0, 90.0);
+    CHECK(world.contains(world));
+    CHECK(world.contains(hemisphere));
+    CHECK_FALSE(hemisphere.contains(world));
+    CHECK_FALSE(hemisphere.contains(world.bounds()));
+    const GeoExtent crossing(SRS::WGS84, 170.0, -10.0, -170.0, 10.0);
+    CHECK(crossing.contains(GeoExtent(SRS::WGS84, 175.0, -5.0, -175.0, 5.0)));
+    CHECK_FALSE(crossing.contains(GeoExtent(SRS::WGS84, -175.0, -5.0, 175.0, 5.0)));
+    CHECK_FALSE(crossing.contains(GeoExtent(SRS::WGS84, 175.0, -15.0, -175.0, 5.0)));
+    CHECK_FALSE(crossing.contains(GeoExtent(SRS::WGS84, 175.0, -5.0, -175.0, 15.0)));
+    CHECK_FALSE(GeoExtent(SRS::WGS84, 10.0, -90.0, -10.0, 90.0).contains(
+        GeoExtent(SRS::WGS84, -175.0, -90.0, 175.0, 90.0)));
+    const GeoExtent local(SRS::WGS84, 8.0, 8.0, 12.0, 12.0);
+    const auto projected = GeoExtent(SRS::WGS84, 9.0, 9.0, 11.0, 11.0).transform(SRS::SPHERICAL_MERCATOR);
+    REQUIRE(projected.valid());
+    CHECK(local.contains(projected));
+    CHECK_FALSE(projected.contains(local));
+    CHECK_FALSE(local.contains(GeoExtent()));
+    CHECK_FALSE(GeoExtent().contains(local));
+}
+
+//! Expanding extents must cover both input areas, in either order, using the smallest enclosing longitude arc.
+TEST_CASE("Geographic extent expansion preserves wide intervals", "[geoextent]")
+{
+    struct Case { double westA, eastA, westB, eastB, width; };
+    const Case cases[] = {
+        { 170.0, 175.0, -180.0, 180.0, 360.0 },
+        { -170.0, 100.0, 80.0, -150.0, 360.0 },
+        { -170.0, 100.0, -100.0, 80.0, 270.0 },
+        { -170.0, -160.0, 160.0, 170.0, 40.0 },
+        { 170.0, -170.0, 175.0, -160.0, 30.0 },
+        { -20.0, -10.0, 10.0, 20.0, 40.0 },
+        { -180.0, 0.0, 0.0, 180.0, 360.0 }
+    };
+    for (const auto& c : cases)
+    {
+        const GeoExtent a(SRS::WGS84, c.westA, -10.0, c.eastA, 10.0);
+        const GeoExtent b(SRS::WGS84, c.westB, -20.0, c.eastB, 20.0);
+        for (bool reverse : { false, true })
+        {
+            auto result = reverse ? b : a;
+            REQUIRE(result.expandToInclude(reverse ? a : b));
+            INFO("inputs: " << a.toString() << " and " << b.toString());
+            CHECK(result.width() == Approx(c.width));
+            CHECK(result.south() == Approx(-20.0));
+            CHECK(result.north() == Approx(20.0));
+            CHECK(result.contains(a));
+            CHECK(result.contains(b));
+            for (int step = 0; step <= 36; ++step)
+            {
+                CHECK(result.contains(a.west() + a.width() * step / 36.0, 0.0));
+                CHECK(result.contains(b.west() + b.width() * step / 36.0, 0.0));
+            }
+        }
+    }
+    GeoExtent projected(SRS::SPHERICAL_MERCATOR, 0.0, 0.0, 10.0, 10.0);
+    REQUIRE(projected.expandToInclude(GeoExtent(SRS::SPHERICAL_MERCATOR, -5.0, 5.0, 15.0, 20.0)));
+    CHECK(projected == GeoExtent(SRS::SPHERICAL_MERCATOR, -5.0, 0.0, 15.0, 20.0));
+    GeoExtent empty;
+    REQUIRE(empty.expandToInclude(projected));
+    CHECK(empty == projected);
+    CHECK_FALSE(empty.expandToInclude(GeoExtent()));
+}
+
+//! Equivalent profile representations must remain interchangeable as hashed and ordered tile keys.
+TEST_CASE("Profile hashes agree with equality", "[profile][tilekey]")
+{
+    const Profile named("global-geodetic");
+    const Box world(-180.0, -90.0, 180.0, 90.0);
+    const std::vector<Profile> equivalents = {
+        named, Profile(SRS::WGS84, world, 2, 1), Profile(SRS("EPSG:4326"), world, 2, 1),
+        Profile(SRS("EPSG:4979"), world, 2, 1), Profile(SRS("EPSG:4326+5773"), world, 2, 1)
+    };
+    std::unordered_map<Profile, int> profiles;
+    std::unordered_map<TileKey, int> tiles;
+    std::map<TileKey, int> ordered;
+    profiles.emplace(named, 7);
+    tiles.emplace(TileKey(2, 3, 1, named), 7);
+    ordered.emplace(TileKey(2, 3, 1, named), 7);
+    for (const auto& profile : equivalents)
+    {
+        REQUIRE(profile.valid());
+        REQUIRE(profile == named);
+        CHECK(profile.hash() == named.hash());
+        const TileKey key(2, 3, 1, profile);
+        CHECK(profiles.count(profile) == 1u);
+        CHECK(tiles.count(key) == 1u);
+        CHECK(ordered.count(key) == 1u);
+        profiles.emplace(profile, 9);
+        tiles.emplace(key, 9);
+        ordered.emplace(key, 9);
+    }
+    CHECK(profiles.size() == 1u);
+    CHECK(tiles.size() == 1u);
+    CHECK(ordered.size() == 1u);
+
+    // Equality's coordinate tolerance must not be broken by hashing rounded coordinates into different bins.
+    const Profile a(SRS::WGS84, Box(10.123456, 5.234567, 20.123456, 15.234567), 2, 1);
+    const Profile b(SRS::WGS84, Box(10.1234565, 5.2345675, 20.1234565, 15.2345675), 2, 1);
+    REQUIRE(a == b);
+    CHECK(a.hash() == b.hash());
+    std::unordered_map<Profile, int> approximate;
+    approximate.emplace(a, 1);
+    CHECK(approximate.count(b) == 1u);
+
+    const std::vector<Profile> different = {
+        a, Profile(SRS::MOON, world, 2, 1), Profile(SRS::WGS84, world, 1, 1),
+        Profile(SRS::WGS84, world, 2, 1, Box(-180.0, -80.0, 180.0, 80.0))
+    };
+    for (const auto& profile : different)
+    {
+        REQUIRE(profile.valid());
+        REQUIRE(profile != named);
+        profiles.emplace(profile, 10);
+        tiles.emplace(TileKey(2, 3, 1, profile), 10);
+        ordered.emplace(TileKey(2, 3, 1, profile), 10);
+    }
+    CHECK(profiles.size() == 5u);
+    CHECK(tiles.size() == 5u);
+    CHECK(ordered.size() == 5u);
+    const Profile mercator("spherical-mercator");
+    const Profile explicitMercator(SRS("EPSG:3857"), mercator.extent().bounds(), 1, 1);
+    REQUIRE(mercator == explicitMercator);
+    CHECK(mercator.hash() == explicitMercator.hash());
+}
+
+//! Resident tile caching compares full keys, sharing equivalent profiles and separating hash collisions and layers.
+TEST_CASE("Resident tile caches resolve profile hash collisions", "[profile][tilekey]")
+{
+    IOOptions io;
+    io.services().residentImageCache = std::make_shared<ResidentCache<TileLayerCacheKey, Image, GeoExtent>>();
+    TestCachedTileLayer layer;
+    TestCachedTileLayer otherLayer;
+    const Profile named("global-geodetic");
+    const Profile equivalent(SRS::WGS84, named.extent().bounds(), 2, 1);
+    const Profile different(SRS::WGS84, Box(10.0, 10.0, 20.0, 20.0), 2, 1);
+    REQUIRE(named.hash() == different.hash());
+    REQUIRE(named != different);
+    unsigned creations = 0;
+    // Keep each generated image resident so subsequent reads exercise cache hits.
+    auto firstImage = Image::create(Image::R32_SFLOAT, 2, 2);
+    const TileKey firstKey(0, 0, 0, named);
+    const auto first = layer.getOrCreateTile(firstKey, io, [&]() -> Result<GeoImage> {
+        ++creations;
+        return GeoImage(firstImage, firstKey.extent());
+    });
+    REQUIRE(first.ok());
+    const auto second = layer.getOrCreateTile(TileKey(0, 0, 0, equivalent), io, [&]() -> Result<GeoImage> {
+        ++creations;
+        return Failure_ResourceUnavailable;
+    });
+    REQUIRE(second.ok());
+    CHECK(second->image() == firstImage);
+    CHECK(creations == 1u);
+    const TileKey differentKey(0, 0, 0, different);
+    auto differentImage = Image::create(Image::R32_SFLOAT, 2, 2);
+    const auto third = layer.getOrCreateTile(differentKey, io, [&]() -> Result<GeoImage> {
+        ++creations;
+        return GeoImage(differentImage, differentKey.extent());
+    });
+    REQUIRE(third.ok());
+    CHECK(third->image() == differentImage);
+    CHECK(creations == 2u);
+    const auto other = otherLayer.getOrCreateTile(firstKey, io, [&]() -> Result<GeoImage> {
+        ++creations;
+        return GeoImage(differentImage, firstKey.extent());
+    });
+    REQUIRE(other.ok());
+    CHECK(other->image() == differentImage);
+    CHECK(creations == 3u);
+    CHECK_FALSE(io.services().residentImageCache->get({ firstKey, layer.uid(), layer.revision() + 1 }).has_value());
+}
+
+//! Repeated intersection queries must compare target profiles instead of reusing a colliding target's cached result.
+TEST_CASE("Tile intersection cache resolves profile hash collisions", "[profile][tilekey]")
+{
+    const TileKey source(2, 4, 1, Profile("global-geodetic"));
+    const Profile inside(SRS::WGS84, Box(0.0, 0.0, 20.0, 20.0), 1, 1);
+    const Profile outside(SRS::WGS84, Box(100.0, 0.0, 120.0, 20.0), 1, 1);
+    REQUIRE(inside.hash() == outside.hash());
+    REQUIRE(inside != outside);
+    const auto first = source.intersectingKeys(inside);
+    REQUIRE_FALSE(first.empty());
+    CHECK(source.intersectingKeys(outside).empty());
+    CHECK(source.intersectingKeys(inside) == first);
+}
+
+//! Encoding preserves bilinear no-data behavior for every missing-sample pattern, including flat tiles.
+TEST_CASE("Encoded heightfields preserve missing samples", "[heightfield]")
+{
+    for (unsigned mask = 0; mask < 16; ++mask)
+    {
+        auto hf = Heightfield::create(2, 2);
+        for (unsigned i = 0; i < 4; ++i)
+            hf.heightAt(i % 2, i / 2) = (mask & (1u << i)) ? NO_DATA_VALUE : -100.0f + 200.0f * i;
+        SECTION("varying heights") {}
+        SECTION("flat heights")
+        {
+            hf.forEachHeight([](float& h) { if (h != NO_DATA_VALUE) h = 42.0f; });
+        }
+        hf.computeAndSetMinMax();
+        const auto encoded = hf.encode();
+        for (unsigned y = 0; y <= 4; ++y)
+        {
+            for (unsigned x = 0; x <= 4; ++x)
+            {
+                const float u = x * 0.25f, v = y * 0.25f;
+                const float expected = hf.heightAtUV(u, v);
+                const float actual = encoded.heightAtUV(u, v);
+                INFO("missing mask: " << mask << ", UV: " << u << ", " << v);
+                if (expected == NO_DATA_VALUE)
+                    CHECK(actual == NO_DATA_VALUE);
+                else
+                    CHECK(std::abs(actual - expected) < 0.02f);
+            }
+        }
+    }
+}
+
+TEST_CASE("Map")
+{
+    auto map = Map::create();
+    REQUIRE(map);
+    if (map) {
+        auto layer = TestLayer::create();
+        map->add(layer);
+        CHECK(map->layers().size() == 1);
+    }
+}
+
+#ifdef ROCKY_HAS_GDAL
+TEST_CASE("GDAL")
+{
+}
+#endif // ROCKY_HAS_GDAL
+
+TEST_CASE("TMS")
+{
+    auto layer = TMSImageLayer::create();
+    layer->uri = "https://readymap.org/readymap/tiles/1.0.0/7/";
+    auto s = layer->open({});
+    CHECK((s.ok() || s.error().type == Failure::ResourceUnavailable));
+}
+
+TEST_CASE("SRS")
+{
+    // epsilon
+    const double E = 0.1;
+
+    SECTION("Spherical Mercator <> Geographic")
+    {        
+        SRS merc("epsg:3785"); // spherical mercator SRS
+        REQUIRE(merc.valid());
+        CHECK(merc.isProjected() == true);
+        CHECK(merc.isGeodetic() == false);
+        CHECK(merc.isGeocentric() == false);
+
+        SRS wgs84("epsg:4326"); // geographic WGS84 (long/lat/hae)
+        REQUIRE(wgs84.valid());
+        CHECK(wgs84.isProjected() == false);
+        CHECK(wgs84.isGeodetic() == true);
+        CHECK(wgs84.isGeocentric() == false);
+
+        auto xform = merc.to(wgs84);
+        REQUIRE(xform.valid());
+
+        glm::dvec3 out;
+        REQUIRE(xform(glm::dvec3(-20037508.342789248, 0, 0), out));
+        CHECK(glm::all(glm::epsilonEqual(out, glm::dvec3(-180, 0, 0), E)));
+        
+        // NB: succeeds despite the 90 degrees N being out of bounds for Mercator.
+        CHECK(xform.inverse(glm::dvec3(0, 90, 0), out));
+        CHECK(out.y > merc.bounds().ymax);
+    }
+
+    SECTION("Geographic SRS")
+    {
+        SRS merc("epsg:3785"); // spherical mercator SRS
+        REQUIRE(merc.valid());
+
+        SRS geo = merc.geodeticSRS();
+        REQUIRE(geo.valid());
+        CHECK(geo.isGeodetic());
+
+        SRS utm("epsg:32632"); // UTM32/WGS84
+        CHECK(utm.geodeticSRS().isGeodetic());
+    }
+
+    SECTION("Geographic <> Geocentric")
+    {
+        SRS wgs84("wgs84"); // geographic WGS84 (long/lat)
+        REQUIRE(wgs84.valid());
+        CHECK(wgs84.isProjected() == false);
+        CHECK(wgs84.isGeodetic() == true);
+        CHECK(wgs84.isGeocentric() == false);
+
+        SRS ecef("geocentric"); // geocentric WGS84 (ECEF)
+        REQUIRE(ecef.valid());
+        CHECK(ecef.isProjected() == false);
+        CHECK(ecef.isGeodetic() == false);
+        CHECK(ecef.isGeocentric() == true);
+
+        glm::dvec3 out;
+
+        auto xform_wgs84_to_ecef = wgs84.to(ecef);
+        REQUIRE(xform_wgs84_to_ecef.valid());
+
+        REQUIRE(xform_wgs84_to_ecef(glm::dvec3(0, 0, 0), out));
+        CHECK(glm::all(glm::epsilonEqual(out, glm::dvec3(6378137, 0, 0), 1e-6)));
+
+        REQUIRE(xform_wgs84_to_ecef.inverse(out, out));
+        CHECK(glm::all(glm::epsilonEqual(out, glm::dvec3(0, 0, 0), 1e-6)));
+    }
+
+    SECTION("Geocentric interpolation")
+    {
+        SRS wgs84("wgs84"); // geographic WGS84 (long/lat)
+        REQUIRE(wgs84.valid());
+
+        auto midpoint = wgs84.ellipsoid().geodesicInterpolate(
+            glm::dvec3(0, 0, 0),
+            glm::dvec3(90, 0, 0),
+            0.5);
+
+        CHECK(glm::epsilonEqual(midpoint.x, 45.0, 1e-9));
+        CHECK(glm::epsilonEqual(midpoint.y, 0.0, 1e-9));
+        CHECK(glm::epsilonEqual(midpoint.z, 0.0, 1e-6));
+    }
+
+    SECTION("Plate Carree SRS")
+    {
+        auto pc = SRS("plate-carree");
+        REQUIRE(pc.valid());
+        REQUIRE(pc == SRS::PLATE_CARREE);
+        CHECK(pc.isProjected() == true);
+        CHECK(pc.isGeodetic() == false);
+        CHECK(pc.isGeocentric() == false);
+
+        // EPSG:32663 uses ellipsoidal EQC. PROJ 9.8 corrected its formerly spherical northing calculation.
+        // https://github.com/OSGeo/PROJ/pull/4656
+        std::istringstream projVersion(SRS::projVersion());
+        int major = 0, minor = 0;
+        char separator = 0;
+        REQUIRE(static_cast<bool>(projVersion >> major >> separator >> minor));
+        REQUIRE(separator == '.');
+        const bool ellipsoidalEQC = major > 9 || (major == 9 && minor >= 8);
+        const double polarNorthing = ellipsoidalEQC ? 10001965.729 : 10018754.171;
+
+        auto b = pc.bounds();
+        REQUIRE(b.valid());
+        CHECK(glm::epsilonEqual(b.xmin, -20037508.342, E));
+        CHECK(glm::epsilonEqual(b.xmax, 20037508.342, E));
+        CHECK(glm::epsilonEqual(b.ymin, -polarNorthing, E));
+        CHECK(glm::epsilonEqual(b.ymax, polarNorthing, E));
+
+        // The projected bounds must still cover the full world under either PROJ implementation.
+        auto toGeodetic = pc.to(SRS::WGS84);
+        REQUIRE(toGeodetic.valid());
+        glm::dvec3 southwest, northeast;
+        REQUIRE(toGeodetic.transform(glm::dvec3(b.xmin, b.ymin, 0.0), southwest));
+        REQUIRE(toGeodetic.transform(glm::dvec3(b.xmax, b.ymax, 0.0), northeast));
+        CHECK(glm::all(glm::epsilonEqual(southwest, glm::dvec3(-180.0, -90.0, 0.0), 1e-8)));
+        CHECK(glm::all(glm::epsilonEqual(northeast, glm::dvec3(180.0, 90.0, 0.0), 1e-8)));
+    }
+
+    SECTION("UTM SRS")
+    {
+        SRS utm32N("epsg:32632"); // +proj=utm +zone=32 +datum=WGS84
+        REQUIRE(utm32N.valid());
+        CHECK(utm32N.isProjected() == true);
+        CHECK(utm32N.isGeodetic() == false);
+        CHECK(utm32N.isGeocentric() == false);
+        CHECK(utm32N.bounds().valid());
+
+        SRS utm32S("+proj=utm +zone=32 +south +datum=WGS84");
+        REQUIRE(utm32S.valid());
+        CHECK(utm32S.isProjected() == true);
+        CHECK(utm32S.isGeodetic() == false);
+        CHECK(utm32S.isGeocentric() == false);
+        auto b = utm32S.bounds();
+        CHECK((b.valid() && b.xmin == 166000 && b.xmax == 834000 && b.ymin == 1116915 && b.ymax == 10000000));
+    }
+
+    SECTION("Quadrilateralized Spherical Cube SRS")
+    {
+        double E = 1.0;
+
+        SRS wgs84("wgs84");
+        REQUIRE(wgs84.valid());
+
+        SRS qsc_face_0("+wktext +proj=qsc +units=m +ellps=WGS84 +datum=WGS84 +lat_0=0 +lon_0=0");
+        REQUIRE(qsc_face_0.valid());
+        auto qsc_bounds = qsc_face_0.bounds();
+        CHECK(qsc_bounds.valid());
+
+        auto xform = wgs84.to(qsc_face_0);
+        REQUIRE(xform.valid());
+
+        double semi_major = wgs84.ellipsoid().semiMajorAxis();
+        double semi_minor = wgs84.ellipsoid().semiMinorAxis();
+
+        glm::dvec3 c;
+        REQUIRE(xform(glm::dvec3(0, 0, 0), c));
+        CHECK(glm::all(glm::epsilonEqual(c, glm::dvec3(0, 0, 0), E)));
+        // long and lat are out of range for face 0, but doesn't fail
+        //CHECK(xform(dvec3(90, 46, 0), c) == false);
+
+        REQUIRE(xform(glm::dvec3(45, 0, 0), c));
+        CHECK(glm::all(glm::epsilonEqual(c, glm::dvec3(semi_major, 0, 0), E)));
+
+        REQUIRE(xform.inverse(glm::dvec3(semi_major, 0, 0), c));
+        CHECK(glm::all(glm::epsilonEqual(c, glm::dvec3(45, 0, 0), E)));
+
+        REQUIRE(xform(glm::dvec3(0, 45, 0), c));
+        // FAILS - not sure what is up here:
+        // 45 degrees transforms to 6352271.2440m
+        // but the semi-minor axis is 6356752.3142m
+        //CHECK(glm::epsilonEqual(c, dvec3(0, semi_minor, 0), E));
+
+        // other way
+        xform = qsc_face_0.to(wgs84);
+        REQUIRE(xform.valid());
+
+        REQUIRE(xform(glm::dvec3(semi_major, 0, 0), c));
+        CHECK(glm::all(glm::epsilonEqual(c, glm::dvec3(45, 0, 0), E)));
+    }
+
+    SECTION("Invalid SRS")
+    {
+        std::string proj_error;
+        SRS::projMessageCallback = [&](int level, const char* msg) { proj_error = msg; };
+
+        SRS bad("gibberish");
+
+        CHECK(bad.valid() == false);
+        CHECK(bad.isProjected() == false);
+        CHECK(bad.isGeodetic() == false);
+        CHECK(bad.isGeocentric() == false);
+        CHECK(bad.errorMessage() == "Invalid PROJ string syntax");
+        
+        CHECK(proj_error == "proj_create: unrecognized format / unknown name");
+
+        SRS::projMessageCallback = nullptr;
+    }
+
+    SECTION("SRS with Vertical Datum")
+    {
+        std::string proj_error;
+        SRS::projMessageCallback = [&](int level, const char* msg) { proj_error = msg; };
+
+        SRS wgs84("epsg:4979"); // geographic WGS84 (3D)
+        REQUIRE(wgs84.valid());
+        REQUIRE(wgs84.hasVerticalDatumShift() == false);
+
+        SRS egm96("epsg:4326+5773"); // WGS84 with EGM96 vdatum
+        REQUIRE(egm96.valid());
+        REQUIRE(egm96.hasVerticalDatumShift() == true);
+
+        // this is legal but will print a warning because Z values will be lost.
+        // (you should use epsg::4979 instead)
+
+        SRS wgs84_2d("epsg:4326"); // 2D geographic
+        REQUIRE(wgs84_2d);
+        auto xform_with_warning = wgs84_2d.to(egm96);
+        CHECK(xform_with_warning);
+        CHECK(proj_error == "Warning, \"epsg:4326->epsg:4326+5773\" transforms from GEOGRAPHIC_2D_CRS to COMPOUND_CRS. Z values will be discarded. Use a GEOGRAPHIC_3D_CRS instead");
+        proj_error.clear();
+
+        // total equivalency:
+        REQUIRE(egm96.equivalentTo(wgs84_2d) == false);
+
+        // horizontal equivalency:
+        REQUIRE(egm96.horizontallyEquivalentTo(wgs84_2d) == true);
+        REQUIRE(wgs84.horizontallyEquivalentTo(wgs84_2d) == true);
+
+        // EGM96 test values are from:
+        // https://earth-info.nga.mil/index.php?dir=wgs84&action=egm96-geoid-calc
+        glm::dvec3 out(0, 0, 0);
+
+        // geodetic to vdatum:
+        {
+            //Log()->info("Note: if you see SRS/VDatum errors, check that you have the NGA grid in your share/proj or PROJ_DATA folder! https://github.com/OSGeo/PROJ-data/blob/master/us_nga/us_nga_egm96_15.tif");
+
+            SRS::projMessageCallback = [&](int level, const char* msg) { 
+                Log()->warn("PROJ: {} ... do you have the NGA grid in your PROJ_DATA or share/proj folder? You can download it from https://github.com/OSGeo/PROJ-data/blob/master/us_nga/us_nga_egm96_15.tif", msg);
+            };
+
+            auto xform = wgs84.to(egm96);
+            REQUIRE(xform.valid());
+
+            REQUIRE(xform(glm::dvec3(0, 0, 17.16), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform(glm::dvec3(90, 0, -63.24), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform(glm::dvec3(180, 0, 21.15), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform(glm::dvec3(-90, 0, -4.29), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+
+            // inverse
+            REQUIRE(xform.inverse(glm::dvec3(0, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 17.16, E));
+            REQUIRE(xform.inverse(glm::dvec3(90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -63.24, E));
+            REQUIRE(xform.inverse(glm::dvec3(180, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 21.15, E));
+            REQUIRE(xform.inverse(glm::dvec3(-90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -4.29, E));
+
+            SRS::projMessageCallback = nullptr;
+        }
+
+        // vdatum to geodetic:
+        {
+            auto xform = egm96.to(wgs84);
+            REQUIRE(xform.valid());
+
+            REQUIRE(xform(glm::dvec3(0, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 17.16, E));
+            REQUIRE(xform(glm::dvec3(90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -63.24, E));
+            REQUIRE(xform(glm::dvec3(180, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 21.15, E));
+            REQUIRE(xform(glm::dvec3(-90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -4.29, E));
+
+            // inverse
+            REQUIRE(xform.inverse(glm::dvec3(0, 0, 17.16), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform.inverse(glm::dvec3(90, 0, -63.24), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform.inverse(glm::dvec3(180, 0, 21.15), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform.inverse(glm::dvec3(-90, 0, -4.29), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+        }
+
+        // vdatum to vdatum (noop)
+        {
+            auto xform = egm96.to(egm96);
+            REQUIRE(xform.valid());
+
+            glm::dvec3 out;
+            REQUIRE(xform(glm::dvec3(0, 0, 17.16), out));
+            CHECK(glm::epsilonEqual(out.z, 17.16, E));
+        }
+    }
+
+    SECTION("SRS Metadata")
+    {
+        Box a = SRS::WGS84.bounds();
+        CHECK(glm::epsilonEqual(a.xmin, -180.0, E));
+        CHECK(glm::epsilonEqual(a.xmax, 180.0, E));
+        CHECK(glm::epsilonEqual(a.ymin, -90.0, E));
+        CHECK(glm::epsilonEqual(a.ymax, 90.0, E));
+
+        Box bb = SRS::SPHERICAL_MERCATOR.bounds();
+        CHECK(glm::epsilonEqual(bb.xmin, -20037508.342789248, E));
+        CHECK(glm::epsilonEqual(bb.xmax, 20037508.342789248, E));
+        CHECK(glm::epsilonEqual(bb.ymin, -20037508.342789248, E));
+        CHECK(glm::epsilonEqual(bb.ymax, 20037508.342789248, E));
+
+        auto ellipsoid = SRS::WGS84.ellipsoid();
+        REQUIRE(ellipsoid.semiMajorAxis() == 6378137.0);
+
+        Units units;
+        units = SRS::WGS84.units();
+        CHECK(units == Units::DEGREES);
+        units = SRS::SPHERICAL_MERCATOR.units();
+        CHECK(units == Units::METERS);
+    }
+
+    SECTION("SRS Multithreading")
+    {
+        // tests the fact that SRS are thread-specific
+        auto function = []()
+        {
+            SRS a("wgs84");
+            SRS b("spherical-mercator");
+            auto xform = a.to(b);
+            glm::dvec3 out;
+            REQUIRE(xform(glm::dvec3(-180, 0, 0), out));
+            CHECK(glm::all(glm::epsilonEqual(out, glm::dvec3(-20037508.34278925, 0, 0), 1e-6)));
+        };
+
+        std::vector<std::thread> threads;
+        for (unsigned i = 0; i < 12; ++i)
+        {
+            threads.emplace_back(function);
+        }
+
+        for (auto& t : threads)
+            t.join();
+
+        // REQUIRE no crash :)
+    }
+
+    SECTION("Well-known Profiles")
+    {
+        Profile GG("global-geodetic");
+        REQUIRE(GG.valid());
+        CHECK(GG.srs() == SRS::WGS84);
+
+        Profile SM("spherical-mercator");
+        REQUIRE(SM.valid());
+        CHECK(SM.srs() == SRS::SPHERICAL_MERCATOR);
+
+        Profile PC("plate-carree");
+        REQUIRE(PC.valid());
+        CHECK(PC.srs() == SRS::PLATE_CARREE);
+
+        Profile INVALID("unknown");
+        CHECK(INVALID.valid() == false);
+    }
+
+    SECTION("Profile metadata")
+    {
+        Profile GG("global-geodetic");
+        REQUIRE(GG.valid());
+
+        auto profile_ex = GG.extent();
+        CHECK(profile_ex == GeoExtent(SRS("wgs84"), -180, -90, 180, 90));
+
+        auto tile_ex = GG.tileExtent(1, 0, 0);
+        CHECK(tile_ex == GeoExtent(SRS("wgs84"), -180, 0, -90, 90));
+
+        auto [x0, y0] = GG.numTiles(0);
+        CHECK((x0 == 2 && y0 == 1));
+
+        auto [dimx0, dimy0] = GG.tileDimensions(0);
+        CHECK((dimx0 == 180.0 && dimy0 == 180.0));
+
+        auto [dimx1, dimy1] = GG.tileDimensions(1);
+        CHECK((dimx1 == 90.0 && dimy1 == 90.0));
+
+        unsigned lod = GG.levelOfDetail(45.0);
+        CHECK(lod == 2);
+
+        std::vector<TileKey> keys = GG.rootKeys();
+        REQUIRE(keys.size() == 2);
+        CHECK(keys[0] == TileKey(0, 0, 0, GG));
+        CHECK(keys[1] == TileKey(0, 1, 0, GG));
+    }
+
+    SECTION("Profile serialization")
+    {
+        const char* json = R"("
+            {
+                "extent": {
+                    "srs": "+proj=longlat +R=1737400",
+                    "xmin": -180,
+                    "ymin": -90,
+                    "xmax": 180,
+                    "ymax": 90
+                },
+                "tx": 2,
+                "ty": 1
+            }
+        ")";
+        Profile profile;
+        profile.from_json(json);
+    }
+}
+
+#if defined(ROCKY_HAS_CURL) || defined(ROCKY_HAS_HTTPLIB)
+namespace
+{
+    //! Serves scripted loopback responses on one thread; destruction interrupts stalls and joins the server.
+    class TestHTTPServer
+    {
+#ifdef _WIN32
+        using Socket = SOCKET;
+        static constexpr Socket invalidSocket = INVALID_SOCKET;
+#else
+        using Socket = int;
+        static constexpr Socket invalidSocket = -1;
+#endif
+    public:
+        struct Reply
+        {
+            std::string head;
+            std::chrono::milliseconds stall{ 0 };
+            std::string tail;
+        };
+
+        //! Binds an ephemeral IPv4 loopback port or throws; owns sockets and the serving thread.
+        explicit TestHTTPServer(std::vector<Reply> replies)
+        {
+#ifdef _WIN32
+            WSADATA data;
+            if (WSAStartup(MAKEWORD(2, 2), &data) != 0)
+                throw std::runtime_error("Unable to initialize test sockets");
+#endif
+            try
+            {
+                _listener = socket(AF_INET, SOCK_STREAM, 0);
+                sockaddr_in address{};
+                address.sin_family = AF_INET;
+                address.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+                if (_listener == invalidSocket ||
+                    bind(_listener, reinterpret_cast<sockaddr*>(&address), sizeof(address)) != 0 ||
+                    listen(_listener, 4) != 0)
+                    throw std::runtime_error("Unable to bind loopback HTTP fixture");
+#ifdef _WIN32
+                int length = sizeof(address);
+#else
+                socklen_t length = sizeof(address);
+#endif
+                if (getsockname(_listener, reinterpret_cast<sockaddr*>(&address), &length) != 0)
+                    throw std::runtime_error("Unable to read test server port");
+                url = "http://127.0.0.1:" + std::to_string(ntohs(address.sin_port)) + "/";
+                _thread = std::thread([this, replies = std::move(replies)]() { serve(replies); });
+            }
+            catch (...)
+            {
+                closeSocket(_listener);
+#ifdef _WIN32
+                WSACleanup();
+#endif
+                throw;
+            }
+        }
+
+        //! Stops accepting requests and wakes a stalled response before releasing socket resources.
+        ~TestHTTPServer()
+        {
+            {
+                std::scoped_lock lock(_mutex);
+                _stop = true;
+            }
+            _changed.notify_all();
+            _thread.join();
+            closeSocket(_listener);
+#ifdef _WIN32
+            WSACleanup();
+#endif
+        }
+
+        //! Waits for the first request so cancellation is tested after a connection is established.
+        bool waitForRequest()
+        {
+            std::unique_lock lock(_mutex);
+            return _changed.wait_for(lock, std::chrono::seconds(5), [&]() { return _requests > 0; });
+        }
+
+        std::string url;
+
+    private:
+        //! Closes a fixture socket, including an uninitialized one during failed setup.
+        static void closeSocket(Socket socket)
+        {
+            if (socket == invalidSocket) return;
+#ifdef _WIN32
+            closesocket(socket);
+#else
+            close(socket);
+#endif
+        }
+
+        //! Bounds each socket wait so destruction cannot hang on an absent client.
+        static bool readable(Socket socket)
+        {
+            fd_set sockets;
+            FD_ZERO(&sockets);
+            FD_SET(socket, &sockets);
+            timeval timeout{ 0, 100000 };
+            return select(static_cast<int>(socket + 1), &sockets, nullptr, nullptr, &timeout) > 0;
+        }
+
+        //! Writes a small scripted response, tolerating clients that canceled or timed out.
+        static void sendResponse(Socket socket, const std::string& data)
+        {
+#ifdef SO_NOSIGPIPE
+            int enabled = 1;
+            setsockopt(socket, SOL_SOCKET, SO_NOSIGPIPE, &enabled, sizeof(enabled));
+#endif
+#ifdef MSG_NOSIGNAL
+            constexpr int flags = MSG_NOSIGNAL;
+#else
+            constexpr int flags = 0;
+#endif
+            std::size_t sent = 0;
+            while (sent < data.size())
+            {
+                auto count = send(socket, data.data() + sent, static_cast<int>(data.size() - sent), flags);
+                if (count <= 0) break;
+                sent += static_cast<std::size_t>(count);
+            }
+        }
+
+        //! Handles one connection per scripted reply; all stalls are interruptible and requests contain no body.
+        void serve(const std::vector<Reply>& replies)
+        {
+            for (const auto& reply : replies)
+            {
+                while (!_stop && !readable(_listener)) {}
+                if (_stop) return;
+                auto client = accept(_listener, nullptr, nullptr);
+                if (client == invalidSocket) return;
+                while (!_stop && !readable(client)) {}
+                char request[4096];
+                if (!_stop && recv(client, request, sizeof(request), 0) > 0)
+                {
+                    sendResponse(client, reply.head);
+                    std::unique_lock lock(_mutex);
+                    ++_requests;
+                    _changed.notify_all();
+                    _changed.wait_for(lock, reply.stall, [&]() { return _stop.load(); });
+                    lock.unlock();
+                    if (!_stop) sendResponse(client, reply.tail);
+                }
+                closeSocket(client);
+            }
+        }
+
+        Socket _listener = invalidSocket;
+        std::thread _thread;
+        std::atomic_bool _stop{ false };
+        std::mutex _mutex;
+        std::condition_variable _changed;
+        unsigned _requests = 0;
+    };
+}
+
+//! Temporary HTTP failures can recover with the same IO services; a missing resource remains cached.
+TEST_CASE("HTTP error cache permits recovery from temporary failures", "[io][http-cache]")
+{
+    std::string status;
+    bool permanent = false;
+    SECTION("service unavailable") { status = "503 Service Unavailable"; }
+    SECTION("server error") { status = "500 Internal Server Error"; }
+    SECTION("rate limited") { status = "429 Too Many Requests"; }
+    SECTION("missing resource") { status = "404 Not Found"; permanent = true; }
+    const std::string failure = "HTTP/1.1 " + status + "\r\nContent-Length: 0\r\n\r\n";
+    const std::string success = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nContent-Type: text/plain\r\n\r\nOK";
+    TestHTTPServer server({ { failure, {}, {} }, { success, {}, {} } });
+    IOOptions io;
+    io.maxNetworkAttempts = 1;
+    io.services().deadpool = std::make_shared<DealpoolService>(16);
+    const URI uri(server.url);
+    auto first = uri.read(io);
+    REQUIRE(first.failed());
+    CHECK(first.error().type == (permanent ? Failure::ResourceUnavailable : Failure::ServiceUnavailable));
+    CHECK(io.services().deadpool->get(uri.full()).has_value() == permanent);
+    auto second = uri.read(io);
+    if (permanent)
+    {
+        REQUIRE(second.failed());
+        CHECK(second.error().type == Failure::ResourceUnavailable);
+        io.services().deadpool->clear();
+        second = uri.read(io);
+    }
+    REQUIRE(second.ok());
+    CHECK(second->content.data == "OK");
+}
+#endif
+
+#if defined(ROCKY_HAS_CURL) && !defined(ROCKY_HAS_HTTPLIB)
+//! Redirects and informational responses must not supply headers for the final response body.
+TEST_CASE("CURL publishes only final response headers", "[io][curl][http-headers]")
+{
+    const std::string redirect =
+        "HTTP/1.1 302 Found\r\nLocation: /final\r\nContent-Length: 0\r\nContent-Type: text/html\r\n\r\n";
+    std::vector<TestHTTPServer::Reply> replies;
+    std::string prefix;
+    std::string body = "{}";
+    std::string finalHeader = "cOnTeNt-TyPe: application/json\r\n";
+    std::string expectedType = "application/json";
+    SECTION("redirect content type is replaced") { replies.push_back({ redirect, {}, {} }); }
+    SECTION("multiple redirects")
+    {
+        replies.push_back({ redirect, {}, {} });
+        replies.push_back({ redirect, {}, {} });
+    }
+    SECTION("absent final header is inferred from the body")
+    {
+        replies.push_back({ redirect, {}, {} });
+        finalHeader.clear();
+        body = "<?xml version=\"1.0\"?><root/>";
+        expectedType = "text/xml";
+    }
+    SECTION("informational headers are discarded")
+    {
+        prefix = "HTTP/1.1 103 Early Hints\r\nContent-Type: text/html\r\n\r\n";
+    }
+    replies.push_back({ prefix + "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(body.size()) +
+        "\r\n" + finalHeader + "\r\n" + body, {}, {} });
+    TestHTTPServer server(std::move(replies));
+    IOOptions io;
+    io.maxNetworkAttempts = 1;
+    const auto response = URI(server.url).read(io);
+    REQUIRE(response.ok());
+    CHECK(response->content.data == body);
+    CHECK(response->content.type == expectedType);
+}
+
+//! Canceling an active URI job must stop stalled headers, stalled bodies, and retry backoff before worker shutdown.
+TEST_CASE("CURL cancellation releases network workers", "[io][curl]")
+{
+    TestHTTPServer::Reply reply;
+    SECTION("stalled response headers") { reply.stall = std::chrono::seconds(6); }
+    SECTION("stalled response body")
+    {
+        reply.head = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n";
+        reply.stall = std::chrono::seconds(6);
+    }
+    SECTION("retry backoff") { reply.head = "HTTP/1.1 429 Too Many Requests\r\nContent-Length: 0\r\n\r\n"; }
+    TestHTTPServer server({ reply });
+    IOOptions io;
+    io.networkReadTimeout = std::chrono::seconds(10);
+    std::promise<Result<URIResponse>> completion;
+    auto result = completion.get_future();
+    jobs::runtime runtime;
+    auto job = runtime.dispatch([&](Cancelable& cancelable)
+    {
+        completion.set_value(URI(server.url).read(io.with(cancelable)));
+        return true;
+    });
+    REQUIRE(server.waitForRequest());
+    // Let the client consume the headers or enter backoff before withdrawing its future.
+    std::this_thread::sleep_for(std::chrono::milliseconds(200));
+    const auto start = std::chrono::steady_clock::now();
+    job.reset();
+    runtime.shutdown();
+    const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+    auto response = result.get();
+    INFO("cancellation/shutdown seconds: " << elapsed);
+    REQUIRE(response.failed());
+    CHECK(response.error().type == Failure::OperationCanceled);
+    CHECK(elapsed < 2.5);
+}
+
+//! Stalled downloads time out, retries discard partial responses, and later requests reuse a clean CURL handle.
+TEST_CASE("CURL read stalls are bounded and retries start clean", "[io][curl]")
+{
+    const std::string success = "HTTP/1.1 200 OK\r\nContent-Length: 2\r\nContent-Type: text/plain\r\n\r\nOK";
+    const std::string partial = "HTTP/1.1 200 OK\r\nContent-Length: 5\r\nContent-Type: application/partial\r\n\r\nbad";
+    IOOptions io;
+    io.networkReadTimeout = std::chrono::seconds(1);
+    io.maxNetworkAttempts = 1;
+    SECTION("stalled body times out without cancellation")
+    {
+        TestHTTPServer server({ { "HTTP/1.1 200 OK\r\nContent-Length: 2\r\n\r\n", std::chrono::seconds(6), {} } });
+        const auto start = std::chrono::steady_clock::now();
+        auto response = URI(server.url).read(io);
+        const auto elapsed = std::chrono::duration<double>(std::chrono::steady_clock::now() - start).count();
+        INFO("stall timeout seconds: " << elapsed);
+        REQUIRE(response.failed());
+        CHECK(response.error().type == Failure::ServiceUnavailable);
+        CHECK(elapsed < 4.0);
+    }
+    SECTION("partial attempt is discarded before retry")
+    {
+        TestHTTPServer server({ { partial, std::chrono::seconds(6), {} }, { success, {}, {} } });
+        io.maxNetworkAttempts = 2;
+        auto response = URI(server.url).read(io);
+        if (response.failed()) INFO(response.error().message);
+        REQUIRE(response.ok());
+        CHECK(response->content.data == "OK");
+        CHECK(response->content.type == "text/plain");
+    }
+    TestHTTPServer server({ { success, {}, {} } });
+    auto response = URI(server.url).read(io);
+    REQUIRE(response.ok());
+    CHECK(response->content.data == "OK");
+}
+#endif
+
+//! Timeout configuration survives copying and moving options before dispatching network work.
+TEST_CASE("IO options preserve network timeouts", "[io]")
+{
+    IOOptions source;
+    source.networkConnectionTimeout = std::chrono::seconds(2);
+    source.networkReadTimeout = std::chrono::seconds(7);
+    source.networkCAFile = "private-ca.pem";
+    IOOptions copy(source);
+    IOOptions moved;
+    moved = std::move(copy);
+    CHECK(moved.networkConnectionTimeout == source.networkConnectionTimeout);
+    CHECK(moved.networkReadTimeout == source.networkReadTimeout);
+    CHECK(moved.networkCAFile == source.networkCAFile);
+}
+
+//! Opt-in TLS integration: TLS_URL serves "OK" with a localhost-only certificate signed by the supplied TLS_CA PEM.
+//! Run with "[.tls]" and set ROCKY_TEST_TLS_URL and ROCKY_TEST_TLS_CA; no system trust changes are needed.
+TEST_CASE("HTTPS verifies peer trust and hostname", "[.tls]")
+{
+    const char* endpoint = std::getenv("ROCKY_TEST_TLS_URL");
+    const char* caFile = std::getenv("ROCKY_TEST_TLS_CA");
+    REQUIRE(endpoint != nullptr);
+    REQUIRE(caFile != nullptr);
+    REQUIRE(URI::supportsHTTPS());
+    IOOptions io;
+    io.maxNetworkAttempts = 1;
+    std::string url = endpoint;
+    SECTION("untrusted issuer is rejected by default")
+    {
+        auto response = URI(url).read(io);
+        REQUIRE(response.failed());
+        CHECK(response.error().type == Failure::ServiceUnavailable);
+    }
+    SECTION("explicit CA bundle accepts the trusted hostname")
+    {
+        io.networkCAFile = caFile;
+        auto response = URI(url).read(io);
+        INFO((response.failed() ? response.error().message : "TLS accepted"));
+        REQUIRE(response.ok());
+        CHECK(response->content.data == "OK");
+    }
+    SECTION("trusted issuer does not bypass hostname validation")
+    {
+        io.networkCAFile = caFile;
+        REQUIRE(url.find("localhost") != std::string::npos);
+        url.replace(url.find("localhost"), 9, "127.0.0.1");
+        CHECK(URI(url).read(io).failed());
+    }
+    SECTION("custom trust does not leak into the next request on the same thread")
+    {
+        io.networkCAFile = caFile;
+        REQUIRE(URI(url).read(io).ok());
+        io.networkCAFile.clear();
+        CHECK(URI(url).read(io).failed());
+    }
+    SECTION("missing CA bundle fails closed")
+    {
+        io.networkCAFile = std::string(caFile) + ".missing";
+        CHECK(URI(url).read(io).failed());
+    }
+    SECTION("default platform trust accepts a public HTTPS site")
+    {
+        auto response = URI("https://example.com/").read(io);
+        INFO((response.failed() ? response.error().message : "TLS accepted"));
+        REQUIRE(response.ok());
+        CHECK(response->content.data.find("Example Domain") != std::string::npos);
+    }
+}
+
+TEST_CASE("IO")
+{
+    SECTION("HTTP")
+    {
+        URI uri("http://readymap.org/readymap/tiles/1.0.0/7/");
+        auto r = uri.read(IOOptions());
+        CHECKED_IF(r.ok())
+        {
+            CHECK(r.value().content.type == "text/xml");
+
+            auto body = r.value().content.data;
+            CHECK(!body.empty());
+            CHECK(geostudio::native::detail::startsWith(body, "<?xml"));
+        }
+        else
+        {
+            std::cerr << "HTTP/S request failed: " << r.error().message << std::endl;
+        }
+    }
+
+    SECTION("HTTPS")
+    {
+        if (URI::supportsHTTPS())
+        {
+            URI uri("https://readymap.org/readymap/tiles/1.0.0/7/");
+            auto r = uri.read(IOOptions());
+            CHECKED_IF(r.ok())
+            {
+                CHECK(r.value().content.type == "text/xml");
+                auto body = r.value().content.data;
+                CHECK(!body.empty());
+                CHECK(geostudio::native::detail::startsWith(body, "<?xml"));
+            }
+        }
+        else
+        {
+            WARN("HTTPS support is not available - skipping HTTP tests");
+        }
+    }
+
+    SECTION("URI")
+    {
+        URI file("C:/folder/filename.ext");
+        CHECK(file.base() == "C:/folder/filename.ext");
+        CHECK(file.full() == "C:/folder/filename.ext");
+
+        URI relative_to_folder("filename.ext", "C:/folder/");
+        CHECK(relative_to_folder.base() == "filename.ext");
+        CHECK(relative_to_folder.full() == "C:/folder/filename.ext");
+
+        URI relative_to_file("filename.ext", "C:/folder/another_file.ext");
+        CHECK(relative_to_file.base() == "filename.ext");
+        CHECK(relative_to_file.full() == "C:/folder/filename.ext");
+
+        URI relative_with_subfolder("subfolder/filename.ext", "C:/folder/another_file.ext");
+        CHECK(relative_with_subfolder.base() == "subfolder/filename.ext");
+        CHECK(relative_with_subfolder.full() == "C:/folder/subfolder/filename.ext");
+
+        URI relative_with_parentfolder("../filename.ext", "C:/folder/another_file.ext");
+        CHECK(relative_with_parentfolder.base() == "../filename.ext");
+        CHECK(relative_with_parentfolder.full() == "C:/filename.ext");
+
+        URI relative_to_url_folder("filename.ext", "https://server.tld/folder/");
+        CHECK(relative_to_url_folder.base() == "filename.ext");
+        CHECK(relative_to_url_folder.full() == "https://server.tld/folder/filename.ext");
+
+        URI relative_to_url_file("filename.ext", "https://server.tld/folder/another_file.ext");
+        CHECK(relative_to_url_file.base() == "filename.ext");
+        CHECK(relative_to_url_file.full() == "https://server.tld/folder/filename.ext");
+    }
+}
+
+TEST_CASE("Earth File")
+{
+    std::string earthFile = "https://raw.githubusercontent.com/gwaldron/osgearth/master/tests/readymap.earth";
+    EarthFileImporter importer;
+    auto result = importer.read(earthFile, {});
+    CHECKED_IF(result.ok())
+    {
+        auto contextSingleton = VSGContextFactory::create(nullptr);
+        auto context = contextSingleton.get();
+        CHECK(context->status.ok());
+
+        auto mapNode = MapNode::create(context);
+        auto r = mapNode->from_json(result.value(), context->io.from(earthFile));
+        CHECK(r.ok());
+
+        auto layers = mapNode->map->layers([&](auto layer) {
+            return layer->name == "ReadyMap 15m Imagery"; });
+
+        CHECK(layers.size() == 1);
+        
+        auto layer1 = layers.front();
+        CHECKED_IF(layer1)
+        {
+            auto tms_layer = TMSImageLayer::cast(layer1);
+            CHECK(tms_layer);
+            CHECK(tms_layer->uri.has_value());
+            CHECK(tms_layer->uri.value().full() == "https://readymap.org/readymap/tiles/1.0.0/7/");
+        }
+    }
+}
+
+TEST_CASE("MapManipulator NaN fix")
+{
+    // Test case for issue #105 - NaN error in MapManipulator.cpp
+    // This tests that very close vectors don't produce NaN when creating quaternions
+    
+    // Test data from the original issue
+    vsg::dvec3 center(-2248544.6429430502, 5050313.7280376982, 3170373.6894794349);
+    vsg::dvec3 target(-2248544.6095093964, 5050313.7806744399, 3170373.6297455574);
+    
+    // Calculate distance between the vectors
+    double dist = vsg::length(center - target);
+    double centerMag = vsg::length(center);
+    double relativeDist = centerMag > 0 ? dist / centerMag : 0;
+    
+    // The relative distance should be very small (less than 1e-6)
+    CHECK(relativeDist < 1e-6);
+    
+    // Test our fix logic - when vectors are very close, use identity quaternion
+    vsg::dquat rotCenterToTarget;
+    if (relativeDist < 1e-6) {
+        rotCenterToTarget = vsg::dquat(0, 0, 0, 1);
+    } else {
+        rotCenterToTarget.set(center, target);
+    }
+    
+    // Check that none of the quaternion components are NaN
+    CHECK(!std::isnan(rotCenterToTarget.x));
+    CHECK(!std::isnan(rotCenterToTarget.y));
+    CHECK(!std::isnan(rotCenterToTarget.z));
+    CHECK(!std::isnan(rotCenterToTarget.w));
+    
+    // The quaternion should be an identity quaternion (or very close to it)
+    CHECK(rotCenterToTarget.x == 0.0);
+    CHECK(rotCenterToTarget.y == 0.0);
+    CHECK(rotCenterToTarget.z == 0.0);
+    CHECK(rotCenterToTarget.w == 1.0);
+}

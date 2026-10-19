@@ -1,0 +1,92 @@
+/**
+ * rocky c++
+ * Copyright 2025 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+#include <geostudio/native/globe/ecs/Component.h>
+#include <geostudio/native/globe/Color.h>
+#include <geostudio/native/globe/SRS.h>
+
+namespace geostudio::native
+{
+    //! Mesh geometry component
+    struct MeshGeometry : public Component<MeshGeometry>
+    {
+        //! Separate arrays containing verts, colors, UVs, and indices.
+        std::vector<glm::dvec3> vertices;
+        std::vector<glm::fvec4> colors;
+        std::vector<glm::fvec3> normals;
+        std::vector<glm::fvec2> uvs;
+        std::vector<std::uint32_t> indices;
+
+        //! Reference SRS for the vertex data.
+        SRS srs;
+    };
+
+    //! Mesh style component
+    struct MeshStyle : public Component<MeshStyle>
+    {
+        //! Default color for the mesh
+        Color color = StockColor::White;
+
+        //! If true, use the per-vertex colors defined in the associated MeshGeometry
+        bool useGeometryColors = false;
+
+        //! Vertex adjustment (in meters) to apply to the mesh vertices
+        //! to help mitigate depth fighting artifacts
+        float depthOffset = 0.0f;
+
+        //! Entity supplying an optional ImageTexture or VSG Texture. Null disables texturing.
+        entt::entity texture = entt::null;
+
+        //! Whether to display only the edges of the mesh triangles
+        bool wireframe = false;
+
+        //! Whether to apply normal-based lighting to the mesh
+        bool lighting = false;
+
+        //! 4x4 stippling pattern (lower 16 bits only)
+        std::uint32_t stipplePattern = 0xFFFF;
+
+        //! Whether the mesh should write to the depth buffer
+        bool writeDepth = true;
+
+        //! Whether to draw back-facing triangles
+        //! (front-facing triangles are wound counter-clockwise)
+        bool drawBackfaces = false;
+
+        //! Whether to use a two-pass rendering technique that will help
+        //! blend semi-transparent objects propertly. "writeDepth" must
+        //! also be TRUE for this to take effect. Two-pass alpha first
+        //! renders all geometry colors with depth writes disabled, and then
+        //! renders the depth writes in a second pass.
+        bool twoPassAlpha = false;
+
+        //! Whether to render the mesh in a late render pass that will sort its
+        //! drawables far-to-near based on distance from the camera. You can use
+        //! this to aid in blending different semi-transparent meshes across the
+        //! entire scene.
+        bool transparencyBin = false;
+
+        //! Tessellation resolution hint (in meters) when building mesh geometry
+        //! from polygon features. A value of 0.0 uses the builder's default
+        //! curvature-following resolution.
+        float resolution = 0.0f;
+    };
+
+    //! Mesh comonent
+    struct Mesh : public Component<Mesh>
+    {
+        //! Entity hosting the MeshGeometry to use
+        entt::entity geometry = entt::null;
+
+        //! Entity hosting the MeshStyle to use
+        entt::entity style = entt::null;
+
+        //! Useful constructors
+        inline Mesh() = default;
+        inline Mesh(const MeshGeometry& geometry_) : geometry(geometry_.owner) {}
+        inline Mesh(const MeshGeometry& geometry_, const MeshStyle& style_) : geometry(geometry_.owner), style(style_.owner) {}
+    };
+}

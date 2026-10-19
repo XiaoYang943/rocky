@@ -1,0 +1,75 @@
+{
+  "schemaVersion": 2,
+  "sdkVersion": "0.2.0",
+  "sources": [
+    {
+      "name": "rocky",
+      "path": ".",
+      "upstreamCommit": "a4d8b141ec478e8440526928b344c6eb93810631",
+      "archiveUrl": "https://codeload.github.com/pelicanmapping/rocky/zip/a4d8b141ec478e8440526928b344c6eb93810631",
+      "archiveSha256": "e68ad90921ae238308e34d37efb87c97d8bd6a11081814eccca7af094b0e24d1",
+      "patches": [
+        {
+          "path": "004-modules.patch",
+          "sha256": "685e2d19d2f130535ad3959db7d1e2db369e6ca60866b04a0f7f99118b50e7f0",
+          "layout": "final-paths",
+          "base": "fixed upstream archive"
+        }
+      ],
+      "fileManifest": "provenance/rocky/module-files.json",
+      "fileManifestSha256": "04621290076c4d734a86dc884bb49c45597dca92522ae08ee0e203c1cd0d6b2d"
+    },
+    {
+      "name": "vsgCs",
+      "path": ".",
+      "upstreamCommit": "72176fdfb35acb8462c5760c1b432d72f19c767a",
+      "archiveUrl": "https://codeload.github.com/timoore/vsgCs/zip/72176fdfb35acb8462c5760c1b432d72f19c767a",
+      "archiveSha256": "ee2a1524d3a103ed9d410f7062fea1e05582067ec521fb2a5794d2dd46d2aca0",
+      "patches": [
+        {
+          "path": "004-modules.patch",
+          "sha256": "fd727150103500bfafef108cf3caa5619a09d37b9b88c3d58bc05b91b644739f",
+          "layout": "final-paths",
+          "base": "fixed upstream archive"
+        }
+      ],
+      "fileManifest": "provenance/vsgCs/module-files.json",
+      "fileManifestSha256": "75fa852f1954d582c878b1830cec48d4a073e31b3e89f4dfac1a7c43e67db0a6"
+    },
+    {
+      "name": "vsgXchange",
+      "path": ".",
+      "upstreamCommit": "bdc241ad1d6813ebc2a1777d35885a39e143297b",
+      "archiveUrl": "https://codeload.github.com/vsg-dev/vsgXchange/zip/bdc241ad1d6813ebc2a1777d35885a39e143297b",
+      "archiveSha256": "addd7c5ab859b54a5144b5f40bd5c1a1d614df806aa43b4cd5a2f80dae8ae3d6",
+      "patches": [
+        {
+          "path": "004-modules.patch",
+          "sha256": "97b522527c68a80b0571e651bc7d4f48eb41819cd947704d9386ecaa80c535cd",
+          "layout": "final-paths",
+          "base": "fixed upstream archive"
+        }
+      ],
+      "fileManifest": "provenance/vsgXchange/module-files.json",
+      "fileManifestSha256": "fa029fda51b8cfdfac6d1ee2433c46598627e2da2ccd93ffc8af77fd73ba7854"
+    }
+  ],
+  "migrationMap": "provenance/module-migration.json",
+  "sourceScopes": [
+    "src",
+    "include",
+    "resources",
+    "examples",
+    "tests",
+    "tools"
+  ],
+  "ownedFiles": {
+    "src/io/CMakeLists.txt": "22bf7ecd7521e3131756057bf3c11c7acdc749bea3e3f3240a1f80764becef17",
+    "src/tiles3d/CMakeLists.txt": "98512146d5e56b74f68cd034a14703fd8918d6bc322f9678eef01e3aa62cb6be",
+    "src/tiles3d/TilesetAdapter.cpp": "5e994a99c43ee4f15c1d0a6e6a87cbd3f8b86bf24384f92cb9c0f21d9d8c02e4",
+    "include/geostudio/native/tiles3d/TilesetAdapter.h": "d147188df8ceed576f38309a1f2a2e362e935329dd2ceed59c188673102eced3",
+    "examples/README.md": "5c678b64485cde1e5316f3d8a8cc9b97cce96f232d2b86ce4d07692667ce5a31",
+    "examples/package-consumer/CMakeLists.txt": "86ae87a847e86e17a063cbed1acb91806431d2c7679dd7db37951d6c361abb35",
+    "examples/package-consumer/main.cpp": "5d0eff092957623752a7c72b60dbc58594f534906ee93c3d0838569d17eaf1e2"
+  }
+}
