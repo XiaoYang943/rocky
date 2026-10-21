@@ -5,11 +5,11 @@
  */
 #pragma include "rocky.defines.h.glsl"
 
-#pragma import_defines(ROCKY_HAS_ATMOSPHERE)
+#pragma import_defines(GEOSTUDIO_NATIVE_HAS_ATMOSPHERE)
 
 #pragma import_defines(VSG_SHADOWS_HARD)
 #if defined(VSG_SHADOWS_HARD) || defined(VSG_SHADOWS_SOFT) || defined(VSG_SHADOWS_PCSS)
-#define ROCKY_SHADOWS
+#define GEOSTUDIO_NATIVE_SHADOWS
 #endif
 
 // from VSG's view-dependent state
@@ -30,8 +30,8 @@ struct PBR {
     float ao;
 } g_pbr;
 
-#ifndef ROCKY_PI
-#define ROCKY_PI
+#ifndef GEOSTUDIO_NATIVE_PI
+#define GEOSTUDIO_NATIVE_PI
 const float PI = 3.14159265359;
 #endif
 
@@ -137,7 +137,7 @@ vec4 applyLighting(in vec4 color, in vec3 vertexVs, in vec3 normalVs)
         int shadowmapCount = int(u_lightData.values[index].r);
         if (shadowmapCount > 0)
         {
-#ifdef ROCKY_SHADOWS
+#ifdef GEOSTUDIO_NATIVE_SHADOWS
             intensity *= (1.0 - calculateShadowCoverageForDirectionalLight(index, shadowmapIndex, vec3(0), vec3(0), Lo));
 #endif
             index += 1 + 8 * shadowmapCount;

@@ -4,9 +4,9 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/vsg/ecs/DecalSystem.h>
-#include <geostudio/native/globe/vsg/ecs/TextureSystem.h>
-#include <geostudio/native/globe/vsg/ShaderDefines.h>
+#include <geostudio/native/render/entity/DecalSystem.h>
+#include <geostudio/native/render/entity/TextureSystem.h>
+#include <geostudio/native/render/vsg/ShaderDefines.h>
 #include <vsg/utils/ShaderCompiler.h>
 #include <filesystem>
 #include <thread>
@@ -28,7 +28,7 @@ TEST_CASE("view dependent decal state is empty and initializes only once", "[pro
     const auto descriptorCount = state->descriptorSet->descriptors.size();
     const auto bindingCount = state->descriptorSetLayout->bindings.size();
     const auto descriptorSet = state->descriptorSet;
-#ifdef ROCKY_HAS_DECALS
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
     BufferAccess<DecalGPU> decals(state->decalsBuf);
     REQUIRE(decals.capacity() == 1u);
     CHECK(decals->count == 0);
@@ -39,7 +39,7 @@ TEST_CASE("view dependent decal state is empty and initializes only once", "[pro
     CHECK(state->descriptorSet == descriptorSet);
     CHECK(state->descriptorSet->descriptors.size() == descriptorCount);
     CHECK(state->descriptorSetLayout->bindings.size() == bindingCount);
-#ifdef ROCKY_HAS_DECALS
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
     CHECK(BufferAccess<DecalGPU>(state->decalsBuf)->count == 7);
 #endif
 }
@@ -56,7 +56,7 @@ TEST_CASE("decal culling and terrain shaders compile together", "[projection][sh
 
     std::vector<std::string> defines;
     SECTION("raster only") { }
-    SECTION("vector enabled") { defines.emplace_back("ROCKY_HAS_SLUGHORN"); }
+    SECTION("vector enabled") { defines.emplace_back("GEOSTUDIO_NATIVE_HAS_SLUGHORN"); }
 
     const auto shadersPath = std::filesystem::path(__FILE__).parent_path().parent_path().parent_path() / "resources/globe/shaders";
     auto options = vsg::Options::create();

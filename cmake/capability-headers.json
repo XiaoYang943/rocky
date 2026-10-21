@@ -1,0 +1,1366 @@
+[
+  {
+    "old": "include/geostudio/native/globe/Azure.h",
+    "path": "src/drivers/azure/Azure.h",
+    "include": "geostudio/native/drivers/azure/Azure.h",
+    "legacy": "geostudio/native/globe/Azure.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/AzureImageLayer.h",
+    "path": "src/drivers/azure/AzureImageLayer.h",
+    "include": "geostudio/native/drivers/azure/AzureImageLayer.h",
+    "legacy": "geostudio/native/globe/AzureImageLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Bing.h",
+    "path": "src/drivers/bing/Bing.h",
+    "include": "geostudio/native/drivers/bing/Bing.h",
+    "legacy": "geostudio/native/globe/Bing.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/BingElevationLayer.h",
+    "path": "src/drivers/bing/BingElevationLayer.h",
+    "include": "geostudio/native/drivers/bing/BingElevationLayer.h",
+    "legacy": "geostudio/native/globe/BingElevationLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/BingImageLayer.h",
+    "path": "src/drivers/bing/BingImageLayer.h",
+    "include": "geostudio/native/drivers/bing/BingImageLayer.h",
+    "legacy": "geostudio/native/globe/BingImageLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Cache.h",
+    "path": "src/core/cache/Cache.h",
+    "include": "geostudio/native/core/cache/Cache.h",
+    "legacy": "geostudio/native/globe/Cache.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Callbacks.h",
+    "path": "src/core/base/Callbacks.h",
+    "include": "geostudio/native/core/base/Callbacks.h",
+    "legacy": "geostudio/native/globe/Callbacks.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Color.h",
+    "path": "src/data/raster/Color.h",
+    "include": "geostudio/native/data/raster/Color.h",
+    "legacy": "geostudio/native/globe/Color.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Common.h",
+    "path": "src/core/base/Common.h",
+    "include": "geostudio/native/core/base/Common.h",
+    "legacy": "geostudio/native/globe/Common.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Context.h",
+    "path": "src/core/io/Context.h",
+    "include": "geostudio/native/core/io/Context.h",
+    "legacy": "geostudio/native/globe/Context.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/contrib/EarthFileImporter.h",
+    "path": "src/drivers/earth/EarthFileImporter.h",
+    "include": "geostudio/native/drivers/earth/EarthFileImporter.h",
+    "legacy": "geostudio/native/globe/contrib/EarthFileImporter.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/DateTime.h",
+    "path": "src/core/base/DateTime.h",
+    "include": "geostudio/native/core/base/DateTime.h",
+    "legacy": "geostudio/native/globe/DateTime.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Component.h",
+    "path": "src/scene/entity/Component.h",
+    "include": "geostudio/native/scene/entity/Component.h",
+    "legacy": "geostudio/native/globe/ecs/Component.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Decal.h",
+    "path": "src/scene/entity/Decal.h",
+    "include": "geostudio/native/scene/entity/Decal.h",
+    "legacy": "geostudio/native/globe/ecs/Decal.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Declutter.h",
+    "path": "src/scene/entity/Declutter.h",
+    "include": "geostudio/native/scene/entity/Declutter.h",
+    "legacy": "geostudio/native/globe/ecs/Declutter.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/EntityCollectionLayer.h",
+    "path": "src/scene/entity/EntityCollectionLayer.h",
+    "include": "geostudio/native/scene/entity/EntityCollectionLayer.h",
+    "legacy": "geostudio/native/globe/ecs/EntityCollectionLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Highlight.h",
+    "path": "src/scene/entity/Highlight.h",
+    "include": "geostudio/native/scene/entity/Highlight.h",
+    "legacy": "geostudio/native/globe/ecs/Highlight.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Label.h",
+    "path": "src/scene/entity/Label.h",
+    "include": "geostudio/native/scene/entity/Label.h",
+    "legacy": "geostudio/native/globe/ecs/Label.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Line.h",
+    "path": "src/scene/entity/Line.h",
+    "include": "geostudio/native/scene/entity/Line.h",
+    "legacy": "geostudio/native/globe/ecs/Line.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Mesh.h",
+    "path": "src/scene/entity/Mesh.h",
+    "include": "geostudio/native/scene/entity/Mesh.h",
+    "legacy": "geostudio/native/globe/ecs/Mesh.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Model.h",
+    "path": "src/scene/entity/Model.h",
+    "include": "geostudio/native/scene/entity/Model.h",
+    "legacy": "geostudio/native/globe/ecs/Model.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Motion.h",
+    "path": "src/scene/entity/Motion.h",
+    "include": "geostudio/native/scene/entity/Motion.h",
+    "legacy": "geostudio/native/globe/ecs/Motion.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Optics.h",
+    "path": "src/scene/entity/Optics.h",
+    "include": "geostudio/native/scene/entity/Optics.h",
+    "legacy": "geostudio/native/globe/ecs/Optics.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Overlay.h",
+    "path": "src/scene/entity/Overlay.h",
+    "include": "geostudio/native/scene/entity/Overlay.h",
+    "legacy": "geostudio/native/globe/ecs/Overlay.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/PixelScale.h",
+    "path": "src/scene/entity/PixelScale.h",
+    "include": "geostudio/native/scene/entity/PixelScale.h",
+    "legacy": "geostudio/native/globe/ecs/PixelScale.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Point.h",
+    "path": "src/scene/entity/Point.h",
+    "include": "geostudio/native/scene/entity/Point.h",
+    "legacy": "geostudio/native/globe/ecs/Point.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Polygon.h",
+    "path": "src/scene/entity/Polygon.h",
+    "include": "geostudio/native/scene/entity/Polygon.h",
+    "legacy": "geostudio/native/globe/ecs/Polygon.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/ProjectedTexture.h",
+    "path": "src/scene/entity/ProjectedTexture.h",
+    "include": "geostudio/native/scene/entity/ProjectedTexture.h",
+    "legacy": "geostudio/native/globe/ecs/ProjectedTexture.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Registry.h",
+    "path": "src/scene/entity/Registry.h",
+    "include": "geostudio/native/scene/entity/Registry.h",
+    "legacy": "geostudio/native/globe/ecs/Registry.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/TerrainAnchor.h",
+    "path": "src/scene/entity/TerrainAnchor.h",
+    "include": "geostudio/native/scene/entity/TerrainAnchor.h",
+    "legacy": "geostudio/native/globe/ecs/TerrainAnchor.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Texture.h",
+    "path": "src/scene/entity/Texture.h",
+    "include": "geostudio/native/scene/entity/Texture.h",
+    "legacy": "geostudio/native/globe/ecs/Texture.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Transform.h",
+    "path": "src/scene/entity/Transform.h",
+    "include": "geostudio/native/scene/entity/Transform.h",
+    "legacy": "geostudio/native/globe/ecs/Transform.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ecs/Visibility.h",
+    "path": "src/scene/entity/Visibility.h",
+    "include": "geostudio/native/scene/entity/Visibility.h",
+    "legacy": "geostudio/native/globe/ecs/Visibility.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ECS.h",
+    "path": "src/scene/entity/ECS.h",
+    "include": "geostudio/native/scene/entity/ECS.h",
+    "legacy": "geostudio/native/globe/ECS.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ElevationLayer.h",
+    "path": "src/scene/layer/ElevationLayer.h",
+    "include": "geostudio/native/scene/layer/ElevationLayer.h",
+    "legacy": "geostudio/native/globe/ElevationLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ElevationSampler.h",
+    "path": "src/streaming/terrain/ElevationSampler.h",
+    "include": "geostudio/native/streaming/terrain/ElevationSampler.h",
+    "legacy": "geostudio/native/globe/ElevationSampler.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Ellipsoid.h",
+    "path": "src/core/geo/Ellipsoid.h",
+    "include": "geostudio/native/core/geo/Ellipsoid.h",
+    "legacy": "geostudio/native/globe/Ellipsoid.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Ephemeris.h",
+    "path": "src/core/geo/Ephemeris.h",
+    "include": "geostudio/native/core/geo/Ephemeris.h",
+    "legacy": "geostudio/native/globe/Ephemeris.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Feature.h",
+    "path": "src/data/vector/Feature.h",
+    "include": "geostudio/native/data/vector/Feature.h",
+    "legacy": "geostudio/native/globe/Feature.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GDAL.h",
+    "path": "src/drivers/gdal/GDAL.h",
+    "include": "geostudio/native/drivers/gdal/GDAL.h",
+    "legacy": "geostudio/native/globe/GDAL.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GDALElevationLayer.h",
+    "path": "src/drivers/gdal/GDALElevationLayer.h",
+    "include": "geostudio/native/drivers/gdal/GDALElevationLayer.h",
+    "legacy": "geostudio/native/globe/GDALElevationLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GDALFeatureSource.h",
+    "path": "src/drivers/gdal/GDALFeatureSource.h",
+    "include": "geostudio/native/drivers/gdal/GDALFeatureSource.h",
+    "legacy": "geostudio/native/globe/GDALFeatureSource.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GDALImageLayer.h",
+    "path": "src/drivers/gdal/GDALImageLayer.h",
+    "include": "geostudio/native/drivers/gdal/GDALImageLayer.h",
+    "legacy": "geostudio/native/globe/GDALImageLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GeoCircle.h",
+    "path": "src/core/geo/GeoCircle.h",
+    "include": "geostudio/native/core/geo/GeoCircle.h",
+    "legacy": "geostudio/native/globe/GeoCircle.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Geocoder.h",
+    "path": "src/drivers/gdal/Geocoder.h",
+    "include": "geostudio/native/drivers/gdal/Geocoder.h",
+    "legacy": "geostudio/native/globe/Geocoder.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GeoExtent.h",
+    "path": "src/core/geo/GeoExtent.h",
+    "include": "geostudio/native/core/geo/GeoExtent.h",
+    "legacy": "geostudio/native/globe/GeoExtent.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GeoImage.h",
+    "path": "src/data/raster/GeoImage.h",
+    "include": "geostudio/native/data/raster/GeoImage.h",
+    "legacy": "geostudio/native/globe/GeoImage.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/GeoPoint.h",
+    "path": "src/core/geo/GeoPoint.h",
+    "include": "geostudio/native/core/geo/GeoPoint.h",
+    "legacy": "geostudio/native/globe/GeoPoint.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Heightfield.h",
+    "path": "src/data/elevation/Heightfield.h",
+    "include": "geostudio/native/data/elevation/Heightfield.h",
+    "legacy": "geostudio/native/globe/Heightfield.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Horizon.h",
+    "path": "src/core/geo/Horizon.h",
+    "include": "geostudio/native/core/geo/Horizon.h",
+    "legacy": "geostudio/native/globe/Horizon.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Image.h",
+    "path": "src/data/raster/Image.h",
+    "include": "geostudio/native/data/raster/Image.h",
+    "legacy": "geostudio/native/globe/Image.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/ImageLayer.h",
+    "path": "src/scene/layer/ImageLayer.h",
+    "include": "geostudio/native/scene/layer/ImageLayer.h",
+    "legacy": "geostudio/native/globe/ImageLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/IOTypes.h",
+    "path": "src/core/io/IOTypes.h",
+    "include": "geostudio/native/core/io/IOTypes.h",
+    "legacy": "geostudio/native/globe/IOTypes.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/json.h",
+    "path": "src/core/io/json.h",
+    "include": "geostudio/native/core/io/json.h",
+    "legacy": "geostudio/native/globe/json.h",
+    "public": false
+  },
+  {
+    "old": "include/geostudio/native/globe/Layer.h",
+    "path": "src/scene/layer/Layer.h",
+    "include": "geostudio/native/scene/layer/Layer.h",
+    "legacy": "geostudio/native/globe/Layer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Log.h",
+    "path": "src/core/base/Log.h",
+    "include": "geostudio/native/core/base/Log.h",
+    "legacy": "geostudio/native/globe/Log.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Map.h",
+    "path": "src/scene/map/Map.h",
+    "include": "geostudio/native/scene/map/Map.h",
+    "legacy": "geostudio/native/globe/Map.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Math.h",
+    "path": "src/core/math/Math.h",
+    "include": "geostudio/native/core/math/Math.h",
+    "legacy": "geostudio/native/globe/Math.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/MBTiles.h",
+    "path": "src/drivers/mbtiles/MBTiles.h",
+    "include": "geostudio/native/drivers/mbtiles/MBTiles.h",
+    "legacy": "geostudio/native/globe/MBTiles.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/MBTilesElevationLayer.h",
+    "path": "src/drivers/mbtiles/MBTilesElevationLayer.h",
+    "include": "geostudio/native/drivers/mbtiles/MBTilesElevationLayer.h",
+    "legacy": "geostudio/native/globe/MBTilesElevationLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/MBTilesImageLayer.h",
+    "path": "src/drivers/mbtiles/MBTilesImageLayer.h",
+    "include": "geostudio/native/drivers/mbtiles/MBTilesImageLayer.h",
+    "legacy": "geostudio/native/globe/MBTilesImageLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Memory.h",
+    "path": "src/core/base/Memory.h",
+    "include": "geostudio/native/core/base/Memory.h",
+    "legacy": "geostudio/native/globe/Memory.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/option.h",
+    "path": "src/core/base/option.h",
+    "include": "geostudio/native/core/base/option.h",
+    "legacy": "geostudio/native/globe/option.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Profile.h",
+    "path": "src/core/geo/tiling/Profile.h",
+    "include": "geostudio/native/core/geo/tiling/Profile.h",
+    "legacy": "geostudio/native/globe/Profile.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Rendering.h",
+    "path": "src/scene/view/Rendering.h",
+    "include": "geostudio/native/scene/view/Rendering.h",
+    "legacy": "geostudio/native/globe/Rendering.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Result.h",
+    "path": "src/core/base/Result.h",
+    "include": "geostudio/native/core/base/Result.h",
+    "legacy": "geostudio/native/globe/Result.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/rocky.h",
+    "path": "src/runtime/engine/rocky.h",
+    "include": "geostudio/native/runtime/engine/rocky.h",
+    "legacy": "geostudio/native/globe/rocky.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/rtree.h",
+    "path": "src/data/vector/rtree.h",
+    "include": "geostudio/native/data/vector/rtree.h",
+    "legacy": "geostudio/native/globe/rtree.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/SentryTracker.h",
+    "path": "src/core/base/SentryTracker.h",
+    "include": "geostudio/native/core/base/SentryTracker.h",
+    "legacy": "geostudio/native/globe/SentryTracker.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/SRS.h",
+    "path": "src/core/geo/SRS.h",
+    "include": "geostudio/native/core/geo/SRS.h",
+    "legacy": "geostudio/native/globe/SRS.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/TerrainTileModel.h",
+    "path": "src/streaming/terrain/TerrainTileModel.h",
+    "include": "geostudio/native/streaming/terrain/TerrainTileModel.h",
+    "legacy": "geostudio/native/globe/TerrainTileModel.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/TerrainTileModelFactory.h",
+    "path": "src/streaming/terrain/TerrainTileModelFactory.h",
+    "include": "geostudio/native/streaming/terrain/TerrainTileModelFactory.h",
+    "legacy": "geostudio/native/globe/TerrainTileModelFactory.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Threading.h",
+    "path": "src/core/async/Threading.h",
+    "include": "geostudio/native/core/async/Threading.h",
+    "legacy": "geostudio/native/globe/Threading.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/TileKey.h",
+    "path": "src/core/geo/tiling/TileKey.h",
+    "include": "geostudio/native/core/geo/tiling/TileKey.h",
+    "legacy": "geostudio/native/globe/TileKey.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/TileLayer.h",
+    "path": "src/scene/layer/TileLayer.h",
+    "include": "geostudio/native/scene/layer/TileLayer.h",
+    "legacy": "geostudio/native/globe/TileLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/tinyxml/tinyxml.h",
+    "path": "src/core/io/xml/tinyxml.h",
+    "include": "geostudio/native/core/io/xml/tinyxml.h",
+    "legacy": "geostudio/native/globe/tinyxml/tinyxml.h",
+    "public": false
+  },
+  {
+    "old": "include/geostudio/native/globe/TMS.h",
+    "path": "src/drivers/tms/TMS.h",
+    "include": "geostudio/native/drivers/tms/TMS.h",
+    "legacy": "geostudio/native/globe/TMS.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/drivers/tms/TerrainRgbLayer.h",
+    "path": "src/drivers/tms/TerrainRgbLayer.h",
+    "include": "geostudio/native/drivers/tms/TerrainRgbLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/TMSElevationLayer.h",
+    "path": "src/drivers/tms/TMSElevationLayer.h",
+    "include": "geostudio/native/drivers/tms/TMSElevationLayer.h",
+    "legacy": "geostudio/native/globe/TMSElevationLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/TMSImageLayer.h",
+    "path": "src/drivers/tms/TMSImageLayer.h",
+    "include": "geostudio/native/drivers/tms/TMSImageLayer.h",
+    "legacy": "geostudio/native/globe/TMSImageLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Units.h",
+    "path": "src/core/geo/Units.h",
+    "include": "geostudio/native/core/geo/Units.h",
+    "legacy": "geostudio/native/globe/Units.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/URI.h",
+    "path": "src/core/io/URI.h",
+    "include": "geostudio/native/core/io/URI.h",
+    "legacy": "geostudio/native/globe/URI.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Utils.h",
+    "path": "src/core/io/Utils.h",
+    "include": "geostudio/native/core/io/Utils.h",
+    "legacy": "geostudio/native/globe/Utils.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/Viewpoint.h",
+    "path": "src/scene/view/Viewpoint.h",
+    "include": "geostudio/native/scene/view/Viewpoint.h",
+    "legacy": "geostudio/native/globe/Viewpoint.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/VisibleLayer.h",
+    "path": "src/scene/layer/VisibleLayer.h",
+    "include": "geostudio/native/scene/layer/VisibleLayer.h",
+    "legacy": "geostudio/native/globe/VisibleLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/Application.h",
+    "path": "src/runtime/engine/Application.h",
+    "include": "geostudio/native/runtime/engine/Application.h",
+    "legacy": "geostudio/native/globe/vsg/Application.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/Common.h",
+    "path": "src/render/vsg/Common.h",
+    "include": "geostudio/native/render/vsg/Common.h",
+    "legacy": "geostudio/native/globe/vsg/Common.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/DisplayManager.h",
+    "path": "src/render/view/DisplayManager.h",
+    "include": "geostudio/native/render/view/DisplayManager.h",
+    "legacy": "geostudio/native/globe/vsg/DisplayManager.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/DecalSystem.h",
+    "path": "src/render/entity/DecalSystem.h",
+    "include": "geostudio/native/render/entity/DecalSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/DecalSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/DeclutterSystem.h",
+    "path": "src/render/entity/DeclutterSystem.h",
+    "include": "geostudio/native/render/entity/DeclutterSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/DeclutterSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/ECSIntersector.h",
+    "path": "src/render/view/ECSIntersector.h",
+    "include": "geostudio/native/render/view/ECSIntersector.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/ECSIntersector.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/ECSNode.h",
+    "path": "src/render/entity/ECSNode.h",
+    "include": "geostudio/native/render/entity/ECSNode.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/ECSNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/ECSTypes.h",
+    "path": "src/render/entity/ECSTypes.h",
+    "include": "geostudio/native/render/entity/ECSTypes.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/ECSTypes.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/ECSVisitors.h",
+    "path": "src/render/entity/ECSVisitors.h",
+    "include": "geostudio/native/render/entity/ECSVisitors.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/ECSVisitors.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/EntityNode.h",
+    "path": "src/render/entity/EntityNode.h",
+    "include": "geostudio/native/render/entity/EntityNode.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/EntityNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/FeatureBuilder.h",
+    "path": "src/render/entity/FeatureBuilder.h",
+    "include": "geostudio/native/render/entity/FeatureBuilder.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/FeatureBuilder.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/LineSystem.h",
+    "path": "src/render/entity/LineSystem.h",
+    "include": "geostudio/native/render/entity/LineSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/LineSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/MeshSystem.h",
+    "path": "src/render/entity/MeshSystem.h",
+    "include": "geostudio/native/render/entity/MeshSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/MeshSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/ModelSystem.h",
+    "path": "src/render/entity/ModelSystem.h",
+    "include": "geostudio/native/render/entity/ModelSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/ModelSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/MotionSystem.h",
+    "path": "src/render/entity/MotionSystem.h",
+    "include": "geostudio/native/render/entity/MotionSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/MotionSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/NodeGraphSystem.h",
+    "path": "src/render/entity/NodeGraphSystem.h",
+    "include": "geostudio/native/render/entity/NodeGraphSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/NodeGraphSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/OpticsSystem.h",
+    "path": "src/render/entity/OpticsSystem.h",
+    "include": "geostudio/native/render/entity/OpticsSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/OpticsSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h",
+    "path": "src/render/entity/OverlayBakeSystem.h",
+    "include": "geostudio/native/render/entity/OverlayBakeSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/OverlayRenderContext.h",
+    "path": "src/render/entity/OverlayRenderContext.h",
+    "include": "geostudio/native/render/entity/OverlayRenderContext.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/OverlayRenderContext.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/PointSystem.h",
+    "path": "src/render/entity/PointSystem.h",
+    "include": "geostudio/native/render/entity/PointSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/PointSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/PolygonSystem.h",
+    "path": "src/render/entity/PolygonSystem.h",
+    "include": "geostudio/native/render/entity/PolygonSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/PolygonSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/RenderTextureParticipant.h",
+    "path": "src/render/entity/RenderTextureParticipant.h",
+    "include": "geostudio/native/render/entity/RenderTextureParticipant.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/RenderTextureParticipant.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/slug/SlugAdapter.h",
+    "path": "src/render/entity/slug/SlugAdapter.h",
+    "include": "geostudio/native/render/entity/slug/SlugAdapter.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/slug/SlugAdapter.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/SlugCoverage.h",
+    "path": "src/render/entity/SlugCoverage.h",
+    "include": "geostudio/native/render/entity/SlugCoverage.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/SlugCoverage.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/SlugResource.h",
+    "path": "src/render/entity/SlugResource.h",
+    "include": "geostudio/native/render/entity/SlugResource.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/SlugResource.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/SlugSystem.h",
+    "path": "src/render/entity/SlugSystem.h",
+    "include": "geostudio/native/render/entity/SlugSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/SlugSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/System.h",
+    "path": "src/render/entity/System.h",
+    "include": "geostudio/native/render/entity/System.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/System.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/TerrainAnchorSystem.h",
+    "path": "src/render/entity/TerrainAnchorSystem.h",
+    "include": "geostudio/native/render/entity/TerrainAnchorSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/TerrainAnchorSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/Texture.h",
+    "path": "src/render/entity/Texture.h",
+    "include": "geostudio/native/render/entity/Texture.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/Texture.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/TextureResource.h",
+    "path": "src/render/entity/TextureResource.h",
+    "include": "geostudio/native/render/entity/TextureResource.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/TextureResource.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/TextureSystem.h",
+    "path": "src/render/entity/TextureSystem.h",
+    "include": "geostudio/native/render/entity/TextureSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/TextureSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/TransformDetail.h",
+    "path": "src/render/entity/TransformDetail.h",
+    "include": "geostudio/native/render/entity/TransformDetail.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/TransformDetail.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ecs/TransformSystem.h",
+    "path": "src/render/entity/TransformSystem.h",
+    "include": "geostudio/native/render/entity/TransformSystem.h",
+    "legacy": "geostudio/native/globe/vsg/ecs/TransformSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/FrustumGridSystem.h",
+    "path": "src/render/vsg/FrustumGridSystem.h",
+    "include": "geostudio/native/render/vsg/FrustumGridSystem.h",
+    "legacy": "geostudio/native/globe/vsg/FrustumGridSystem.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/FutureNode.h",
+    "path": "src/render/paging/FutureNode.h",
+    "include": "geostudio/native/render/paging/FutureNode.h",
+    "legacy": "geostudio/native/globe/vsg/FutureNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/GeoTransform.h",
+    "path": "src/render/vsg/GeoTransform.h",
+    "include": "geostudio/native/render/vsg/GeoTransform.h",
+    "legacy": "geostudio/native/globe/vsg/GeoTransform.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/json.h",
+    "path": "src/render/vsg/json.h",
+    "include": "geostudio/native/render/vsg/json.h",
+    "legacy": "geostudio/native/globe/vsg/json.h",
+    "public": false
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/MapManipulator.h",
+    "path": "src/render/view/MapManipulator.h",
+    "include": "geostudio/native/render/view/MapManipulator.h",
+    "legacy": "geostudio/native/globe/vsg/MapManipulator.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/MapNode.h",
+    "path": "src/render/vsg/MapNode.h",
+    "include": "geostudio/native/render/vsg/MapNode.h",
+    "legacy": "geostudio/native/globe/vsg/MapNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/NodeLayer.h",
+    "path": "src/render/vsg/NodeLayer.h",
+    "include": "geostudio/native/render/vsg/NodeLayer.h",
+    "legacy": "geostudio/native/globe/vsg/NodeLayer.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/NodePager.h",
+    "path": "src/render/paging/NodePager.h",
+    "include": "geostudio/native/render/paging/NodePager.h",
+    "legacy": "geostudio/native/globe/vsg/NodePager.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/PixelScaleTransform.h",
+    "path": "src/render/vsg/PixelScaleTransform.h",
+    "include": "geostudio/native/render/vsg/PixelScaleTransform.h",
+    "legacy": "geostudio/native/globe/vsg/PixelScaleTransform.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/Polyfill.h",
+    "path": "src/render/vsg/Polyfill.h",
+    "include": "geostudio/native/render/vsg/Polyfill.h",
+    "legacy": "geostudio/native/globe/vsg/Polyfill.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/RTT.h",
+    "path": "src/render/vsg/RTT.h",
+    "include": "geostudio/native/render/vsg/RTT.h",
+    "legacy": "geostudio/native/globe/vsg/RTT.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ShaderDefines.h",
+    "path": "src/render/vsg/ShaderDefines.h",
+    "include": "geostudio/native/render/vsg/ShaderDefines.h",
+    "legacy": "geostudio/native/globe/vsg/ShaderDefines.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/SharedRenderData.h",
+    "path": "src/render/vsg/SharedRenderData.h",
+    "include": "geostudio/native/render/vsg/SharedRenderData.h",
+    "legacy": "geostudio/native/globe/vsg/SharedRenderData.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/SkyNode.h",
+    "path": "src/render/vsg/SkyNode.h",
+    "include": "geostudio/native/render/vsg/SkyNode.h",
+    "legacy": "geostudio/native/globe/vsg/SkyNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/GeometryPool.h",
+    "path": "src/render/terrain/GeometryPool.h",
+    "include": "geostudio/native/render/terrain/GeometryPool.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/GeometryPool.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/SurfaceNode.h",
+    "path": "src/render/terrain/SurfaceNode.h",
+    "include": "geostudio/native/render/terrain/SurfaceNode.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/SurfaceNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/TerrainNode.h",
+    "path": "src/render/terrain/TerrainNode.h",
+    "include": "geostudio/native/render/terrain/TerrainNode.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/TerrainNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/TerrainSettings.h",
+    "path": "src/render/terrain/TerrainSettings.h",
+    "include": "geostudio/native/render/terrain/TerrainSettings.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/TerrainSettings.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/TerrainState.h",
+    "path": "src/render/terrain/TerrainState.h",
+    "include": "geostudio/native/render/terrain/TerrainState.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/TerrainState.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/TerrainTileFactory.h",
+    "path": "src/render/terrain/TerrainTileFactory.h",
+    "include": "geostudio/native/render/terrain/TerrainTileFactory.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/TerrainTileFactory.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/TerrainTileHost.h",
+    "path": "src/render/terrain/TerrainTileHost.h",
+    "include": "geostudio/native/render/terrain/TerrainTileHost.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/TerrainTileHost.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/TerrainTileNode.h",
+    "path": "src/render/terrain/TerrainTileNode.h",
+    "include": "geostudio/native/render/terrain/TerrainTileNode.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/TerrainTileNode.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/terrain/TerrainTilePager.h",
+    "path": "src/render/terrain/TerrainTilePager.h",
+    "include": "geostudio/native/render/terrain/TerrainTilePager.h",
+    "legacy": "geostudio/native/globe/vsg/terrain/TerrainTilePager.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/ViewDependentState.h",
+    "path": "src/render/vsg/ViewDependentState.h",
+    "include": "geostudio/native/render/vsg/ViewDependentState.h",
+    "legacy": "geostudio/native/globe/vsg/ViewDependentState.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/VSGContext.h",
+    "path": "src/render/vsg/VSGContext.h",
+    "include": "geostudio/native/render/vsg/VSGContext.h",
+    "legacy": "geostudio/native/globe/vsg/VSGContext.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/vsg/VSGUtils.h",
+    "path": "src/render/vsg/VSGUtils.h",
+    "include": "geostudio/native/render/vsg/VSGUtils.h",
+    "legacy": "geostudio/native/globe/vsg/VSGUtils.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/weejobs.h",
+    "path": "src/core/async/weejobs.h",
+    "include": "geostudio/native/core/async/weejobs.h",
+    "legacy": "geostudio/native/globe/weejobs.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/globe/weemesh.h",
+    "path": "src/data/vector/weemesh.h",
+    "include": "geostudio/native/data/vector/weemesh.h",
+    "legacy": "geostudio/native/globe/weemesh.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/3DTiles.h",
+    "path": "src/render/import/3DTiles/3DTiles.h",
+    "include": "geostudio/native/render/import/3DTiles/3DTiles.h",
+    "legacy": "geostudio/native/io/3DTiles.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/all.h",
+    "path": "src/render/import/all/all.h",
+    "include": "geostudio/native/render/import/all/all.h",
+    "legacy": "geostudio/native/io/all.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/assimp.h",
+    "path": "src/render/import/assimp/assimp.h",
+    "include": "geostudio/native/render/import/assimp/assimp.h",
+    "legacy": "geostudio/native/io/assimp.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/bin.h",
+    "path": "src/render/import/bin/bin.h",
+    "include": "geostudio/native/render/import/bin/bin.h",
+    "legacy": "geostudio/native/io/bin.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/cpp.h",
+    "path": "src/render/import/cpp/cpp.h",
+    "include": "geostudio/native/render/import/cpp/cpp.h",
+    "legacy": "geostudio/native/io/cpp.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/curl.h",
+    "path": "src/render/import/curl/curl.h",
+    "include": "geostudio/native/render/import/curl/curl.h",
+    "legacy": "geostudio/native/io/curl.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/Export.h",
+    "path": "src/render/import/all/Export.h",
+    "include": "geostudio/native/render/import/all/Export.h",
+    "legacy": "geostudio/native/io/Export.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/freetype.h",
+    "path": "src/render/import/freetype/freetype.h",
+    "include": "geostudio/native/render/import/freetype/freetype.h",
+    "legacy": "geostudio/native/io/freetype.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/gdal.h",
+    "path": "src/render/import/gdal/gdal.h",
+    "include": "geostudio/native/render/import/gdal/gdal.h",
+    "legacy": "geostudio/native/io/gdal.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/gltf.h",
+    "path": "src/render/import/gltf/gltf.h",
+    "include": "geostudio/native/render/import/gltf/gltf.h",
+    "legacy": "geostudio/native/io/gltf.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/images.h",
+    "path": "src/render/import/images/images.h",
+    "include": "geostudio/native/render/import/images/images.h",
+    "legacy": "geostudio/native/io/images.h",
+    "public": true
+  },
+  {
+    "old": "include/geostudio/native/io/models.h",
+    "path": "src/render/import/all/models.h",
+    "include": "geostudio/native/render/import/all/models.h",
+    "legacy": "geostudio/native/io/models.h",
+    "public": true
+  },
+  {
+    "old": "src/io/dds/tinyddsloader.h",
+    "path": "src/render/import/dds/tinyddsloader.h",
+    "include": "geostudio/native/render/import/dds/tinyddsloader.h",
+    "legacy": null,
+    "public": false
+  },
+  {
+    "old": "src/io/stbi/stb_image.h",
+    "path": "src/render/import/stbi/stb_image.h",
+    "include": "geostudio/native/render/import/stbi/stb_image.h",
+    "legacy": null,
+    "public": false
+  },
+  {
+    "old": "src/io/stbi/stb_image_write.h",
+    "path": "src/render/import/stbi/stb_image_write.h",
+    "include": "geostudio/native/render/import/stbi/stb_image_write.h",
+    "legacy": null,
+    "public": false
+  },
+  {
+    "old": "include/geostudio/native/tiles3d/TilesetAdapter.h",
+    "path": "src/runtime/engine/TilesetAdapter.h",
+    "include": "geostudio/native/runtime/engine/TilesetAdapter.h",
+    "legacy": "geostudio/native/tiles3d/TilesetAdapter.h",
+    "public": true
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/accessor_traits.h",
+    "path": "src/render/model/cesium/accessor_traits.h",
+    "include": "geostudio/native/render/model/cesium/accessor_traits.h",
+    "legacy": "geostudio/native/tiles3d/accessor_traits.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/accessorUtils.h",
+    "path": "src/render/model/cesium/accessorUtils.h",
+    "include": "geostudio/native/render/model/cesium/accessorUtils.h",
+    "legacy": "geostudio/native/tiles3d/accessorUtils.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CesiumGltfBuilder.h",
+    "path": "src/render/model/cesium/CesiumGltfBuilder.h",
+    "include": "geostudio/native/render/model/cesium/CesiumGltfBuilder.h",
+    "legacy": "geostudio/native/tiles3d/CesiumGltfBuilder.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CompilableImage.h",
+    "path": "src/render/resources/cesium/CompilableImage.h",
+    "include": "geostudio/native/render/resources/cesium/CompilableImage.h",
+    "legacy": "geostudio/native/tiles3d/CompilableImage.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CppAllocator.h",
+    "path": "src/core/base/cesium/CppAllocator.h",
+    "include": "geostudio/native/core/base/cesium/CppAllocator.h",
+    "legacy": "geostudio/native/tiles3d/CppAllocator.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CRS.h",
+    "path": "src/render/geospatial/cesium/CRS.h",
+    "include": "geostudio/native/render/geospatial/cesium/CRS.h",
+    "legacy": "geostudio/native/tiles3d/CRS.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CsDebugColorizeTilesOverlay.h",
+    "path": "src/render/tileset/overlays/CsDebugColorizeTilesOverlay.h",
+    "include": "geostudio/native/render/tileset/overlays/CsDebugColorizeTilesOverlay.h",
+    "legacy": "geostudio/native/tiles3d/CsDebugColorizeTilesOverlay.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CsOverlay.h",
+    "path": "src/render/tileset/overlays/CsOverlay.h",
+    "include": "geostudio/native/render/tileset/overlays/CsOverlay.h",
+    "legacy": "geostudio/native/tiles3d/CsOverlay.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CsTileMapServiceRasterOverlay.h",
+    "path": "src/render/tileset/overlays/CsTileMapServiceRasterOverlay.h",
+    "include": "geostudio/native/render/tileset/overlays/CsTileMapServiceRasterOverlay.h",
+    "legacy": "geostudio/native/tiles3d/CsTileMapServiceRasterOverlay.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CsUrlTemplateRasterOverlay.h",
+    "path": "src/render/tileset/overlays/CsUrlTemplateRasterOverlay.h",
+    "include": "geostudio/native/render/tileset/overlays/CsUrlTemplateRasterOverlay.h",
+    "legacy": "geostudio/native/tiles3d/CsUrlTemplateRasterOverlay.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CsWebMapServiceRasterOverlay.h",
+    "path": "src/render/tileset/overlays/CsWebMapServiceRasterOverlay.h",
+    "include": "geostudio/native/render/tileset/overlays/CsWebMapServiceRasterOverlay.h",
+    "legacy": "geostudio/native/tiles3d/CsWebMapServiceRasterOverlay.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/CsWebMapTileServiceRasterOverlay.h",
+    "path": "src/render/tileset/overlays/CsWebMapTileServiceRasterOverlay.h",
+    "include": "geostudio/native/render/tileset/overlays/CsWebMapTileServiceRasterOverlay.h",
+    "legacy": "geostudio/native/tiles3d/CsWebMapTileServiceRasterOverlay.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/GeoNode.h",
+    "path": "src/render/geospatial/cesium/GeoNode.h",
+    "include": "geostudio/native/render/geospatial/cesium/GeoNode.h",
+    "legacy": "geostudio/native/tiles3d/GeoNode.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/GeospatialServices.h",
+    "path": "src/render/geospatial/cesium/GeospatialServices.h",
+    "include": "geostudio/native/render/geospatial/cesium/GeospatialServices.h",
+    "legacy": "geostudio/native/tiles3d/GeospatialServices.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/GltfLoader.h",
+    "path": "src/render/model/cesium/GltfLoader.h",
+    "include": "geostudio/native/render/model/cesium/GltfLoader.h",
+    "legacy": "geostudio/native/tiles3d/GltfLoader.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/GraphicsEnvironment.h",
+    "path": "src/render/resources/cesium/GraphicsEnvironment.h",
+    "include": "geostudio/native/render/resources/cesium/GraphicsEnvironment.h",
+    "legacy": "geostudio/native/tiles3d/GraphicsEnvironment.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/jsonUtils.h",
+    "path": "src/render/tileset/cesium/jsonUtils.h",
+    "include": "geostudio/native/render/tileset/cesium/jsonUtils.h",
+    "legacy": "geostudio/native/tiles3d/jsonUtils.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/LoadGltfResult.h",
+    "path": "src/render/model/cesium/LoadGltfResult.h",
+    "include": "geostudio/native/render/model/cesium/LoadGltfResult.h",
+    "legacy": "geostudio/native/tiles3d/LoadGltfResult.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/ModelBuilder.h",
+    "path": "src/render/model/cesium/ModelBuilder.h",
+    "include": "geostudio/native/render/model/cesium/ModelBuilder.h",
+    "legacy": "geostudio/native/tiles3d/ModelBuilder.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/OpThreadTaskProcessor.h",
+    "path": "src/core/async/cesium/OpThreadTaskProcessor.h",
+    "include": "geostudio/native/core/async/cesium/OpThreadTaskProcessor.h",
+    "legacy": "geostudio/native/tiles3d/OpThreadTaskProcessor.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/pbr.h",
+    "path": "src/render/model/cesium/pbr.h",
+    "include": "geostudio/native/render/model/cesium/pbr.h",
+    "legacy": "geostudio/native/tiles3d/pbr.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/RuntimeEnvironment.h",
+    "path": "src/render/tileset/cesium/RuntimeEnvironment.h",
+    "include": "geostudio/native/render/tileset/cesium/RuntimeEnvironment.h",
+    "legacy": "geostudio/native/tiles3d/RuntimeEnvironment.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/runtimeSupport.h",
+    "path": "src/render/tileset/cesium/runtimeSupport.h",
+    "include": "geostudio/native/render/tileset/cesium/runtimeSupport.h",
+    "legacy": "geostudio/native/tiles3d/runtimeSupport.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/ShaderFactory.h",
+    "path": "src/render/resources/cesium/ShaderFactory.h",
+    "include": "geostudio/native/render/resources/cesium/ShaderFactory.h",
+    "legacy": "geostudio/native/tiles3d/ShaderFactory.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/Styling.h",
+    "path": "src/render/model/cesium/Styling.h",
+    "include": "geostudio/native/render/model/cesium/Styling.h",
+    "legacy": "geostudio/native/tiles3d/Styling.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/TilesetNode.h",
+    "path": "src/render/tileset/cesium/TilesetNode.h",
+    "include": "geostudio/native/render/tileset/cesium/TilesetNode.h",
+    "legacy": "geostudio/native/tiles3d/TilesetNode.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/Tracing.h",
+    "path": "src/core/base/cesium/Tracing.h",
+    "include": "geostudio/native/core/base/cesium/Tracing.h",
+    "legacy": "geostudio/native/tiles3d/Tracing.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/TracingCommandGraph.h",
+    "path": "src/render/tileset/cesium/TracingCommandGraph.h",
+    "include": "geostudio/native/render/tileset/cesium/TracingCommandGraph.h",
+    "legacy": "geostudio/native/tiles3d/TracingCommandGraph.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/UrlAssetAccessor.h",
+    "path": "src/drivers/http/cesium/UrlAssetAccessor.h",
+    "include": "geostudio/native/drivers/http/cesium/UrlAssetAccessor.h",
+    "legacy": "geostudio/native/tiles3d/UrlAssetAccessor.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/Version.h",
+    "path": "src/core/base/cesium/Version.h",
+    "include": "geostudio/native/core/base/cesium/Version.h",
+    "legacy": "geostudio/native/tiles3d/Version.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/vsgResourcePreparer.h",
+    "path": "src/render/resources/cesium/vsgResourcePreparer.h",
+    "include": "geostudio/native/render/resources/cesium/vsgResourcePreparer.h",
+    "legacy": "geostudio/native/tiles3d/vsgResourcePreparer.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/WorldAnchor.h",
+    "path": "src/render/geospatial/cesium/WorldAnchor.h",
+    "include": "geostudio/native/render/geospatial/cesium/WorldAnchor.h",
+    "legacy": "geostudio/native/tiles3d/WorldAnchor.h",
+    "public": false
+  },
+  {
+    "old": "src/tiles3d/include/geostudio/native/tiles3d/WorldNode.h",
+    "path": "src/render/geospatial/cesium/WorldNode.h",
+    "include": "geostudio/native/render/geospatial/cesium/WorldNode.h",
+    "legacy": "geostudio/native/tiles3d/WorldNode.h",
+    "public": false
+  }
+]

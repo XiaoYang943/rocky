@@ -1,9 +1,10 @@
-param([int]$Jobs = 6, [switch]$Offline, [string]$From = '', [string]$Only = '')
+param([int]$Jobs = 6, [switch]$Offline, [string]$From = '', [string]$Only = '', [switch]$WithHostUi)
 . "$PSScriptRoot/common.ps1"
 Enable-NativeEnvironment
 Enable-RuntimeEnvironment
 New-Item -ItemType Directory -Force (Join-Path $DepsRoot 'downloads'), (Join-Path $DepsRoot 'src'), (Join-Path $NativeRoot 'out/logs') | Out-Null
-foreach ($entry in ($SourceLock.sources | Where-Object { $_.name -notin @('rocky', 'vsgCs', 'vsgXchange', 'cesium-native', 'vcpkg') })) {
+$hostUi = $WithHostUi -or $Only -eq 'imgui' -or $From -eq 'imgui'
+foreach ($entry in ($SourceLock.sources | Where-Object { $_.name -notin @('rocky', 'vsgCs', 'vsgXchange', 'cesium-native', 'vcpkg') -and ($_.name -ne 'imgui' -or $hostUi) })) {
     $archive = Join-Path $DepsRoot "downloads/$($entry.name)-$($entry.commit).zip"
     if (-not (Test-Path $archive)) {
         if ($Offline) { throw "Missing archive: $archive" }
@@ -26,6 +27,7 @@ $steps = @(
 )
 $started = ($From -eq '')
 foreach ($step in $steps) {
+    if ($step.Name -eq 'imgui' -and -not $hostUi) { continue }
     if ($Only -and $step.Name -ne $Only) { continue }
     if ($step.Name -eq $From) { $started = $true }
     if (-not $started) { continue }

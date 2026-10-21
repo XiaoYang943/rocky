@@ -4,8 +4,8 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/vsg/ecs/FeatureBuilder.h>
-#include <geostudio/native/globe/weemesh.h>
+#include <geostudio/native/render/entity/FeatureBuilder.h>
+#include <geostudio/native/data/vector/weemesh.h>
 #include <algorithm>
 #include <cmath>
 

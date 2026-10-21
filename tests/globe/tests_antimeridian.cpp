@@ -4,10 +4,10 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/GeoImage.h>
-#include <geostudio/native/globe/ImageLayer.h>
-#include <geostudio/native/globe/Profile.h>
-#include <geostudio/native/globe/TileKey.h>
+#include <geostudio/native/data/raster/GeoImage.h>
+#include <geostudio/native/scene/layer/ImageLayer.h>
+#include <geostudio/native/core/geo/tiling/Profile.h>
+#include <geostudio/native/core/geo/tiling/TileKey.h>
 #include <cmath>
 #include <vector>
 

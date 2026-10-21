@@ -1,8 +1,8 @@
 // include from either GLSL or C++
-#ifndef ROCKY_DEFINES
-#define ROCKY_DEFINES
+#ifndef GEOSTUDIO_NATIVE_DEFINES
+#define GEOSTUDIO_NATIVE_DEFINES
 
-#define ROCKY_HAS_DECALS
+#define GEOSTUDIO_NATIVE_HAS_DECALS
 
 
 // transient/local bindings (in descriptor set 0):
@@ -84,5 +84,5 @@
 
 #endif
 
-#endif // ROCKY_DEFINES
+#endif // GEOSTUDIO_NATIVE_DEFINES
 

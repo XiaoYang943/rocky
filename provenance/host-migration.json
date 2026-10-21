@@ -1,0 +1,110 @@
+{
+  "task": "NativeSDK-004",
+  "moves": {
+    "examples/imgui-adapter/CMakeLists.txt": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/CMakeLists.txt",
+      "sha256": "cee0e56fc1980a42dd8fd5a7109367c93fa2fb7bc88ec280579829122ae52286"
+    },
+    "examples/imgui-adapter/Install.cpp": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/Install.cpp",
+      "sha256": "e824e2162d34092fe601c11754a58b5ec02eb869b7d4018332f7d61e6180e5ad"
+    },
+    "examples/imgui-adapter/Install.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/Install.h",
+      "sha256": "32ae3c80e8dba01b4b6419aa7f8d81e2990d6ef0c6f01c7d00ff567e0ca585cd"
+    },
+    "examples/imgui-adapter/README.md": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/README.md",
+      "sha256": "75c65845f56adda3d4059df530ff8a43d1916eedff530867aeeb9f143636edf4"
+    },
+    "examples/imgui-adapter/src/ecs/Widget.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/ecs/Widget.h",
+      "sha256": "306f8a0249b5b3849b42ccf3e5384674519f8e65d55f9c20441ade8a841e6709"
+    },
+    "examples/imgui-adapter/src/rocky_imgui.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/rocky_imgui.h",
+      "sha256": "5d27d41a68a341f4d02101bd15ae18e1c8011ec8b3ebf68e0aa62836c355c4f7"
+    },
+    "examples/imgui-adapter/src/vsg/ecs/LabelSystem.cpp": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/ecs/LabelSystem.cpp",
+      "sha256": "892398dcb044aa8eaccc2e5db43877cfe79ab004c98b7725fe38c55b13b7f131"
+    },
+    "examples/imgui-adapter/src/vsg/ecs/LabelSystem.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/ecs/LabelSystem.h",
+      "sha256": "116f0dd02c1f3635994213ad4f3f88b072dea194ea728f0993286d76fcdf078a"
+    },
+    "examples/imgui-adapter/src/vsg/ecs/WidgetSystem.cpp": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/ecs/WidgetSystem.cpp",
+      "sha256": "f3fe25ebef456e8e33c65caedaf1712c20c87043d856e3df52bd2858bbb7920c"
+    },
+    "examples/imgui-adapter/src/vsg/ecs/WidgetSystem.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/ecs/WidgetSystem.h",
+      "sha256": "5018e0abc09d60cdc8f87f533f0a51d703101468898ab2f7219299cf61925c73"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/ImGuiImage.cpp": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/ImGuiImage.cpp",
+      "sha256": "3141ad65ad28eeefebf7605062d2b2025fd7bffcbb55bb8c3e34bceb1c51f7a6"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/ImGuiImage.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/ImGuiImage.h",
+      "sha256": "e5daa6e80a733a902dfae430ca2f2fb230931708512bd997e0f00fe8d4950386"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/ImGuiIntegration.cpp": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/ImGuiIntegration.cpp",
+      "sha256": "7f101b613189a9937abcebeaf05b37685bdba890b45c268de61bacc629caf44c"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/ImGuiIntegration.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/ImGuiIntegration.h",
+      "sha256": "d71f9b701f11ee8466cbf216c62f0e323ef8b9917360db195bb383e842b1f7b6"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/RenderImGui.cpp": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/RenderImGui.cpp",
+      "sha256": "2f01474e1ee9d64ee088fc3885f4c0c7d16b3cb0cde06042e28046de732340be"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/RenderImGui.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/RenderImGui.h",
+      "sha256": "bf6f77485518ed97b0783332b025f741a48532476132820da71255600024446c"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/SendEventsToImGui.cpp": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/SendEventsToImGui.cpp",
+      "sha256": "decddeff7a6e18eb58b17d2e8e8087ecb7f64a3639cd41ea550afc49b43c0ac2"
+    },
+    "examples/imgui-adapter/src/vsg/imgui/SendEventsToImGui.h": {
+      "repoId": "native-gis-demo",
+      "path": "native/ui/src/vsg/imgui/SendEventsToImGui.h",
+      "sha256": "88750d01a8bb253afa1f3b43e1661fb37d184a08618cd0eb6607de6631c13539"
+    },
+    "examples/package-consumer/CMakeLists.txt": {
+      "repoId": "geostudio-native",
+      "path": "tests/package-consumer/CMakeLists.txt",
+      "sha256": "30e14dcd51813260a4ac2f6e70c3ee6082c35bdd4eae95718231cf847599df19"
+    },
+    "examples/package-consumer/core.cpp": {
+      "repoId": "geostudio-native",
+      "path": "tests/package-consumer/core.cpp",
+      "sha256": "4d7c8d7fc99de3d46ed83e80228afaa668915c7a4591c5d1a08a26ba201f2f71"
+    },
+    "examples/package-consumer/main.cpp": {
+      "repoId": "geostudio-native",
+      "path": "tests/package-consumer/main.cpp",
+      "sha256": "4075ad0ef1685c798bb4f6a27063dbd87f20d67b87b46ca0c4c2f29b0a4a6faa"
+    }
+  }
+}

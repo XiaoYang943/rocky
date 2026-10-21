@@ -1,0 +1,560 @@
+{
+  "task": "NativeSDK-004",
+  "status": "deleted-after-explicit-user-authorization",
+  "root": "D:/code/xiaoyang943/Programming-Lab/GeoStudio/sdk/GeoStudio-Native",
+  "reason": "Inactive upstream examples and conversion tool; active UI and package consumer were moved previously.",
+  "files": [
+    {
+      "path": "examples/globe/CMakeLists.txt",
+      "bytes": 62,
+      "sha256": "ec5b4c03e38fef654670875805f7e6982316f22ea3266465cd5b6eadaca85d4e"
+    },
+    {
+      "path": "examples/globe/data/arcgis.map.json",
+      "bytes": 1183,
+      "sha256": "b621f1cd7dbf1343f7f31c82411371427aa7bf2d55de091992fa0a2cc043ec9a"
+    },
+    {
+      "path": "examples/globe/data/bing.map.json",
+      "bytes": 837,
+      "sha256": "8b604b1c6de9426914dab8b719605999c56a936565de421e058738ed5e4e930f"
+    },
+    {
+      "path": "examples/globe/data/composite.map.json",
+      "bytes": 437,
+      "sha256": "9d47ef6adc9bb5a124cefeade6c442e985b7def452432782854269d0abbe4bc4"
+    },
+    {
+      "path": "examples/globe/data/crop.map.json",
+      "bytes": 980,
+      "sha256": "eedb18ee36dbd7f1ebb34ff88beccd1202d99d79dda03edd6baa83c85909ddcb"
+    },
+    {
+      "path": "examples/globe/data/geotiff.map.json",
+      "bytes": 251,
+      "sha256": "233c80e1d20dd568b480a4754966a3e5e2a2c90b1aa4d34afda23ba1bda9a45a"
+    },
+    {
+      "path": "examples/globe/data/imagery/boston-inset-utm.tif",
+      "bytes": 392924,
+      "sha256": "409575e500d302a840270d2ca30c3d5874e7052c3d00f7bd236ee40c0467ad5b"
+    },
+    {
+      "path": "examples/globe/data/imagery/world.tif",
+      "bytes": 487120,
+      "sha256": "51302f5262bec17da62173063991fefb80e2515ed99eda9ef9378454a29e4d2e"
+    },
+    {
+      "path": "examples/globe/data/models/duck.gltf",
+      "bytes": 5183,
+      "sha256": "329175b826a0ca8140346ae9559bbbeb3db7b31029f331b5e0c4a38bd94d3293"
+    },
+    {
+      "path": "examples/globe/data/openmaptiles.map.json",
+      "bytes": 626,
+      "sha256": "9991016d0a8b5bcc2d35f16e65f23d03f67deac20409428a30b7d36e1583adf8"
+    },
+    {
+      "path": "examples/globe/data/openstreetmap.map.json",
+      "bytes": 565,
+      "sha256": "91d854f93132a672acba777b22d0185ce63cc05b51dfcde8c74c8fc0a6d2a0a5"
+    },
+    {
+      "path": "examples/globe/data/openstreetmap_slippy.map.json",
+      "bytes": 631,
+      "sha256": "50199256603fc5a4993435028bbe853ae4bee1184957d158ffcfa51eec261667"
+    },
+    {
+      "path": "examples/globe/data/qsc.map.json",
+      "bytes": 523,
+      "sha256": "87df989c8cdc833fc793cb0087feaced6521096efd79348d66bda44aacab8bee"
+    },
+    {
+      "path": "examples/globe/data/readymap.map.json",
+      "bytes": 688,
+      "sha256": "59517a0ab03896d5429b9aee0a0d299e5cc9703816196fdaa0c2bd7e819c0767"
+    },
+    {
+      "path": "examples/globe/data/wmts.map.json",
+      "bytes": 472,
+      "sha256": "9bd98a39277ee6af4c854a2d52d828a604f207411e52b90a607e2e926da17729"
+    },
+    {
+      "path": "examples/globe/rocky_demo/CMakeLists.txt",
+      "bytes": 858,
+      "sha256": "99b7d889a5f0a63648fdf4c75fcafa8831345370b60114e425a95715ad149279"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Camera.h",
+      "bytes": 5435,
+      "sha256": "9326f4161319832622a3fbbe352fb27611e1542f1a174a359dea5391673e9176"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Clamping.h",
+      "bytes": 5758,
+      "sha256": "42631d32384e334482b1f83527cfc271c9c9f0bbcc74359f11c396634a8b5a21"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Decal.h",
+      "bytes": 23451,
+      "sha256": "2c1df878716d4cf17b851482185ab5c388fe3e7898134987fea691af9c5c919c"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Decluttering.h",
+      "bytes": 2187,
+      "sha256": "17cf52c2dace41dd2574700c4223bbdc680a6d920ed0efb7343d15c80ce44738"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_DrawComponent.h",
+      "bytes": 3999,
+      "sha256": "ae6b6413d257817a7779a01006fba0ed53e743a6c07c2d78b134119128fed902"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_ElevationSampler.h",
+      "bytes": 5531,
+      "sha256": "4798ac68ab8c43dc7b5265c0759b4778f5ae889a1d08c803bc6f2cb9ae778358"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_EntityCollectionLayer.h",
+      "bytes": 1524,
+      "sha256": "2e88810d24c8a8b6146f75289a3e4e384ee9990bdebf48a8dd21e4bd2f72906e"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Environment.h",
+      "bytes": 4988,
+      "sha256": "1f9bd5168768cb7ea18c4d4180996739379663c5b8dce4196896cd674797dfef"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_FeatureBuilder.h",
+      "bytes": 9081,
+      "sha256": "8bc8869ef9cd2af00d46eb382104976d94117021eb5ea72a492c7ad99b582692"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_FrustumGrid.h",
+      "bytes": 1685,
+      "sha256": "8579ab9c9ed70f8cc1e1ff8107da82a82d131d9713e4e07113237b5e76d5f82a"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Geocoder.h",
+      "bytes": 13905,
+      "sha256": "899e3e513d182b7cc6027b1470ca7057a19010519bbe2e06dc6919668032991e"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_GeoTransform.h",
+      "bytes": 3650,
+      "sha256": "98392fedb33fc8eb180ecd72f0e903db51f7445b544736016f9918e6bd759289"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Icon.h",
+      "bytes": 3711,
+      "sha256": "faa48cb5cbfb139fee4a5380bd2108d0f2152876e5bc73cb2c2227a83d658ae8"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Label.h",
+      "bytes": 6126,
+      "sha256": "3c4e0b8a06a4ed4aaab74106ee0c5704f0268e3863ba85c9850ea3b9cc9d3303"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_LabelFeatures.h",
+      "bytes": 5074,
+      "sha256": "e4aea49976e4456f3a4213f495f3a37d4c9311df0ca0760403b3c2b50a8489ca"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Line.h",
+      "bytes": 14870,
+      "sha256": "f9f4c3500368eff0fad59e7abcc0c0ea4d3e4e0fdcf4c16a8e96480adfdb4ad9"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_LineFeatures.h",
+      "bytes": 3536,
+      "sha256": "a9b10a56af0d100b8dd6cc73a2225d7d6cd8f736cda3f8b4f9c9bcc205013254"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Map.h",
+      "bytes": 5783,
+      "sha256": "eda7003c384ce504515096bbc69c18169aa0c954112182b3f0925f4be8a2c1f8"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Mesh.h",
+      "bytes": 20795,
+      "sha256": "99617040c9384573abb8a6b38073c58abe9f45be19264b6e91772e74a07cf24e"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Model.h",
+      "bytes": 5403,
+      "sha256": "dc8b90702aa8110934e56e41434bce13ad8dee5e58671b02fce98d47e3d07082"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_MVTFeatures.h",
+      "bytes": 10898,
+      "sha256": "5dc937035cccd6ca62a17dee90313522d090ae34f150fec1c8cba6ad3e6a55c4"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_NodePager.h",
+      "bytes": 6304,
+      "sha256": "5e32a3a378dc84e7ea946651eedd0145ab25f9914a079a4760c6599c2a9e1886"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_OrderedRendering.h",
+      "bytes": 5046,
+      "sha256": "2b57567c772a8700d31e43b7653be6b30fcfee82b26d26ca8a66a2674af93348"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Overlay.h",
+      "bytes": 16742,
+      "sha256": "5ebedc97bbb60560bfa6f3dc2b7672b637c277c3480a89a9d76c3c39eef89214"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Picking.h",
+      "bytes": 7141,
+      "sha256": "581cf13980cfe8c62cacc95dc3c0a74b38bec8a7ec22198aa9a05addb9e79d6b"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Point.h",
+      "bytes": 2784,
+      "sha256": "d7c54984cd70caa0f3279fa0bf176b5236ec1877663e7acf65b1346c470d3c36"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Polygon.h",
+      "bytes": 8772,
+      "sha256": "25b96f4f957c0b3cbd21e3fb0309a763a2db20cd7e8277247c55c915a2ed3a05"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_PolygonFeatures.h",
+      "bytes": 4070,
+      "sha256": "5357b011fd358011ed7c01410e08969a6752499ba6d270d434a040fffae86c55"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Registry.h",
+      "bytes": 2414,
+      "sha256": "1ea1d4e4d3a7be31b1e7460a3018214a9f1fec1ccceeb89855679862c0c0898d"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_RTT.h",
+      "bytes": 7149,
+      "sha256": "40297e09017e5e832e08c17c7f32e5cdeb98431b7c81b6136b238359f9ff570e"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_SceneGraphInspector.h",
+      "bytes": 45294,
+      "sha256": "d9934c7d80ee63d44c3098a6470b6f251003d50d0178ec36ca2c5503f2f0ca33"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Screenshot.h",
+      "bytes": 14668,
+      "sha256": "64a88b12def01545c72ea2c4e9141444c2f0d5bf04ba1decda925092197dc7a0"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Serialization.h",
+      "bytes": 630,
+      "sha256": "6cd72be409779c5fc7e8ece51398a40e22491ef2d078a21eb484ff2f70b3c75d"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Simulation.h",
+      "bytes": 11150,
+      "sha256": "0af1aab1ade51c50eb86547355ba1f721eded1803a07b283073e92923ae4e255"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_SlugOverlay.h",
+      "bytes": 7637,
+      "sha256": "5d2eca371029287e4df3a70cd267f28cfd0d138dfada14447db839db4094022d"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Stats.h",
+      "bytes": 8012,
+      "sha256": "bd3166bef773c68ebf6653692854ed58a64499c41c155dc860587636393d665a"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Synchro.h",
+      "bytes": 3121,
+      "sha256": "bceff6da28c2bba547b812d5620efae714810d2a4fe6a786c836b74274cbf2b8"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Terrain.h",
+      "bytes": 5553,
+      "sha256": "7c2425619ecfb7870aac3cdf5ab4e253a89f88c439ec05b4c02f1fdd4308fa4c"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_TrackHistory.h",
+      "bytes": 11177,
+      "sha256": "c0adc674253ccf7f698a2f8964913a2f6ad77dc32152bfaea5802fd00a7f0267"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Views.h",
+      "bytes": 13251,
+      "sha256": "d1911176e92628319327dd899ae2700c4ab5abeccb46754fce2f1fd66880fb3e"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_Widget.h",
+      "bytes": 6351,
+      "sha256": "c08c4c28dd47ecd2a90aa2f95c701c228ca30c507f96298d2fcf4612cf5d21df"
+    },
+    {
+      "path": "examples/globe/rocky_demo/Demo_WindowHUD.h",
+      "bytes": 2123,
+      "sha256": "5ca2d4815f44166d0205470d63c4d255a824ca3151f3dad49368d59516735102"
+    },
+    {
+      "path": "examples/globe/rocky_demo/helpers.h",
+      "bytes": 15240,
+      "sha256": "9c5644f86927dfcea1d99880f39a82732930e44d84869da09de0224cc9354bb3"
+    },
+    {
+      "path": "examples/globe/rocky_demo/rocky_demo.cpp",
+      "bytes": 9738,
+      "sha256": "8c378709de49079f7ba2766c21de12bfaaf6d0865ebb19a62f9798bc1e917a88"
+    },
+    {
+      "path": "examples/globe/rocky_demo/WindowImGuiHUD.cpp",
+      "bytes": 13891,
+      "sha256": "9db50a28c8a7d4489100818076a2cbbf7c45debc4ad42e758df8ba46c2f77142"
+    },
+    {
+      "path": "examples/globe/rocky_demo/WindowImGuiHUD.h",
+      "bytes": 1880,
+      "sha256": "b70c41c6152077f293135d2a2a555071a594e38018f7d033cd57d937b33db72d"
+    },
+    {
+      "path": "examples/globe/rocky_demo_qt/CMakeLists.txt",
+      "bytes": 1040,
+      "sha256": "f805ce704be6c29e419502879eeaa2d085f024efb18aa89fdd963aac99c74a67"
+    },
+    {
+      "path": "examples/globe/rocky_demo_qt/rocky_demo_qt.cpp",
+      "bytes": 6105,
+      "sha256": "11afeecb5548e477dbb6864f38255e8f6d4bd9c31a8216ac7d1add9c21fdd2a6"
+    },
+    {
+      "path": "examples/globe/rocky_sandbox/CMakeLists.txt",
+      "bytes": 406,
+      "sha256": "adbf86201cb738b5a091fbe1951321470c869e21237c8d564187959606c36a9d"
+    },
+    {
+      "path": "examples/globe/rocky_sandbox/deferred.fsq.frag",
+      "bytes": 3074,
+      "sha256": "dbe512d0300b24f6af6f4b8d5a236aa8aabd8ec262bab7bc7ef8be2ec7cd26a3"
+    },
+    {
+      "path": "examples/globe/rocky_sandbox/deferred.fsq.vert",
+      "bytes": 469,
+      "sha256": "6d37371a452a63404aa11db235c669c72cbe927318351dfe2c1218ec19ddbc68"
+    },
+    {
+      "path": "examples/globe/rocky_sandbox/deferred.standard.frag",
+      "bytes": 2837,
+      "sha256": "274b1634e9d084bfa339186adbb46762b1a2f14ba51f8c31a40fe66b4efcd701"
+    },
+    {
+      "path": "examples/globe/rocky_sandbox/deferred.standard.vert",
+      "bytes": 6188,
+      "sha256": "785631871ee32dff4d24fbf95ecdb73e58f03373ed74a0d2635d4197ec84c8b1"
+    },
+    {
+      "path": "examples/globe/rocky_sandbox/rocky_sandbox.cpp",
+      "bytes": 28878,
+      "sha256": "1c20d1f91fae43d1097d94ef55b548acec1e1b446c6cf032d50184d45e6243f4"
+    },
+    {
+      "path": "examples/globe/rocky_simple/CMakeLists.txt",
+      "bytes": 313,
+      "sha256": "4908c219b6ce2398208494b1b16d635570256521b0983e7732f4b4b8d624c62a"
+    },
+    {
+      "path": "examples/globe/rocky_simple/rocky_simple.cpp",
+      "bytes": 10542,
+      "sha256": "5c78508e7e088103a2296c0edc44e22d41a303d10c6e1fedfde8fee207950e98"
+    },
+    {
+      "path": "examples/README.md",
+      "bytes": 1296,
+      "sha256": "b6b137004a8f67bfde4f620d11e1bb52c95f1ec8090b97130bc8bb86cd8bc658"
+    },
+    {
+      "path": "examples/tiles3d/CMakeLists.txt",
+      "bytes": 60,
+      "sha256": "56e4c64c602b8f5beb9349799de48974f5022fcf9383dc8cf65218858180fb05"
+    },
+    {
+      "path": "examples/tiles3d/config/agi.json",
+      "bytes": 194,
+      "sha256": "b08545661d6401fd2dbb232a76a767a36728380e4de6c962e6d00b799dac0a1f"
+    },
+    {
+      "path": "examples/tiles3d/config/color-debug-overlay.json",
+      "bytes": 257,
+      "sha256": "6e4fb98aeb0a1898b88e11e4570fc50f8055cd3d4f010f5cbbeec25e41f50085"
+    },
+    {
+      "path": "examples/tiles3d/config/csterrain.json",
+      "bytes": 223,
+      "sha256": "5fcfd8e6ade82a02fe3e100e81924c9c8f41a787f945c44cf6aa28373bf582c0"
+    },
+    {
+      "path": "examples/tiles3d/config/egm96-model.json",
+      "bytes": 305,
+      "sha256": "0471f7b5477a9c81334d291cc67e4e5d0c3c3773dc877d1cc3d645e22752023d"
+    },
+    {
+      "path": "examples/tiles3d/config/GMaps-ion.json",
+      "bytes": 184,
+      "sha256": "a2471d0b7242c64f8e6d686edb5cc894b5353582d3f4fe080595ec9830dbe03b"
+    },
+    {
+      "path": "examples/tiles3d/config/GMaps-sample.json",
+      "bytes": 164,
+      "sha256": "709bfef5996a7fc8936e50f623ae096f669573821289dd0ea73d79562c3b966f"
+    },
+    {
+      "path": "examples/tiles3d/config/melbourne-cloud.json",
+      "bytes": 254,
+      "sha256": "8a20cea0b766fc6e80d6acee1b13790898464457bef6f7076f9bfbeb88f22aea"
+    },
+    {
+      "path": "examples/tiles3d/config/multilayer.json",
+      "bytes": 455,
+      "sha256": "0032cc7cd14a882a545d196245bc000be949907052c5f0792ffdc6df2dd4768a"
+    },
+    {
+      "path": "examples/tiles3d/config/multilayer3.json",
+      "bytes": 556,
+      "sha256": "be25f588e51660f29586ca549deee14f9c0aa0f83b71e79916bde5a81d92efb0"
+    },
+    {
+      "path": "examples/tiles3d/config/osm-buildings.json",
+      "bytes": 345,
+      "sha256": "cbf062f1beb5f737914907e166560d708d4a4cc36701656bf10c5ccfd65a795d"
+    },
+    {
+      "path": "examples/tiles3d/config/osm-nooverlay.json",
+      "bytes": 253,
+      "sha256": "1b0495e3e822ae9f8df95ade8fc4c52008572a87757ecfc036a4ca5caa015085"
+    },
+    {
+      "path": "examples/tiles3d/config/overlay-openrailwaymap.json",
+      "bytes": 403,
+      "sha256": "aa90c594703088ff293230302c5a0fc094f218736047015457354d4083c76307"
+    },
+    {
+      "path": "examples/tiles3d/config/overlay-tms.json",
+      "bytes": 356,
+      "sha256": "d0797dbfd42d415b27a3b87d15a6d0ffbded8b5169d761cab5d704279fdcdcfe"
+    },
+    {
+      "path": "examples/tiles3d/config/overlay-urlTemplate.json",
+      "bytes": 349,
+      "sha256": "f8cf98eb373f54bef7f427c74ce719f223a503b5e3c218ea0a493e84f478d85d"
+    },
+    {
+      "path": "examples/tiles3d/config/overlay-wms.json",
+      "bytes": 408,
+      "sha256": "7ebbf734cd183d5b5370c0520303a7f20f8d3dff42df5449e771b37ee7fbdb74"
+    },
+    {
+      "path": "examples/tiles3d/config/overlay-wmts.json",
+      "bytes": 556,
+      "sha256": "c426fb7755de1c0de18f96d3bdbab135096c71fa5e5f79364241e86e3443b3ae"
+    },
+    {
+      "path": "examples/tiles3d/config/utm-model.json",
+      "bytes": 309,
+      "sha256": "10a99a43d0d7239fae45b7f595f0ad702554112d9fdd49f167874b52decf3812"
+    },
+    {
+      "path": "examples/tiles3d/config/wgs84-model.json",
+      "bytes": 279,
+      "sha256": "c40b7ab73eb0d9204948ed50e5392d10d69a0a01baa1276f67804344da71cee6"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/CMakeLists.txt",
+      "bytes": 1218,
+      "sha256": "0324bdc9cda08d2414182827b52570298b26ba5082f4b80cbc45bd4ce00dd6a9"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/CreditComponent.cpp",
+      "bytes": 7507,
+      "sha256": "00c32fcf876205135721b5a1b070ab4a6bb884b46a9c02971c2d522f9f11a522"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/CreditComponent.h",
+      "bytes": 2488,
+      "sha256": "4b98442c652c279beef04098d4cba39f863ac082e4bf53136577ace51c28bd56"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/CsViewer.cpp",
+      "bytes": 2232,
+      "sha256": "1bdde8a7894a214ec004a5f527735571854c32fed76994eb6e4e6ea563bc0c37"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/CsViewer.h",
+      "bytes": 1645,
+      "sha256": "cb11b573c50b40089d6549e2398d1d8a6fb831fd3083fbaeba227bf0d481f471"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/GeneralPerspective.h",
+      "bytes": 2822,
+      "sha256": "b63798f2ab367ce25d6e8af877b6846b474c90e09e9bb4265d57154f7d9957d0"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/MapManipulator.cpp",
+      "bytes": 64956,
+      "sha256": "b06efd26a3df8c897ea2ebed0a16dc67dfa335cc4c05f1b3c0d2d2488a3c3a29"
+    },
+    {
+      "path": "examples/tiles3d/CsApp/MapManipulator.h",
+      "bytes": 31365,
+      "sha256": "914637c8b0f8264ea205597521948f0ddfb1b2393907a2af9c7fdce9883d0ede"
+    },
+    {
+      "path": "examples/tiles3d/data/models/Credits.md",
+      "bytes": 178,
+      "sha256": "f87d60efb6e7df3866b9d6163c875cba7117d0b9a282626df644ef4555d2c9fe"
+    },
+    {
+      "path": "examples/tiles3d/data/models/maersk_container_ship.glb",
+      "bytes": 36534828,
+      "sha256": "eb385692bb074daf97082f8a5d6eef1004d1a54241a231822f20d52d348092bd"
+    },
+    {
+      "path": "examples/tiles3d/gltfviewer/CMakeLists.txt",
+      "bytes": 334,
+      "sha256": "fbbb6867bfe8b79da110acccf3d0e1d6ab4acae76adbe1c6396f996e0f477b44"
+    },
+    {
+      "path": "examples/tiles3d/gltfviewer/gltfviewer.cpp",
+      "bytes": 7538,
+      "sha256": "7f44ea61378b916fb5c9bbe7e49c999e34d134c37526f4b1df0c79b5e2445f53"
+    },
+    {
+      "path": "examples/tiles3d/worldviewer/CMakeLists.txt",
+      "bytes": 800,
+      "sha256": "37c7cfe1af02ec7b525ac8c057113bb54771bb9cb0c8ca7070b2a9cae372e4e1"
+    },
+    {
+      "path": "examples/tiles3d/worldviewer/UI.cpp",
+      "bytes": 5083,
+      "sha256": "ffacbf101063612f415d5868c38b2b26ca8eccd3abbbdf3dd0f7dc5cbcdf74ea"
+    },
+    {
+      "path": "examples/tiles3d/worldviewer/UI.h",
+      "bytes": 2600,
+      "sha256": "2f28b7eb56443c7e861a5c99588039eec9a9cb3493f9f0f594b142394473c002"
+    },
+    {
+      "path": "examples/tiles3d/worldviewer/worldviewer.cpp",
+      "bytes": 22342,
+      "sha256": "58407cb6ac220980da73c77d2f14f618ed61ec1b16d8207d59416c9c79fad8cd"
+    },
+    {
+      "path": "tools/io/vsgconv/CMakeLists.txt",
+      "bytes": 466,
+      "sha256": "d04e7c219d5199bc56aa80dd444fc26afbfcce6b82c9ce0c23b608ed7598a1c3"
+    },
+    {
+      "path": "tools/io/vsgconv/vsgconv.cpp",
+      "bytes": 20269,
+      "sha256": "516c83ca287e42017c6db128cb14374388d065228cbd3f89690cdf93c127445c"
+    }
+  ],
+  "authorization": "给你授权删除权限，你进行删除",
+  "execution": "Each exact file was deleted in a separate command after path and SHA-256 verification. Empty directories were removed separately without recursion."
+}

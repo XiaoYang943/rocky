@@ -3,8 +3,8 @@
  * Copyright 2026 Pelican Mapping
  * MIT License
  */
-#ifndef ROCKY_DECAL_RECORD
-#define ROCKY_DECAL_RECORD
+#ifndef GEOSTUDIO_NATIVE_DECAL_RECORD
+#define GEOSTUDIO_NATIVE_DECAL_RECORD
 
 // Shared std430 record for decal culling, shading, and volume diagnostics.
 // Keep synchronized with rocky::DecalGPU. This header deliberately needs no textures or Slug evaluator.

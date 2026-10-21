@@ -1,0 +1,844 @@
+/**
+ * rocky c++
+ * Copyright 2026 Pelican Mapping
+ * MIT License
+ */
+#include <geostudio/native/runtime/engine/Application.h>
+#include <geostudio/native/render/view/MapManipulator.h>
+#include <geostudio/native/render/vsg/ShaderDefines.h>
+#include <geostudio/native/render/vsg/SkyNode.h>
+#include <geostudio/native/render/entity/TransformSystem.h>
+#include <geostudio/native/drivers/earth/EarthFileImporter.h>
+
+#include <geostudio/native/render/vsg/FrustumGridSystem.h>
+#include <geostudio/native/render/entity/DecalSystem.h>
+#include <geostudio/native/render/entity/OverlayBakeSystem.h>
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
+#include <geostudio/native/render/entity/SlugSystem.h>
+#endif
+#include <geostudio/native/render/entity/OpticsSystem.h>
+#include <geostudio/native/render/entity/TerrainAnchorSystem.h>
+#include <charconv>
+
+
+#define GEOSTUDIO_NATIVE_HAS_FRUSTUM_GRID
+
+using namespace geostudio::native;
+
+namespace
+{
+    std::uint32_t clampProjectedTextureCapacity(
+        std::uint32_t requested,
+        const VkPhysicalDeviceLimits& limits)
+    {
+        // Leave room for terrain color/elevation, optional shadow-map resources,
+        // UBOs, and SSBOs in the same pipeline layout/stages.
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
+        constexpr std::uint32_t arrayCount = 3u; // RTT + Slug curve + Slug band
+#else
+        constexpr std::uint32_t arrayCount = 1u; // RTT only
+#endif
+        auto availablePerArray = [arrayCount](std::uint32_t limit, std::uint32_t reserved)
+        {
+            return limit > reserved ?
+                std::max(1u, (limit - reserved) / arrayCount) : 1u;
+        };
+
+        // Divide the available descriptors among the projected image arrays
+        // compiled into this build, leaving room for terrain and shadows.
+        auto supported = std::min({
+            availablePerArray(limits.maxPerStageDescriptorSamplers, 3u),
+            availablePerArray(limits.maxPerStageDescriptorSampledImages, 2u),
+            availablePerArray(limits.maxDescriptorSetSamplers, 4u),
+            availablePerArray(limits.maxDescriptorSetSampledImages, 3u),
+            availablePerArray(limits.maxPerStageResources, 16u)
+        });
+
+        return std::clamp(requested, 1u, supported);
+    }
+
+    Result<> loadMapFile(const std::string& location, MapNode& mapNode, Context context)
+    {
+        auto map_file = URI(location).read(context->io);
+        if (map_file.failed())
+            return map_file.error();
+
+        auto r = mapNode.from_json(map_file->content.data, context->io.from(location));
+        if (r.failed())
+            return r.error();
+
+        return ResultVoidOK;
+    }
+
+    Result<> importEarthFile(const std::string& infile, MapNode& mapNode, Context context)
+    {
+        auto io = context->io.from(infile);
+
+        EarthFileImporter importer;
+        auto result = importer.read(infile, io);
+        if (result.failed())
+            return result.error();
+
+        auto count = mapNode.map->layers().size();
+
+        auto r = mapNode.from_json(result.value(), io);
+        if (r.failed())
+            return r.error();
+
+        if (count == mapNode.map->layers().size())
+            return Failure(Failure::ResourceUnavailable, "No layers imported from earth file");
+
+        return ResultVoidOK;
+    }
+
+
+    struct CloseWindowEventHandler : public vsg::Inherit<vsg::Visitor, CloseWindowEventHandler>
+    {
+        CloseWindowEventHandler(geostudio::native::Application* app) : _app(app) {}
+
+        void apply(vsg::CloseWindowEvent& e) override
+        {
+            auto window = e.window.ref_ptr();
+            if (window)
+            {
+                _app->onNextUpdate([window, this](...)
+                    {
+                        Log()->debug("Removing window...");
+
+                        for (auto& win : _app->display.windows())
+                        {
+                            if (win.vsgWindow == window)
+                            {
+                                _app->display.removeWindow(win);
+                                break;
+                            }
+                        }
+
+                        if (_app->viewer->windows().empty())
+                        {
+                            Log()->debug("All windows closed... shutting down.");
+                            _app->viewer->close();
+                        }
+                    });
+
+                e.handled = true;
+            }
+        }
+
+        geostudio::native::Application* _app;
+    };
+
+
+    // utility visitor to find all views.
+    struct FindViews : public vsg::Visitor {
+
+        void apply(vsg::Object& g) override {
+            g.traverse(*this);
+        }
+        void apply(vsg::View& view) override {
+            views.push_back(vsg::ref_ptr<vsg::View>(&view));
+        };
+
+        std::vector<vsg::ref_ptr<vsg::View>> views;
+    };
+}
+
+Application::Application()
+{
+    int argc = 0;
+    const char* argv[1] = { "rocky" };
+    ctor(argc, (char**)argv);
+}
+
+Application::Application(vsg::ref_ptr<vsg::Viewer> viewer_)
+    : viewer(viewer_)
+{
+    int argc = 0;
+    const char* argv[1] = { "rocky" };
+    ctor(argc, (char**)argv);
+}
+
+Application::Application(int& argc, char** argv)
+{
+    ctor(argc, argv);
+}
+
+Application::Application(vsg::ref_ptr<vsg::Viewer> viewer_, int& argc, char** argv) :
+    viewer(viewer_)
+{
+    ctor(argc, argv);
+}
+
+void
+Application::ctor(int& argc, char** argv)
+{
+    if (!viewer)
+    {
+        viewer = vsg::Viewer::create();
+    }
+
+    // new VSG context
+    _vsgcontextSingleton = VSGContextFactory::create(viewer, argc, argv);
+    vsgcontext = _vsgcontextSingleton.get();
+
+    if (!vsgcontext->status.ok())
+    {
+        Log()->error("Cannot create rocky context: {}" + vsgcontext->status.error().message);
+        return;
+    }
+
+    // parse the command line
+    vsg::CommandLine commandLine(&argc, argv);
+    commandLine.read(vsgcontext->readerWriterOptions);
+
+    // new display manager
+    display.initialize(vsgcontext, commandLine);
+
+    // intercept the window-close event so we can remove the window from our tracking tables.
+    auto& handlers = vsgcontext->viewer()->getEventHandlers();
+    handlers.insert(handlers.begin(), CloseWindowEventHandler::create(this));
+
+    // subscribe to display manager events:
+    _subscriptions += display.onAddWindow([this](Window& window) { onAddWindow(window); });
+    _subscriptions += display.onAddView([this](Window& window, View& view) { onAddView(window, view); });
+    _subscriptions += display.onRemoveWindow([this](const Window& window) { onRemoveWindow(window); });
+    _subscriptions += display.onRemoveView([this](const Window& window, const View& view) { onRemoveView(window, view); });
+
+    // parse the command line
+    if (commandLine.read("--pause")) ::getchar();
+
+    if (commandLine.read("--version"))
+    {
+        std::cout << "rocky " << GEOSTUDIO_NATIVE_VERSION_STRING << std::endl;
+        exit(0);
+    }
+
+    if (commandLine.read("--version-all"))
+    {
+        std::cout << about() << std::endl;
+        exit(0);
+    }
+
+    if (commandLine.read("--help"))
+    {
+        std::cout
+            << "rocky " << GEOSTUDIO_NATIVE_VERSION_STRING << std::endl
+            << argv[0] << std::endl
+            << "    [--map <filename>]        // load a JSON map file" << std::endl
+            << "    [--earth-file <filename>] // import an osgEarth earth file" << std::endl
+            << "    [--no-vsync]              // disable vertical sync" << std::endl
+            << "    [--msaa <samples>]        // request 1, 2, 4, 8, 16, 32, or 64 samples per pixel" << std::endl
+            << "    [--continuous]            // render frames continuously (instead of only when needed)" << std::endl
+            << "    [--log-level <level>]     // set the log level (debug, info, warn, error, critical, off)" << std::endl
+            << "    [--sky]                   // install a rudimentary lighting model" << std::endl
+            << "    [--version]               // print the version" << std::endl
+            << "    [--version-all]           // print all dependency versions" << std::endl
+            << "    [--debug]                 // activate the Vulkan debug validation layer" << std::endl
+            << "    [--debug-brutal]          // like --debug but exit at the first validation error" << std::endl
+            << "    [--api]                   // activate the Vulkan API validation layer (mega-verbose)" << std::endl
+            ;
+
+        exit(0);
+    }
+
+    std::string msaa;
+    if (commandLine.read("--msaa", msaa))
+    {
+        std::uint32_t samples = 0;
+        auto result = std::from_chars(msaa.data(), msaa.data() + msaa.size(), samples);
+        if (result.ec != std::errc{} || result.ptr != msaa.data() + msaa.size() ||
+            samples < 1u || samples > 64u || (samples & (samples - 1u)) != 0u)
+        {
+            commandLineStatus = Failure(Failure::ConfigurationError,
+                "--msaa requires 1, 2, 4, 8, 16, 32, or 64 samples");
+        }
+        else
+        {
+            vsgcontext->msaaSamples = samples;
+        }
+    }
+    else if (commandLine.read("--msaa"))
+    {
+        commandLineStatus = Failure(Failure::ConfigurationError, "--msaa requires a sample count, for example --msaa 4");
+    }
+
+    scene = vsg::Group::create();
+
+    mapNode = geostudio::native::MapNode::create(vsgcontext);
+
+    compute = vsg::Group::create();
+
+    // the sun
+    if (commandLine.read("--sky"))
+    {
+        auto skyNode = geostudio::native::SkyNode::create(vsgcontext);
+        scene->addChild(skyNode);
+
+        // if the user didn't disable terrain lighting...enable it.
+        if (!mapNode->terrainSettings().lighting.has_value())
+            mapNode->terrainSettings().lighting = true;
+
+        if (commandLine.read("--shadows"))
+        {
+            skyNode->sun->shadowSettings = vsg::HardShadows::create(4);
+            vsgcontext->shaderCompileSettings->defines.insert("VSG_SHADOWS_HARD");
+        }
+    }
+
+    // set on-demand rendering mode from the command line
+    if (commandLine.read("--on-demand"))
+    {
+        renderContinuously = false;
+    }
+    else if (commandLine.read("--continuous"))
+    {
+        renderContinuously = true;
+    }
+
+    // a node to render the map/terrain
+    scene->addChild(mapNode);
+
+    // No idea what this actually does :)
+    if (commandLine.read("--mt"))
+    {
+        viewer->setupThreading();
+    }
+
+    vsgcontext->sharedObjects = vsg::SharedObjects::create();
+
+    // read map from file:
+    std::string infile; 
+    if (commandLine.read("--map", infile))
+    {
+        auto r = loadMapFile(infile, *mapNode, vsgcontext);
+        if (r.failed())
+            commandLineStatus = r.error();
+    }
+
+    // import map from an osgEarth earth file:
+    if (commandLine.read({ "--earthfile", "--earth-file" }, infile) && commandLineStatus.ok())
+    {
+        auto r = importEarthFile(infile, *mapNode, vsgcontext);
+        if (r.failed())
+            commandLineStatus = r.error();
+    }
+
+    // if there are any command-line arguments remaining, assume the first is a map file.
+    if (commandLine.argc() > 1 && commandLineStatus.ok())
+    {
+        auto r = loadMapFile(commandLine[1], *mapNode, vsgcontext);
+        if (r.failed())
+            commandLineStatus = r.error();
+    }
+
+    // Create the ECS system manager and all its default systems.
+    systemsNode = ECSNode::create(registry, true);
+
+    // Terrain anchors resolve ordinary Transform positions against the map terrain.
+    if (auto* terrainAnchorSystem = systemsNode->get<TerrainAnchorSystem>())
+    {
+        terrainAnchorSystem->target = mapNode->terrainNode;
+    }
+
+    // Projection placement uses the terrain scene for focal-point intersections.
+    if (auto* opticsSystem = systemsNode->get<OpticsSystemNode>())
+    {
+        opticsSystem->target = mapNode->terrainNode;
+    }
+
+    // Systems with compute shader traversals also need to go here:
+    computeSystemsNode = ECSNode::create(registry, false);
+    compute->addChild(computeSystemsNode);
+
+#ifdef GEOSTUDIO_NATIVE_HAS_FRUSTUM_GRID
+    auto fgsystem = FrustumGridSystemNode::create(registry);
+    systemsNode->add(fgsystem);
+    computeSystemsNode->add(fgsystem);
+    vsgcontext->shaderCompileSettings->defines.insert("GEOSTUDIO_NATIVE_HAS_FRUSTUM_GRID");
+#endif
+
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
+    // Producer/consumer ordering is significant:
+    //  1. The main ECSNode publishes shared textures before MeshSystem updates.
+    //  2. OverlayBakeSystem updates RTT resources and fits shared projectors.
+    //  3. SlugSystem consumes those projectors and publishes vector atlases.
+    //  4. DecalSystem assigns visible producer results to descriptors, writes
+    //     the common projection buffers, and records the tile-culling pass.
+    auto overlayBakeSystem = OverlayBakeSystemNode::create(registry);
+    overlayBakeSystem->worldSRS = mapNode->srs();
+    overlayBakeSystem->renderSourceSystems = systemsNode.get();
+    computeSystemsNode->add(overlayBakeSystem);
+
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
+    auto slugSystem = SlugSystemNode::create(registry);
+    slugSystem->worldSRS = mapNode->srs();
+    computeSystemsNode->add(slugSystem);
+    vsgcontext->shaderCompileSettings->defines.insert("GEOSTUDIO_NATIVE_HAS_SLUGHORN");
+#endif
+
+    auto decalSystem = DecalSystemNode::create(registry);
+    computeSystemsNode->add(decalSystem);
+    vsgcontext->shaderCompileSettings->defines.insert("GEOSTUDIO_NATIVE_HAS_DECALS");
+#endif
+
+    auto xformSystem = systemsNode->get<TransformSystemNode>();
+    if (xformSystem)
+    {
+        // Responds to changes in Transform components by updating the scene graph
+        _subscriptions += xformSystem->onChanges([&]() { vsgcontext->requestFrame(); });
+    }
+
+    scene->addChild(systemsNode);
+
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
+    // Graphics diagnostics belong after terrain/ECS drawing, never in the decal compute traversal.
+    scene->addChild(decalSystem->debugNode());
+#endif
+
+
+    // let's try VSG's delete queue.
+    _activityStatus = vsg::ActivityStatus::create();
+    deleteQueue = vsg::DeleteQueue::create(_activityStatus);
+
+    vsgcontext->io.services().jobs.dispatch([deleteQueue(this->deleteQueue), activityStatus(this->_activityStatus)]() {
+        while (activityStatus->active()) {
+            deleteQueue->wait_then_clear();
+        }
+    });
+
+#if 0
+    // replace our context's stock disposer with vsg's:
+    vsgcontext->disposer = [deleteQueue(this->deleteQueue)](vsg::ref_ptr<vsg::Object> object) {
+        deleteQueue->add(object);
+    };
+#endif
+}
+
+Application::~Application()
+{
+    Log()->debug("Quitting background tasks...");
+    workers.quit();
+
+    // Release app-owned scene/view resources while the context is still alive.
+    // Several of these objects own weejobs futures; dropping them first gives
+    // those futures a chance to cancel before the runtime joins all threads.
+    if (viewer)
+    {
+        viewer->close();
+        if (!viewer->windows().empty())
+        {
+            viewer->deviceWaitIdle();
+        }
+    }
+
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
+    // Stop bake jobs while their hosts and the deferred GPU disposer are still
+    // alive, after recording has stopped and the device has become idle.
+    if (computeSystemsNode)
+        if (auto* bake = computeSystemsNode->get<OverlayBakeSystemNode>())
+            bake->shutdown(vsgcontext);
+#endif
+
+    while (!display.windows().empty())
+    {
+        display.removeWindow(display.windows().back());
+    }
+
+    _subscriptions.clear();
+
+    // this will signal the delete-queue thread to exit.
+    _activityStatus->set(false);
+
+    systemsNode = {};
+    computeSystemsNode = {};
+    mapNode = {};
+    scene = {};
+
+    Log()->debug("Waiting for all jobs to stop...");
+    io().services().jobs.shutdown();
+}
+
+void
+Application::onNextUpdate(std::function<void()> func)
+{
+    vsgcontext->onNextUpdate([func](...) {
+        func();
+    });
+}
+
+void
+Application::realize()
+{
+    if (!_viewerRealized)
+    {
+        // Make a window if the user didn't.
+        if (display.windows().empty() && autoCreateWindow)
+        {
+            auto traits = vsg::WindowTraits::create(20, 20, 1920, 1080, "Main Window");
+            traits->queueFlags |= VK_QUEUE_COMPUTE_BIT;
+            traits->synchronizationLayer = true;
+
+            display.addWindow(traits);
+        }
+
+        // Set up a compute CG the application can use.
+        // Share the same queue family as the graphics command graph for now.
+        Window& mainWindow = display.window(0);
+        GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(mainWindow, void());
+
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
+        auto device = mainWindow.vsgWindow->getOrCreateDevice();
+        GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(device && device->getPhysicalDevice(), void());
+
+        const auto requestedCapacity = projectedTextureCapacity;
+        projectedTextureCapacity = clampProjectedTextureCapacity(
+            requestedCapacity,
+            device->getPhysicalDevice()->getProperties().limits);
+
+        if (projectedTextureCapacity != requestedCapacity)
+        {
+            Log()->warn(
+                "Requested projected texture capacity {} exceeds Vulkan device limits; using {}",
+                requestedCapacity,
+                projectedTextureCapacity);
+        }
+
+        if (vsgcontext->sharedRenderData->projectedTextureCapacity() != projectedTextureCapacity)
+        {
+            vsgcontext->sharedRenderData->configureProjectedTextureCapacity(projectedTextureCapacity);
+            if (mapNode && mapNode->terrainNode)
+                mapNode->terrainNode->rebuildRenderPipeline(vsgcontext);
+        }
+#endif
+
+        // Initialize the ECS subsystem:
+        if (systemsNode)
+            systemsNode->initialize(vsgcontext);
+
+        if (computeSystemsNode)
+            computeSystemsNode->initialize(vsgcontext);
+
+        // respond to the X or to hitting ESC
+        // TODO: refactor this so it responds to individual windows and not the whole app?
+        //viewer->addEventHandler(vsg::CloseHandler::create(viewer));
+
+        // This sets up the internal tasks that will, for each command graph, record
+        // a scene graph and submit the results to the renderer each frame. Also sets
+        // up whatever's necessary to present the resulting swapchain to the device.
+        vsg::CommandGraphs commandGraphs;
+
+        for (auto& window : display.windows())
+        {
+            if (window.commandGraph)
+            {
+                commandGraphs.emplace_back(window.commandGraph);
+            }
+        }
+
+        viewer->assignRecordAndSubmitTaskAndPresentation(commandGraphs);
+
+#if 1
+        // Configure a descriptor pool size that's appropriate for terrain
+        // https://groups.google.com/g/vsg-users/c/JJQZ-RN7jC0/m/tyX8nT39BAAJ
+        // https://www.reddit.com/r/vulkan/comments/8u9zqr/having_trouble_understanding_descriptor_pool/    
+        // Since VSG dynamic allocates descriptor pools as it needs them,
+        // this is not strictly necessary. But if you know something about the
+        // types of descriptor sets you are going to use it will increase 
+        // performance (?) to pre-allocate some pools like this.
+        // There is a big trade-off since pre-allocating these pools takes up
+        // a significant amount of memory.
+
+        auto resourceHints = vsg::ResourceHints::create();
+
+        resourceHints->shadowMapSize = { 2048, 2048 };
+
+        // max number of descriptor sets per pool, regardless of type:
+        //resourceHints->numDescriptorSets = 1;
+
+        //#if VSG_API_VERSION_GREATER_EQUAL(1,1,8)
+        //    resourceHints->numDatabasePagerReadThreads = 8;
+        //#endif
+
+        // max number of descriptor sets of a specific type per pool:
+        //resourceHints->descriptorPoolSizes.push_back(
+        //    VkDescriptorPoolSize{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 });
+
+        resourceHints->maxSlots = {4, 4};
+
+        viewer->compile(resourceHints);
+
+        // Force VSG to install a DatabasePager.
+        //vsg::CompileResult result;
+        //result.containsPagedLOD = true;
+        //vsg::updateTasks(viewer->recordAndSubmitTasks, viewer->compileManager, result);
+
+#else
+        viewer->compile();
+#endif
+
+
+        // Callback that will update the ECS systems each frame
+        _subscriptions += vsgcontext->onUpdate([&](VSGContext vsgcontext)
+            {
+                if (mapNode && computeSystemsNode)
+                {
+                    if (auto* overlayBake = computeSystemsNode->get<OverlayBakeSystemNode>())
+                        overlayBake->worldSRS = mapNode->srs();
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
+                    if (auto* slug = computeSystemsNode->get<SlugSystemNode>())
+                        slug->worldSRS = mapNode->srs();
+#endif
+                }
+
+                // ECS updates - rendering or modifying entities
+                if (systemsNode)
+                    systemsNode->update(vsgcontext);
+
+                if (computeSystemsNode)
+                    computeSystemsNode->update(vsgcontext);
+            });
+
+        // mark the viewer ready so that subsequent changes will know to
+        // use an asynchronous path.
+        _viewerRealized = true;
+    }
+}
+
+std::uint64_t
+Application::frameCount() const
+{
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(viewer, 0);
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(viewer->getFrameStamp(), 0);
+    return viewer->getFrameStamp()->frameCount;
+}
+
+int
+Application::run()
+{
+    // The main frame loop
+    while (frame() == true);
+    return 0;
+}
+
+bool
+Application::frame()
+{
+    //Log()->info("Frame start ----------------------------------------------------------------------------");
+
+    //viewer->deviceWaitIdle();
+    //viewer->waitForFences(1, ~0);
+
+    _lastFrameOK = true;
+
+    // for stats collection
+    std::chrono::steady_clock::time_point t_start, t_update, t_events, t_record, t_present, t_end;
+
+    // realize on first frame if not already realized
+    if (!viewer->compileManager)
+    {
+        realize();
+    }
+
+    t_start = std::chrono::steady_clock::now();
+
+    // whether we need to render a new frame based on the renderOnDemand state:
+    if (vsgcontext->renderRequests.exchange(0) > 0)
+        _framesUntilStopRender = 2;
+
+    vsgcontext->renderingEnabled =
+        renderContinuously == true ||
+        _framesUntilStopRender-- > 0;
+
+    if (vsgcontext->renderingEnabled)
+    {
+        if (!viewer->advanceToNextFrame())
+        {
+            _lastFrameOK = false;
+            return false;
+        }
+
+        t_events = std::chrono::steady_clock::now();
+
+        viewer->handleEvents();
+
+        if (!viewer->active())
+        {
+            _lastFrameOK = false;
+            return false;
+        }
+
+        t_update = std::chrono::steady_clock::now();
+
+        auto num_windows = viewer->windows().size();
+
+        // Update the scene graph (see AppUpdateOperation)
+        viewer->update();
+
+        // it's possible that an update operation will shut down the viewer:
+        if (!viewer->active())
+        {
+            _lastFrameOK = false;
+            return false;
+        }
+
+        // if the number of windows has changed, skip to the next frame immediately
+        if (num_windows != viewer->windows().size())
+        {
+            Log()->debug("Number of windows changed; skipping to next frame");
+            return true;
+        }
+
+        t_record = std::chrono::steady_clock::now();
+
+        viewer->recordAndSubmit();
+
+        t_present = std::chrono::steady_clock::now();
+
+        viewer->present();
+
+        auto t_end = std::chrono::steady_clock::now();
+        stats.frame = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_start);
+        stats.events = std::chrono::duration_cast<std::chrono::microseconds>(t_update - t_events);
+        stats.update = std::chrono::duration_cast<std::chrono::microseconds>(t_record - t_update);
+        stats.record = std::chrono::duration_cast<std::chrono::microseconds>(t_present - t_record);
+        stats.present = std::chrono::duration_cast<std::chrono::microseconds>(t_end - t_present);
+
+        _framesSinceLastRender = 0;
+    }
+
+    else // no render
+    {
+        // manually poll the events and install a frame event
+        // (normally called by advanceToNextFrame)
+        viewer->pollEvents(_framesSinceLastRender > 0);
+        viewer->getEvents().emplace_back(new vsg::FrameEvent(vsg::ref_ptr<vsg::FrameStamp>(viewer->getFrameStamp())));
+
+        viewer->handleEvents();
+
+        // update traversal (see AppUpateOperation)
+        viewer->update();
+
+        // it's possible that an update operation will shut down the viewer:
+        if (!viewer->active())
+        {
+            return false;
+        }
+
+        // Invoke any "idle" callbacks
+        onIdleFrame.fire();
+
+        _framesSinceLastRender++;
+
+        // After not rendering for a few frames, start applying a sleep to
+        // "simulate" vsync so we don't tax the CPU by running full-out.
+        if (_framesSinceLastRender >= 60 && vsgcontext->renderRequests == 0)
+        {
+            auto max_frame_time = std::chrono::milliseconds(10);
+            auto now = vsg::clock::now();
+            auto elapsed = now - t_start;
+            if (elapsed < max_frame_time)
+            {
+                auto dur_us = std::chrono::duration_cast<std::chrono::microseconds>(max_frame_time - elapsed);
+                std::this_thread::sleep_for(dur_us);
+            }
+        }
+    }
+
+    deleteQueue->advance(vsg::ref_ptr<vsg::FrameStamp>(viewer->getFrameStamp()));
+
+    return viewer->active();
+}
+
+
+std::string
+Application::about() const
+{
+    std::stringstream buf;
+    for (auto& a : vsgcontext->about())
+        buf << a << std::endl;
+    return buf.str();
+}
+
+
+void
+Application::onAddWindow(Window& window)
+{
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(window, void());
+
+    // wait until the device is idle to avoid changing state while it's being used
+    vsgcontext->viewer()->deviceWaitIdle();
+
+    if (window.views().empty() && mapNode && scene)
+    {
+        // Window with no view? Make a default view covering the entire window
+        auto extent = window.vsgWindow->extent2D();
+        double nearFarRatio = 0.0000001;
+        double R = mapNode->srs().ellipsoid().semiMajorAxis();
+        double ar = (double)extent.width / (double)extent.height;
+
+        auto camera = vsg::Camera::create(
+            vsg::Perspective::create(30.0, ar, R * nearFarRatio, R * 20.0),
+            vsg::LookAt::create(vsg::dvec3(R * 5.0, 0.0, 0.0), vsg::dvec3(0.0, 0.0, 0.0), vsg::dvec3(0.0, 0.0, 1.0)),
+            vsg::ViewportState::create(0, 0, extent.width, extent.height));
+
+        View& newView = window.addView(camera, scene);
+        if (newView)
+            newView.vsgView->setValue("rocky_auto_created", true);
+    }
+
+    // install our compute graph on this window.
+    // TODO: do we need it on EVERY window or just one??
+    if (window.commandGraph)
+    {
+        // install compute graph before render graph.
+        window.commandGraph->children.insert(window.commandGraph->children.begin(), compute);
+    }
+
+    // add the new window to the VSG viewer
+    vsgcontext->viewer()->addWindow(window.vsgWindow);
+    vsgcontext->viewer()->addRecordAndSubmitTaskAndPresentation({ window.commandGraph });
+
+    // Tell Rocky it needs to mutex-protect the terrain engine if we have more than one window.
+    if (vsgcontext->viewer()->windows().size() > 1)
+    {
+        mapNode->terrainSettings().supportMultiThreadedRecord = true;
+    }
+}
+
+void
+Application::onAddView(Window& window, View& view)
+{
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(window && view, void());
+
+    // The shared compute branch is outside the view's scene; resolve its picking dependencies once at assembly.
+    view.setComputeGraph(compute.get());
+
+    // wait until the device is idle to avoid changing state while it's being used
+    vsgcontext->viewer()->deviceWaitIdle();
+
+    // install a manipulator
+    auto manip = MapManipulator::create(view.find<MapNode>(), window.vsgWindow, view.vsgView->camera, vsgcontext);
+    display.setManipulatorForView(manip, view.vsgView);
+    view.eventHandlersInstalled.emplace_back(manip);
+
+}
+
+void
+Application::onRemoveWindow(const Window& window)
+{
+    // wait until the device is idle to avoid changing state while it's being used
+    vsgcontext->viewer()->deviceWaitIdle();
+
+    // remove it from the VSG viewer:
+    vsgcontext->viewer()->removeWindow(window.vsgWindow);
+}
+
+void
+Application::onRemoveView(const Window& window, const View& view)
+{
+    // nop
+}
+
+
+
+

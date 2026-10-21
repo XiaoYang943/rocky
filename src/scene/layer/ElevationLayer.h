@@ -1,0 +1,102 @@
+/**
+ * rocky c++
+ * Copyright 2023 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+
+#include <geostudio/native/scene/layer/TileLayer.h>
+#include <geostudio/native/data/raster/GeoImage.h>
+#include <geostudio/native/data/elevation/Heightfield.h>
+#include <geostudio/native/core/geo/Units.h>
+
+namespace geostudio::native
+{
+    /**
+     * A map terrain layer producing elevation grid heightfields.
+     */
+    class GEOSTUDIO_NATIVE_API ElevationLayer :  public Inherit<TileLayer, ElevationLayer>
+    {
+    public:
+        enum class Encoding
+        {
+            SingleChannel,
+            MapboxRGB,
+            TerrariumRGB
+        };
+
+        //! Whether this layer contains offsets instead of absolute elevation heights
+        option<bool> offset = false;
+
+        //! Value to treat as "absence of data" if the datasource does not specify it
+        option<float> noDataValue = NO_DATA_VALUE;
+
+        //! Treat values lesser than this as "no data"
+        option<float> minValidValue = -FLT_MAX;
+
+        //! Treat values greater than this as "no data"
+        option<float> maxValidValue = FLT_MAX;
+
+        //! Encoding of the elevation data
+        option<Encoding> encoding = Encoding::SingleChannel;
+
+        //! Serialize this layer
+        std::string to_json() const override;
+
+    public:
+
+        /**
+         * Creates a GeoHeightField for this layer that corresponds to the extents and LOD
+         * in the specified TileKey. The returned HeightField will always match the geospatial
+         * extents of that TileKey.
+         *
+         * @param key TileKey for which to create a heightfield.
+         * @param io IO options
+         */
+        Result<GeoImage> createTile(const TileKey& key, const IOOptions& io) const;
+
+        /**
+        * The resolution in each dimension (x, y) for the data at the given level of detail.
+        */
+        std::pair<Distance, Distance> resolution(unsigned level) const;
+
+    public: // Layer
+
+        Result<> openImplementation(const IOOptions&) override;
+
+        void closeImplementation() override;
+
+    protected:
+
+        //! Construct (from subclass)
+        ElevationLayer();
+
+        //! Deserialize (from subclass)
+        explicit ElevationLayer(std::string_view JSON, const IOOptions& io);
+
+        //! Entry point for createHeightfield
+        Result<GeoImage> createTileInKeyProfile(const TileKey& key, const IOOptions& io) const;
+
+        //! Subclass overrides this to generate image data for the key.
+        //! The key will always be in the same profile as the layer.
+        virtual Result<GeoImage> createTileImplementation(const TileKey& key, const IOOptions& io) const
+        {
+            return Failure_ResourceUnavailable;
+        }
+
+        //! Decodes an image into a heightfield from its native representation
+        //! as denoted in the "encoding" option
+        std::shared_ptr<Image> decodeRGB(std::shared_ptr<Image> image) const;
+
+    private:
+        void construct(std::string_view, const IOOptions& io);
+
+        std::shared_ptr<Image> assembleTile(const TileKey& key, const IOOptions& io) const;
+
+        void normalizeNoDataValues(Image*) const;
+
+        Result<GeoImage> createTileImplementation_internal(const TileKey& key, const IOOptions& io) const;
+    };
+
+} // namespace
+

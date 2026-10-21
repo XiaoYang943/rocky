@@ -4,22 +4,22 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/Common.h>
+#include <geostudio/native/core/base/Common.h>
 
-#ifdef ROCKY_HAS_SLUGHORN
-#include <geostudio/native/globe/ecs/Line.h>
-#include <geostudio/native/globe/ecs/Mesh.h>
-#include <geostudio/native/globe/ecs/Point.h>
-#include <geostudio/native/globe/ecs/Polygon.h>
-#include <geostudio/native/globe/ecs/Transform.h>
-#include <geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h>
-#include <geostudio/native/globe/vsg/ecs/OverlayRenderContext.h>
-#include <geostudio/native/globe/vsg/ecs/MeshSystem.h>
-#include <geostudio/native/globe/vsg/ecs/PolygonSystem.h>
-#include <geostudio/native/globe/vsg/ecs/SlugResource.h>
-#include <geostudio/native/globe/vsg/ecs/SlugSystem.h>
-#include "geostudio/native/globe/vsg/ecs/slug/SlugAdapter.h"
-#include <geostudio/native/globe/Log.h>
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
+#include <geostudio/native/scene/entity/Line.h>
+#include <geostudio/native/scene/entity/Mesh.h>
+#include <geostudio/native/scene/entity/Point.h>
+#include <geostudio/native/scene/entity/Polygon.h>
+#include <geostudio/native/scene/entity/Transform.h>
+#include <geostudio/native/render/entity/OverlayBakeSystem.h>
+#include <geostudio/native/render/entity/OverlayRenderContext.h>
+#include <geostudio/native/render/entity/MeshSystem.h>
+#include <geostudio/native/render/entity/PolygonSystem.h>
+#include <geostudio/native/render/entity/SlugResource.h>
+#include <geostudio/native/render/entity/SlugSystem.h>
+#include <geostudio/native/render/entity/slug/SlugAdapter.h>
+#include <geostudio/native/core/base/Log.h>
 #include <spdlog/sinks/ostream_sink.h>
 #include <cstring>
 #include <limits>

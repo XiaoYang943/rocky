@@ -4,11 +4,11 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/ecs/Texture.h>
-#include <geostudio/native/globe/vsg/ecs/Texture.h>
-#include <geostudio/native/globe/vsg/ecs/TextureSystem.h>
-#include <geostudio/native/globe/vsg/ecs/MeshSystem.h>
-#include <geostudio/native/globe/vsg/ecs/PolygonSystem.h>
+#include <geostudio/native/scene/entity/Texture.h>
+#include <geostudio/native/render/entity/Texture.h>
+#include <geostudio/native/render/entity/TextureSystem.h>
+#include <geostudio/native/render/entity/MeshSystem.h>
+#include <geostudio/native/render/entity/PolygonSystem.h>
 #include <vsg/utils/ShaderCompiler.h>
 #include <filesystem>
 #include <type_traits>

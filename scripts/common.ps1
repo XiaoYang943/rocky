@@ -2,19 +2,20 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Stop'
 $NativeRoot = Split-Path $PSScriptRoot -Parent
 $WorkspaceRoot = [IO.Path]::GetFullPath((Join-Path $NativeRoot '../..'))
-$NativeInstallRoot = Join-Path $NativeRoot 'out/install-modules'
+$NativeInstallRoot = Join-Path $NativeRoot 'out/install-capabilities'
 $buildManifest = Join-Path $NativeInstallRoot 'share/GeoStudioNative/build-manifest.json'
+if (-not (Test-Path -LiteralPath $buildManifest)) { $buildManifest = Join-Path $NativeRoot 'out/install-modules/share/GeoStudioNative/build-manifest.json' }
 if (-not (Test-Path -LiteralPath $buildManifest)) { $buildManifest = Join-Path $NativeRoot 'out/install/share/GeoStudioNative/build-manifest.json' }
 $rememberedDependencies = if (Test-Path -LiteralPath $buildManifest) { (Get-Content -LiteralPath $buildManifest -Raw | ConvertFrom-Json).dependencyRoot } else { $null }
 $DepsRoot = if ($env:GEOSTUDIO_NATIVE_DEPS) { [IO.Path]::GetFullPath($env:GEOSTUDIO_NATIVE_DEPS) } elseif ($rememberedDependencies) { $rememberedDependencies } else { Join-Path $NativeRoot '.deps' }
 $InstallRoot = Join-Path $DepsRoot 'install'
-$GdalSdk = if ($env:NG_GDAL_SDK) { $env:NG_GDAL_SDK } else { Join-Path $WorkspaceRoot 'third-party/gdal/sdk/gdal-3.12.2-windows-x64-msvc-sdk' }
+$GdalSdk = if ($env:NG_GDAL_SDK) { $env:NG_GDAL_SDK } else { Join-Path $WorkspaceRoot 'packages/gdal/sdk/gdal-3.12.2-windows-x64-msvc-sdk' }
 $SourceLock = Get-Content (Join-Path $NativeRoot 'dependencies.lock.json') -Raw | ConvertFrom-Json
 # Resolve the fixed source location; SDK-owned engines never resolve to an old cache.
 function Get-Source([string]$Name) {
-    if ($Name -eq 'rocky') { return Join-Path $NativeRoot 'src/globe' }
-    if ($Name -eq 'vsgCs') { return Join-Path $NativeRoot 'src/tiles3d' }
-    if ($Name -eq 'vsgXchange') { return Join-Path $NativeRoot 'src/io' }
+    if ($Name -eq 'rocky') { return $NativeRoot }
+    if ($Name -eq 'vsgCs') { return $NativeRoot }
+    if ($Name -eq 'vsgXchange') { return $NativeRoot }
     $entry = $SourceLock.sources | Where-Object name -EQ $Name
     if (-not $entry) { throw "Unknown source: $Name" }
     return Join-Path $DepsRoot "src/$($entry.directory)"

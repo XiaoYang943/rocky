@@ -26,14 +26,14 @@ function(rocky_resolve_slughorn)
             return()
         endif()
 
-        message(STATUS "Slughorn: no installed package found; fetching ${ROCKY_SLUGHORN_REVISION}. If unavailable, provide SLUGHORN_SOURCE_DIR or configure with -DROCKY_SUPPORTS_SLUGHORN=OFF.")
+        message(STATUS "Slughorn: no installed package found; fetching ${GEOSTUDIO_NATIVE_SLUGHORN_REVISION}. If unavailable, provide SLUGHORN_SOURCE_DIR or configure with -DGEOSTUDIO_NATIVE_SUPPORTS_SLUGHORN=OFF.")
         include(FetchContent)
         if(POLICY CMP0135)
             cmake_policy(SET CMP0135 NEW)
         endif()
         FetchContent_Declare(slughorn
-            URL "https://github.com/AlphaPixel/slughorn/archive/${ROCKY_SLUGHORN_REVISION}.tar.gz"
-            URL_HASH "SHA512=${ROCKY_SLUGHORN_SHA512}"
+            URL "https://github.com/AlphaPixel/slughorn/archive/${GEOSTUDIO_NATIVE_SLUGHORN_REVISION}.tar.gz"
+            URL_HASH "SHA512=${GEOSTUDIO_NATIVE_SLUGHORN_SHA512}"
             # Populate only; our core-only recipe replaces upstream's build.
             SOURCE_SUBDIR rocky-core-only-unused)
         FetchContent_MakeAvailable(slughorn)

@@ -5,9 +5,9 @@
  */
  
 // GLSL include file - decal subsystem
-#pragma import_defines(ROCKY_HAS_SLUGHORN)
+#pragma import_defines(GEOSTUDIO_NATIVE_HAS_SLUGHORN)
 #include "rocky.defines.h.glsl"
-#ifdef ROCKY_HAS_DECALS
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
 
 /*
  * Decal rendering is split between a compute and fragment stage:
@@ -41,7 +41,7 @@ struct DecalTile
 
 #pragma include "rocky.decal.record.h.glsl"
 
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
 struct SlugLayer
 {
     vec4 color;
@@ -66,7 +66,7 @@ layout(std430, set = DESCRIPTOR_SET_VDS, binding = BINDING_VDS_DECALS) DECALS_AC
 }
 b_decals;
 
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
 // Slug shape metadata is separate from cullable logical decals, so an
 // outline/core pair consumes one entry in DecalTile instead of two.
 layout(std430, set = DESCRIPTOR_SET_VDS, binding = BINDING_VDS_SLUG_LAYERS) readonly buffer SlugLayers
@@ -129,7 +129,7 @@ layout(set = DESCRIPTOR_SET_GLOBAL, binding = BINDING_DECAL_TEXTURES) uniform sa
 void applyDecals(
     inout vec3 color,
     in vec3 vertexVs,
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
     in vec3 vertexVsDx,
     in vec3 vertexVsDy,
 #endif
@@ -150,7 +150,7 @@ void applyDecals(
     if (tileCount == 0u)
         return;
 
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
     // Slug outlines from every logical decal must composite before any cores;
     // otherwise adjoining road cores can cover a neighboring road's casing.
     // Non-Slug decals participate only in the regular (second) pass.
@@ -170,12 +170,12 @@ void applyDecals(
             // Do not copy the complete 192-byte Decal record into function
             // storage. Load only the fields that survive each early reject.
             int payloadFlags = b_decals.decal[decalIndex].payloadFlags;
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
             bool slug = (payloadFlags & DECAL_FLAG_SLUG) != 0;
 #endif
             float distance = b_decals.decal[decalIndex].distance;
 
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
             uint firstLayer = 0u;
             uint layerCount = 0u;
             int textureWidthLog2 = 0;
@@ -285,7 +285,7 @@ void applyDecals(
             if (!inside)
                 continue;
 
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
             if (slug)
             {
                 // The initial Slug path supports orthographic projectors. Since
@@ -357,4 +357,4 @@ void applyDecals(
     color.rgb = mix(color.rgb, debugColor, u_debugTiles * 0.75);
 }
 
-#endif // ROCKY_HAS_DECALS
+#endif // GEOSTUDIO_NATIVE_HAS_DECALS

@@ -1,0 +1,45 @@
+/**
+ * rocky c++
+ * Copyright 2023 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+#include <geostudio/native/core/base/Common.h>
+#include <geostudio/native/core/geo/Units.h>
+#include <geostudio/native/core/math/Math.h>
+
+namespace geostudio::native
+{
+    class DateTime;
+
+    /**
+     * Location of a celestial body relative to the Earth.
+     */
+    struct CelestialBody
+    {
+        Angle rightAscension;
+        Angle declination;
+        Angle latitude;
+        Angle longitude;
+        Distance altitude;
+        glm::dvec3 geocentric;
+        glm::dvec3 eci;
+    };
+
+    /**
+     * An Ephemeris gives the positions of naturally occurring astronimical
+     * objects; in that case, the sun and the moon. Also includes some
+     * related utility functions.
+     */
+    class GEOSTUDIO_NATIVE_API Ephemeris
+    {
+    public:
+
+        //! Return the sun's position for a given date and time.
+        virtual CelestialBody sunPosition(const DateTime& dt) const;
+
+        //! Return the moon's position for a given date and time.
+        virtual CelestialBody moonPosition(const DateTime& dt) const;
+    };
+
+}

@@ -1,0 +1,2340 @@
+--- a/vendor/vsgXchange/CMakeLists.txt
++++ /dev/null
+@@ -1,96 +0,0 @@
+-cmake_minimum_required(VERSION 3.10)
+-
+-project(vsgXchange
+-    VERSION 1.1.14
+-    DESCRIPTION "VulkanSceneGraph 3rd party data integration library"
+-    LANGUAGES CXX C
+-)
+-set(VSGXCHANGE_SOVERSION 3)
+-SET(VSGXCHANGE_RELEASE_CANDIDATE 0)
+-
+-set(VSGXCHANGE_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE INTERNAL "Root source directory of vsgXchange.")
+-set(VSGXCHANGE_BINARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" CACHE INTERNAL "Root binary directory of vsgXchange.")
+-
+-# Find Vulkan and the VSG
+-if (VULKAN_SDK)
+-    set(ENV{VULKAN_SDK} ${VULKAN_SDK})
+-endif()
+-
+-set(VSG_MIN_VERSION 1.1.14)
+-find_package(vsg ${VSG_MIN_VERSION})
+-
+-vsg_setup_dir_vars()
+-vsg_setup_build_vars()
+-
+-
+-#fine optional meshoptimer dependency
+-find_package(meshoptimizer 1.2 QUIET)
+-if (meshoptimizer_FOUND)
+-    OPTION(vsgXchange_meshoptimizer "Optional meshoptimizer support provided" ON)
+-endif()
+-
+-if (vsgXchange_meshoptimizer)
+-    set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} meshoptimizer::meshoptimizer)
+-    if(NOT BUILD_SHARED_LIBS)
+-        set(FIND_DEPENDENCY ${FIND_DEPENDENCY} "find_dependency(meshoptimizer)")
+-    endif()
+-endif()
+-
+-# find optional osg2vsg package for loading image/nodes using OpenSceneGraph
+-find_package(osg2vsg QUIET)
+-if(osg2vsg_FOUND)
+-    OPTION(vsgXchange_OSG "OSG support provided" ON)
+-endif()
+-
+-if (vsgXchange_OSG)
+-    set(EXTRA_LIBRARIES ${EXTRA_LIBRARIES} osg2vsg::osg2vsg)
+-    if(NOT BUILD_SHARED_LIBS)
+-        set(FIND_DEPENDENCY ${FIND_DEPENDENCY} "find_dependency(osg2vsg)")
+-    endif()
+-endif()
+-
+-# for generated cmake support files
+-set(FIND_DEPENDENCY ${FIND_DEPENDENCY} "find_dependency(vsg ${VSG_MIN_VERSION} REQUIRED)")
+-
+-vsg_add_target_clang_format(
+-    FILES
+-        ${VSGXCHANGE_SOURCE_DIR}/include/*/*.h
+-        ${VSGXCHANGE_SOURCE_DIR}/src/*/*.h
+-        ${VSGXCHANGE_SOURCE_DIR}/src/*/*.cpp
+-        ${VSGXCHANGE_SOURCE_DIR}/applications/*/*.h
+-        ${VSGXCHANGE_SOURCE_DIR}/applications/*/*.cpp
+-    EXCLUDES
+-        ${VSGXCHANGE_SOURCE_DIR}/src/stbi/stb_image.h
+-        ${VSGXCHANGE_SOURCE_DIR}/src/stbi/stb_image_write.h
+-        ${VSGXCHANGE_SOURCE_DIR}/src/dds/tinyddsloader.h
+-)
+-vsg_add_target_clobber()
+-vsg_add_target_cppcheck(
+-    FILES
+-        ${VSGXCHANGE_SOURCE_DIR}/include/*/*.h
+-        ${VSGXCHANGE_SOURCE_DIR}/src/*/*.h
+-        ${VSGXCHANGE_SOURCE_DIR}/src/*/*.cpp
+-        ${VSGXCHANGE_SOURCE_DIR}/applications/*/*.h
+-        ${VSGXCHANGE_SOURCE_DIR}/applications/*/*.cpp
+-)
+-vsg_add_target_docs(
+-    FILES
+-        ${VSGXCHANGE_SOURCE_DIR}/include
+-)
+-vsg_add_target_uninstall()
+-
+-# only provide custom targets if not building as a submodule/FetchContent
+-if (${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_SOURCE_DIR})
+-
+-    vsg_add_option_maintainer(
+-        PREFIX v
+-        RCLEVEL ${VSGXCHANGE_RELEASE_CANDIDATE}
+-    )
+-
+-endif()
+-
+-# source directory for main vsgXchange library
+-add_subdirectory(src)
+-add_subdirectory(applications/vsgconv)
+-
+-vsg_add_feature_summary()
+--- a/vendor/vsgXchange/applications/vsgconv/CMakeLists.txt
++++ /dev/null
+@@ -1,28 +0,0 @@
+-if(NOT ANDROID)
+-    find_package(Threads)
+-endif()
+-
+-if (UNIX)
+-    find_library(DL_LIBRARY dl)
+-endif()
+-
+-set(SOURCES
+-    vsgconv.cpp
+-)
+-
+-add_executable(vsgconv ${SOURCES})
+-
+-target_include_directories(vsgconv PRIVATE
+-    $<BUILD_INTERFACE:${CMAKE_SOURCE_DIR}/include>
+-)
+-
+-set_target_properties(vsgconv PROPERTIES OUTPUT_NAME vsgconv DEBUG_POSTFIX "d")
+-
+-target_link_libraries(vsgconv
+-    vsgXchange
+-    vsg::vsg
+-)
+-
+-install(TARGETS vsgconv
+-        RUNTIME DESTINATION bin
+-)
+--- a/vendor/vsgXchange/applications/vsgconv/vsgconv.cpp
++++ /dev/null
+@@ -1,568 +0,0 @@
+-#include <vsg/all.h>
+-
+-#include <chrono>
+-#include <iostream>
+-#include <ostream>
+-#include <thread>
+-
+-#include <vsgXchange/Version.h>
+-#include <vsgXchange/all.h>
+-
+-namespace vsgconv
+-{
+-    static std::mutex s_log_mutex;
+-
+-    template<typename... Args>
+-    void log(Args... args)
+-    {
+-        std::scoped_lock lock(s_log_mutex);
+-        (std::cout << ... << args) << std::endl;
+-    }
+-
+-    void writeAndMakeDirectoryIfRequired(vsg::ref_ptr<vsg::Object> object, const vsg::Path& filename, vsg::ref_ptr<const vsg::Options> options)
+-    {
+-        vsg::Path path = vsg::filePath(filename);
+-        if (path && !vsg::fileExists(path))
+-        {
+-            if (!vsg::makeDirectory(path))
+-            {
+-                log("Warning: could not create directory for ", path);
+-                return;
+-            }
+-        }
+-        vsg::write(object, filename, options);
+-    }
+-
+-    struct ReadRequest
+-    {
+-        vsg::ref_ptr<const vsg::Options> options;
+-        vsg::Path src_filename;
+-        vsg::Path dest_filename;
+-    };
+-
+-    struct CollectReadRequests : public vsg::Visitor
+-    {
+-        vsg::Path dest_path;
+-        vsg::Path dest_extension = ".vsgb";
+-        std::map<vsg::Path, ReadRequest> readRequests;
+-
+-        bool operator()(vsg::Object& object, const vsg::Path& dest_filename)
+-        {
+-            dest_path = vsg::filePath(dest_filename);
+-            dest_extension = vsg::fileExtension(dest_filename);
+-
+-            object.accept(*this);
+-            return !readRequests.empty();
+-        }
+-
+-        void apply(vsg::Node& node) override
+-        {
+-            node.traverse(*this);
+-        }
+-
+-        void apply(vsg::PagedLOD& plod) override
+-        {
+-            if (plod.filename)
+-            {
+-                if (readRequests.count(plod.filename) == 0)
+-                {
+-                    auto src_filename = plod.filename;
+-                    auto dest_base_filename = vsg::filePath(src_filename) / vsg::simpleFilename(src_filename) + dest_extension;
+-                    auto dest_filename = dest_path / dest_base_filename;
+-
+-                    readRequests[plod.filename] = {plod.options, src_filename, dest_filename};
+-                    plod.filename = dest_base_filename;
+-                }
+-            }
+-
+-            plod.traverse(*this);
+-        }
+-    };
+-
+-    struct ReadOperation : public vsg::Inherit<vsg::Operation, ReadOperation>
+-    {
+-        ReadOperation(vsg::observer_ptr<vsg::OperationQueue> in_queue, vsg::ref_ptr<vsg::Latch> in_latch, ReadRequest in_readRequest, size_t in_level, size_t in_max_level) :
+-            level(in_level),
+-            max_level(in_max_level),
+-            queue(in_queue),
+-            latch(in_latch),
+-            readRequest(in_readRequest)
+-        {
+-        }
+-
+-        void run() override
+-        {
+-            auto vsg_scene = vsg::read(readRequest.src_filename, readRequest.options);
+-            if (vsg_scene)
+-            {
+-                log("   loaded ", readRequest.src_filename, ", writing to ", readRequest.dest_filename, ", level ", level);
+-
+-                vsgconv::CollectReadRequests collectReadRequests;
+-                if (level < max_level && collectReadRequests(*vsg_scene, readRequest.dest_filename))
+-                {
+-                    vsg::ref_ptr<vsg::OperationQueue> ref_queue = queue;
+-
+-                    for (auto itr = collectReadRequests.readRequests.begin(); itr != collectReadRequests.readRequests.end(); ++itr)
+-                    {
+-                        latch->count_up();
+-
+-                        ref_queue->add(vsgconv::ReadOperation::create(queue, latch, itr->second, level + 1, max_level));
+-                    }
+-                }
+-
+-                vsgconv::writeAndMakeDirectoryIfRequired(vsg_scene, readRequest.dest_filename, readRequest.options);
+-            }
+-            else
+-            {
+-                log("   failed to read ", readRequest.src_filename);
+-            }
+-
+-            // we have finished this read operation so decrement the latch, which will release any threads waiting on it.
+-            latch->count_down();
+-        }
+-
+-        size_t level;
+-        size_t max_level;
+-        vsg::observer_ptr<vsg::OperationQueue> queue;
+-        vsg::ref_ptr<vsg::Latch> latch;
+-        ReadRequest readRequest;
+-    };
+-
+-    struct indent
+-    {
+-        int chars = 0;
+-    };
+-
+-    std::ostream& operator<<(std::ostream& input, indent in)
+-    {
+-        for (int i = 0; i < in.chars; ++i) input << ' ';
+-        return input;
+-    }
+-
+-    struct pad
+-    {
+-        const char* str;
+-        size_t chars;
+-    };
+-
+-    std::ostream& operator<<(std::ostream& input, pad in)
+-    {
+-        input << in.str;
+-        for (size_t i = strlen(in.str); i < in.chars; ++i) input << ' ';
+-        return input;
+-    }
+-
+-    void printFeatures(std::ostream& out, vsg::ref_ptr<vsg::ReaderWriter> rw, int indentation = 0)
+-    {
+-        if (auto cws = rw.cast<vsg::CompositeReaderWriter>(); cws)
+-        {
+-            out << cws->className() << std::endl;
+-            for (auto& child : cws->readerWriters)
+-            {
+-                printFeatures(out, child, indentation + 4);
+-            }
+-        }
+-        else
+-        {
+-            vsg::ReaderWriter::Features features;
+-            rw->getFeatures(features);
+-            out << indent{indentation} << rw->className() << " provides support for " << features.extensionFeatureMap.size() << " extensions, and " << features.protocolFeatureMap.size() << " protocols." << std::endl;
+-
+-            indentation += 4;
+-            bool precedingNewline = false;
+-
+-            if (!features.protocolFeatureMap.empty())
+-            {
+-                if (precedingNewline) out << std::endl;
+-
+-                size_t padding = 16;
+-                out << indent{indentation} << pad{"Protocols", padding} << "Supported ReaderWriter methods" << std::endl;
+-                out << indent{indentation} << pad{"----------", padding} << "------------------------------" << std::endl;
+-                for (auto& [protocol, featureMask] : features.protocolFeatureMap)
+-                {
+-                    auto protocol_string = protocol.string();
+-                    out << indent{indentation} << pad{protocol_string.c_str(), padding};
+-
+-                    if (featureMask & vsg::ReaderWriter::READ_FILENAME) out << "read(vsg::Path, ..) ";
+-                    if (featureMask & vsg::ReaderWriter::READ_ISTREAM) out << "read(std::istream, ..) ";
+-                    if (featureMask & vsg::ReaderWriter::READ_MEMORY) out << "read(uint8_t* ptr, size_t size, ..) ";
+-
+-                    if (featureMask & vsg::ReaderWriter::WRITE_FILENAME) out << "write(vsg::Path, ..) ";
+-                    if (featureMask & vsg::ReaderWriter::WRITE_OSTREAM) out << "write(std::ostream, ..) ";
+-                    out << std::endl;
+-                }
+-                precedingNewline = true;
+-            }
+-
+-            if (!features.extensionFeatureMap.empty())
+-            {
+-                if (precedingNewline) out << std::endl;
+-
+-                size_t padding = 16;
+-                out << indent{indentation} << pad{"Extensions", padding} << "Supported ReaderWriter methods" << std::endl;
+-                out << indent{indentation} << pad{"----------", padding} << "------------------------------" << std::endl;
+-                for (auto& [ext, featureMask] : features.extensionFeatureMap)
+-                {
+-                    auto ext_string = ext.string();
+-                    out << indent{indentation} << pad{ext_string.c_str(), padding};
+-
+-                    if (featureMask & vsg::ReaderWriter::READ_FILENAME) out << "read(vsg::Path, ..) ";
+-                    if (featureMask & vsg::ReaderWriter::READ_ISTREAM) out << "read(std::istream, ..) ";
+-                    if (featureMask & vsg::ReaderWriter::READ_MEMORY) out << "read(uint8_t* ptr, size_t size, ..) ";
+-
+-                    if (featureMask & vsg::ReaderWriter::WRITE_FILENAME) out << "write(vsg::Path, ..) ";
+-                    if (featureMask & vsg::ReaderWriter::WRITE_OSTREAM) out << "write(std::ostream, ..) ";
+-                    out << std::endl;
+-                }
+-                precedingNewline = true;
+-            }
+-
+-            if (!features.optionNameTypeMap.empty())
+-            {
+-                if (precedingNewline) out << std::endl;
+-
+-                // expand the padding to encompass any long value strings
+-                size_t maxValueWidth = 19;
+-                for (auto& vt : features.optionNameTypeMap)
+-                {
+-                    if (vt.first.length() > maxValueWidth) maxValueWidth = vt.first.length();
+-                }
+-
+-                size_t padding = maxValueWidth + 2;
+-
+-                // print out the options
+-                out << indent{indentation} << pad{"vsg::Options::Value", padding} << "type" << std::endl;
+-                out << indent{indentation} << pad{"-------------------", padding} << "----" << std::endl;
+-                for (auto& [value, type] : features.optionNameTypeMap)
+-                {
+-                    out << indent{indentation} << pad{value.c_str(), padding} << type << std::endl;
+-                }
+-                precedingNewline = true;
+-            }
+-        }
+-        out << std::endl;
+-    };
+-
+-    void printMatchedFeatures(std::ostream& out, const std::string& rw_name, vsg::ref_ptr<vsg::ReaderWriter> rw, int indentation = 0)
+-    {
+-        if (rw_name == rw->className())
+-        {
+-            printFeatures(out, rw, indentation);
+-            return;
+-        }
+-
+-        if (auto cws = rw.cast<vsg::CompositeReaderWriter>(); cws)
+-        {
+-            for (auto& child : cws->readerWriters)
+-            {
+-                printMatchedFeatures(out, rw_name, child, indentation);
+-            }
+-        }
+-    };
+-
+-} // namespace vsgconv
+-
+-void printHelp(std::ostream& out)
+-{
+-    out << "Usage:\n";
+-    out << "    vsgconv input_filename output_filename\n";
+-    out << "    vsgconv input_filename_1 input_filename_2 output_filename\n";
+-    out << "Options:\n";
+-    out << "    --features              # list all ReaderWriters and the formats supported\n";
+-    out << "    --features <rw_name>    # list formats supported by the specified ReaderWriter\n";
+-    out << "    --nc --no-compile       # do not compile shaders to SPIRV\n";
+-    out << "    --rgb                   # leave RGB source data in its original form rather than converting to RGBA\n";
+-    out << "    --ot <count>            # for loading vsg::OperationThreads with <count> threads.\n";
+-    out << "    --ss <name> <filename>  # override named ShaderSet with ShaderSet in specified file.\n";
+-    out << "    -s                      # report load time stats\n";
+-    out << "    -v --version            # report version\n";
+-}
+-
+-int main(int argc, char** argv)
+-{
+-    // use the vsg::Options object to pass the vsgXchange::all ReaderWriter to use when reading files.
+-    auto options = vsg::Options::create(vsgXchange::all::create());
+-    options->paths = vsg::getEnvPaths("VSG_FILE_PATH");
+-    options->sharedObjects = vsg::SharedObjects::create();
+-
+-    // set up defaults and read command line arguments to override them
+-    vsg::CommandLine arguments(&argc, argv);
+-
+-    std::string name;
+-    vsg::Path shaderSetFilename;
+-    while(arguments.read("--ss", name, shaderSetFilename))
+-    {
+-        if (auto shaderSet = vsg::read_cast<vsg::ShaderSet>(shaderSetFilename, options))
+-        {
+-            options->shaderSets[name] = shaderSet;
+-            vsg::info("assigned shaderSets[", name, "] = ", shaderSet);
+-        }
+-    }
+-
+-    if (arguments.read({"-h", "--help"}))
+-    {
+-        printHelp(std::cout);
+-        return 0;
+-    }
+-
+-    if (uint32_t numOperationThreads = 0; arguments.read("--ot", numOperationThreads)) options->operationThreads = vsg::OperationThreads::create(numOperationThreads);
+-
+-    if (arguments.read("--rgb")) options->mapRGBtoRGBAHint = false;
+-
+-    bool reportLoadStats = arguments.read("-s");
+-
+-    if (int log_level = 0; arguments.read("--log-level", log_level)) vsg::Logger::instance()->level = vsg::Logger::Level(log_level);
+-
+-    // read any command line options that the ReaderWriter supports
+-    options->readOptions(arguments);
+-
+-    if (arguments.read({"-v", "--version"}))
+-    {
+-        std::cout << "VulkanSceneGraph version = " << vsgGetVersionString() << ", so = " << vsgGetSOVersionString() << std::endl;
+-        std::cout << "vsgXchange version = " << vsgXchangeGetVersionString() << ", so = " << vsgXchangeGetSOVersionString() << std::endl;
+-        if (vsgXchangeBuiltAsSharedLibrary())
+-            std::cout << "vsgXchange built as shared library" << std::endl;
+-        else
+-            std::cout << "vsgXchange built as static library" << std::endl;
+-        return 1;
+-    }
+-
+-    std::string rw_name;
+-    if (arguments.read("--features", rw_name) || arguments.read("--features"))
+-    {
+-        if (rw_name.empty())
+-        {
+-            for (auto rw : options->readerWriters)
+-            {
+-                vsgconv::printFeatures(std::cout, rw);
+-            }
+-        }
+-        else
+-        {
+-            for (auto rw : options->readerWriters)
+-            {
+-                vsgconv::printMatchedFeatures(std::cout, rw_name, rw);
+-            }
+-        }
+-
+-        return 0;
+-    }
+-
+-    auto levels = arguments.value(0, "-l");
+-    auto numThreads = arguments.value(16, "-t");
+-    bool compileShaders = !arguments.read({"--no-compile", "--nc"});
+-
+-    if (argc <= 2)
+-    {
+-        std::cout << "Warning: vsgconv requires at last an input filename and output filename.\n\n";
+-
+-        printHelp(std::cout);
+-        return 1;
+-    }
+-
+-    vsg::Path outputFilename;
+-    if (!arguments.read("-o", outputFilename))
+-    {
+-        outputFilename = arguments[argc - 1];
+-        --argc;
+-    }
+-
+-    using VsgObjects = std::vector<vsg::ref_ptr<vsg::Object>>;
+-    VsgObjects vsgObjects;
+-
+-    auto beforeLoad = vsg::clock::now();
+-
+-    // read any input files
+-    for (int i = 1; i < argc; ++i)
+-    {
+-        vsg::Path filename = arguments[i];
+-
+-        auto loaded_object = vsg::read(filename, options);
+-        if (loaded_object)
+-        {
+-            vsgObjects.push_back(loaded_object);
+-            arguments.remove(i, 1);
+-            --i;
+-        }
+-        else
+-        {
+-            std::cout << "Failed to load " << filename << std::endl;
+-        }
+-    }
+-
+-    if (vsgObjects.empty())
+-    {
+-        std::cout << "No files loaded." << std::endl;
+-        return 1;
+-    }
+-
+-    if (options->sharedObjects && options->sharedObjects->contains(outputFilename, options))
+-    {
+-        options->sharedObjects->remove(outputFilename, options);
+-    }
+-
+-    auto afterLoad = vsg::clock::now();
+-    double timeToLoad = std::chrono::duration<double, std::chrono::milliseconds::period>(afterLoad - beforeLoad).count();
+-    if (reportLoadStats) std::cout << "Time to load: " << timeToLoad << "ms" << std::endl;
+-
+-    unsigned int numImages = 0;
+-    unsigned int numShaders = 0;
+-    unsigned int numNodes = 0;
+-
+-    for (auto& object : vsgObjects)
+-    {
+-        if (dynamic_cast<vsg::Data*>(object.get()))
+-        {
+-            ++numImages;
+-        }
+-        else if (dynamic_cast<vsg::ShaderModule*>(object.get()) || dynamic_cast<vsg::ShaderStage*>(object.get()))
+-        {
+-            ++numShaders;
+-        }
+-        else if (dynamic_cast<vsg::Node*>(object.get()))
+-        {
+-            ++numNodes;
+-        }
+-    }
+-
+-    if (numImages == vsgObjects.size())
+-    {
+-        // all images
+-        vsg::ref_ptr<vsg::Node> vsg_scene;
+-
+-        if (numImages == 1)
+-        {
+-            auto group = vsg::Group::create();
+-            for (auto& object : vsgObjects)
+-            {
+-                vsg::ref_ptr<vsg::Node> node(dynamic_cast<vsg::Node*>(object.get()));
+-                if (node) group->addChild(node);
+-            }
+-        }
+-
+-        if (outputFilename)
+-        {
+-            if (numImages == 1)
+-            {
+-                auto image = vsgObjects[0].cast<vsg::Data>();
+-                vsgconv::writeAndMakeDirectoryIfRequired(image, outputFilename, options);
+-            }
+-            else
+-            {
+-                auto objects = vsg::Objects::create();
+-                for (auto& object : vsgObjects)
+-                {
+-                    objects->addChild(object);
+-                }
+-                vsgconv::writeAndMakeDirectoryIfRequired(objects, outputFilename, options);
+-            }
+-        }
+-    }
+-    else if (numShaders == vsgObjects.size())
+-    {
+-        // all shaders
+-        if (compileShaders)
+-        {
+-            vsg::ShaderStages stagesToCompile;
+-            for (auto& object : vsgObjects)
+-            {
+-                vsg::ShaderStage* ss = dynamic_cast<vsg::ShaderStage*>(object.get());
+-                vsg::ShaderModule* sm = ss ? ss->module.get() : dynamic_cast<vsg::ShaderModule*>(object.get());
+-                if (sm && !sm->source.empty() && sm->code.empty())
+-                {
+-                    if (ss)
+-                        stagesToCompile.emplace_back(ss);
+-                    else
+-                        stagesToCompile.emplace_back(vsg::ShaderStage::create(VK_SHADER_STAGE_ALL, "main", vsg::ref_ptr<vsg::ShaderModule>(sm)));
+-                }
+-            }
+-
+-            if (!stagesToCompile.empty())
+-            {
+-                auto shaderCompiler = vsg::ShaderCompiler::create();
+-                shaderCompiler->compile(stagesToCompile);
+-            }
+-
+-            if (outputFilename && !stagesToCompile.empty())
+-            {
+-                // TODO work out how to handle multiple input shaders when we only have one output filename.
+-                vsgconv::writeAndMakeDirectoryIfRequired(stagesToCompile.front(), outputFilename, options);
+-            }
+-        }
+-        else
+-        {
+-            // TODO work out how to handle multiple input shaders when we only have one output filename.
+-            vsgconv::writeAndMakeDirectoryIfRequired(vsgObjects.front(), outputFilename, options);
+-        }
+-    }
+-    else if (numNodes == vsgObjects.size())
+-    {
+-        // all nodes
+-        vsg::ref_ptr<vsg::Node> vsg_scene;
+-        if (numNodes == 1)
+-            vsg_scene = dynamic_cast<vsg::Node*>(vsgObjects.front().get());
+-        else
+-        {
+-            auto group = vsg::Group::create();
+-            for (auto& object : vsgObjects)
+-            {
+-                vsg::ref_ptr<vsg::Node> node(dynamic_cast<vsg::Node*>(object.get()));
+-                if (node) group->addChild(node);
+-            }
+-            vsg_scene = group;
+-        }
+-
+-        auto shaderCompiler = vsg::ShaderCompiler::create();
+-        vsg_scene->accept(*shaderCompiler);
+-
+-        vsgconv::CollectReadRequests collectReadRequests;
+-
+-        if (levels > 0 && collectReadRequests(*vsg_scene, outputFilename))
+-        {
+-            vsgconv::writeAndMakeDirectoryIfRequired(vsg_scene, outputFilename, options);
+-
+-            auto status = vsg::ActivityStatus::create();
+-            auto operationThreads = vsg::OperationThreads::create(numThreads, status);
+-            auto operationQueue = operationThreads->queue;
+-            auto latch = vsg::Latch::create(collectReadRequests.readRequests.size());
+-
+-            vsg::observer_ptr<vsg::OperationQueue> obs_queue(operationQueue);
+-
+-            for (auto itr = collectReadRequests.readRequests.begin(); itr != collectReadRequests.readRequests.end(); ++itr)
+-            {
+-                operationQueue->add(vsgconv::ReadOperation::create(obs_queue, latch, itr->second, 1, levels));
+-            }
+-
+-            // wait until the latch goes to zero i.e. all read operations have completed
+-            latch->wait();
+-
+-            // signal that we are finished and the thread should close
+-            status->set(false);
+-        }
+-        else
+-        {
+-            vsgconv::writeAndMakeDirectoryIfRequired(vsg_scene, outputFilename, options);
+-        }
+-    }
+-    else
+-    {
+-        if (outputFilename)
+-        {
+-            if (vsgObjects.size() == 1)
+-            {
+-                vsgconv::writeAndMakeDirectoryIfRequired(vsgObjects[0], outputFilename, options);
+-            }
+-            else
+-            {
+-                auto objects = vsg::Objects::create();
+-                for (auto& object : vsgObjects)
+-                {
+-                    objects->addChild(object);
+-                }
+-                vsgconv::writeAndMakeDirectoryIfRequired(objects, outputFilename, options);
+-            }
+-        }
+-    }
+-
+-    return 0;
+-}
+--- a/src/render/import/3DTiles/3DTiles.h
++++ b/src/render/import/3DTiles/3DTiles.h
+@@ -25,9 +25,9 @@
+ 
+ #include <vsg/threading/OperationThreads.h>
+ 
+-#include <vsgXchange/gltf.h>
+-
+-namespace vsgXchange
++#include <geostudio/native/render/import/gltf/gltf.h>
++
++namespace geostudio::native::io
+ {
+ 
+     /// 3DTiles ReaderWriter, C++ won't handle class called 3DTiles so make do with Tiles3D.
+@@ -331,8 +331,8 @@
+         };
+     };
+ 
+-} // namespace vsgXchange
+-
+-EVSG_type_name(vsgXchange::Tiles3D)
+-EVSG_type_name(vsgXchange::Tiles3D::Tileset)
+-EVSG_type_name(vsgXchange::Tiles3D::Builder)
++} // namespace geostudio::native::io
++
++EVSG_type_name(geostudio::native::io::Tiles3D)
++EVSG_type_name(geostudio::native::io::Tiles3D::Tileset)
++EVSG_type_name(geostudio::native::io::Tiles3D::Builder)
+--- a/src/render/import/all/Export.h
++++ b/src/render/import/all/Export.h
+@@ -14,7 +14,7 @@
+ </editor-fold> */
+ 
+ #if (defined(_MSC_VER) || defined(__CYGWIN__) || defined(__MINGW32__))
+-#    if defined(vsgXchange_EXPORTS)
++#    if defined(GEOSTUDIO_IO_EXPORTS)
+ #        define VSGXCHANGE_DECLSPEC __declspec(dllexport)
+ #    elif defined(VSGXCHANGE_SHARED_LIBRARY)
+ #        define VSGXCHANGE_DECLSPEC __declspec(dllimport)
+--- a/src/render/import/all/all.h
++++ b/src/render/import/all/all.h
+@@ -24,9 +24,9 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+     /// initialize any statics, such as registering all the ReaderWriters with vsg::ObjectFactory::instance(),
+     /// so that any serialization that includes vsgXchange ReaderWriters will be able to load them.
+@@ -38,6 +38,6 @@
+     public:
+         all();
+     };
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+-EVSG_type_name(vsgXchange::all);
++EVSG_type_name(geostudio::native::io::all);
+--- a/src/render/import/assimp/assimp.h
++++ b/src/render/import/assimp/assimp.h
+@@ -32,7 +32,7 @@
+ #include <vsg/animation/JointSampler.h>
+ #include <vsg/utils/GraphicsPipelineConfigurator.h>
+ 
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+ #include <memory>
+ 
+@@ -46,7 +46,7 @@
+ struct aiMaterial;
+ #endif
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+     enum class TextureFormat
+     {
+@@ -243,11 +243,11 @@
+         Implementation* _implementation;
+     };
+ 
+-} // namespace vsgXchange
+-
+-EVSG_type_name(vsgXchange::TextureFormat)
+-EVSG_type_name(vsgXchange::assimp);
++} // namespace geostudio::native::io
++
++EVSG_type_name(geostudio::native::io::TextureFormat)
++EVSG_type_name(geostudio::native::io::assimp);
+ 
+ #ifdef vsgXchange_assimp
+-EVSG_type_name(vsgXchange::assimp::Builder);
++EVSG_type_name(geostudio::native::io::assimp::Builder);
+ #endif
+--- a/src/render/import/bin/bin.h
++++ b/src/render/import/bin/bin.h
+@@ -25,9 +25,9 @@
+ 
+ #include <vsg/io/JSONParser.h>
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+ 
+     /// .bin ReaderWriter
+@@ -47,6 +47,6 @@
+         bool getFeatures(Features& features) const override;
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+-EVSG_type_name(vsgXchange::bin)
++EVSG_type_name(geostudio::native::io::bin)
+--- a/src/render/import/cpp/cpp.h
++++ b/src/render/import/cpp/cpp.h
+@@ -24,11 +24,11 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Export.h>
++#include <geostudio/native/render/import/all/Export.h>
+ 
+ #include <map>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+ 
+     class VSGXCHANGE_DECLSPEC cpp : public vsg::Inherit<vsg::ReaderWriter, cpp>
+@@ -44,6 +44,6 @@
+         void _write(std::ostream& out, const std::string& str) const;
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+-EVSG_type_name(vsgXchange::cpp);
++EVSG_type_name(geostudio::native::io::cpp);
+--- a/src/render/import/curl/curl.h
++++ b/src/render/import/curl/curl.h
+@@ -24,11 +24,11 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Export.h>
++#include <geostudio/native/render/import/all/Export.h>
+ 
+ #include <memory>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+ 
+     /// optional curl ReaderWriter.
+@@ -44,7 +44,7 @@
+         // vsg::Options::setValue(str, value) supported options:
+         static constexpr const char* SSL_OPTIONS = "CURLOPT_SSL_OPTIONS"; ///  uint32_t
+ 
+-        /// specify whether libcurl should be initialized and cleaned up by vsgXchange::curl.
++        /// specify whether libcurl should be initialized and cleaned up by geostudio::native::io::curl.
+         static bool s_do_curl_global_init_and_cleanup; // defaults to true
+ 
+     protected:
+@@ -55,6 +55,6 @@
+         mutable Implementation* _implementation;
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+-EVSG_type_name(vsgXchange::curl);
++EVSG_type_name(geostudio::native::io::curl);
+--- a/src/render/import/freetype/freetype.h
++++ b/src/render/import/freetype/freetype.h
+@@ -24,11 +24,11 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Export.h>
++#include <geostudio/native/render/import/all/Export.h>
+ 
+ #include <memory>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+ 
+     class VSGXCHANGE_DECLSPEC freetype : public vsg::Inherit<vsg::ReaderWriter, freetype>
+@@ -52,6 +52,6 @@
+         Implementation* _implementation;
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+-EVSG_type_name(vsgXchange::freetype);
++EVSG_type_name(geostudio::native::io::freetype);
+--- a/src/render/import/gdal/gdal.h
++++ b/src/render/import/gdal/gdal.h
+@@ -24,13 +24,13 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+ #include <istream>
+ #include <memory>
+ #include <unordered_set>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+     /// optional GDAL ReaderWriter
+     class VSGXCHANGE_DECLSPEC GDAL : public vsg::Inherit<vsg::ReaderWriter, GDAL>
+@@ -50,9 +50,9 @@
+         Implementation* _implementation;
+     };
+ 
+-} // namespace vsgXchange
+-
+-EVSG_type_name(vsgXchange::GDAL);
++} // namespace geostudio::native::io
++
++EVSG_type_name(geostudio::native::io::GDAL);
+ 
+ #ifdef vsgXchange_GDAL
+ 
+@@ -66,7 +66,7 @@
+ #    include <memory>
+ #    include <set>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+     /// call GDALAllRegister() etc. if it hasn't already been called. Return true if this call to initGDAL() invoked GDAL setup, or false if it has previously been done.
+     extern VSGXCHANGE_DECLSPEC bool initGDAL();
+@@ -224,6 +224,6 @@
+         return input;
+     }
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+ #endif
+--- a/src/render/import/gltf/gltf.h
++++ b/src/render/import/gltf/gltf.h
+@@ -30,11 +30,11 @@
+ #include <vsg/io/ReaderWriter.h>
+ #include <vsg/lighting/Light.h>
+ #include <vsg/utils/GraphicsPipelineConfigurator.h>
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+ #include <stack>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+ 
+     /// gltf ReaderWriter
+@@ -58,7 +58,7 @@
+ 
+         static constexpr const char* report = "report";                                 /// bool, report parsed glTF to console, defaults to false
+         static constexpr const char* culling = "culling";                               /// bool, insert cull nodes, defaults to true
+-        static constexpr const char* disable_gltf = "disable_gltf";                     /// bool, disable vsgXchange::gltf so vsgXchange::assimp will be used instead, defaults to false
++        static constexpr const char* disable_gltf = "disable_gltf";                     /// bool, disable geostudio::native::io::gltf so geostudio::native::io::assimp will be used instead, defaults to false
+         static constexpr const char* clone_accessors = "clone_accessors";               /// bool, hint to clone the data associated with accessors, defaults to false
+         static constexpr const char* maxAnisotropy = "maxAnisotropy";                   /// float, default setting of vsg::Sampler::maxAnisotropy to use
+ 
+@@ -818,8 +818,8 @@
+         return input;
+     }
+ 
+-} // namespace vsgXchange
+-
+-EVSG_type_name(vsgXchange::gltf)
+-EVSG_type_name(vsgXchange::gltf::glTF)
+-EVSG_type_name(vsgXchange::gltf::Builder)
++} // namespace geostudio::native::io
++
++EVSG_type_name(geostudio::native::io::gltf)
++EVSG_type_name(geostudio::native::io::gltf::glTF)
++EVSG_type_name(geostudio::native::io::gltf::Builder)
+--- a/src/render/import/images/images.h
++++ b/src/render/import/images/images.h
+@@ -24,15 +24,15 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+ #include <memory>
+ #include <unordered_set>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+     /// Composite ReaderWriter that holds the used 3rd party image format loaders.
+-    /// By default utilizes the stbi, dds and ktx ReaderWriters so that users only need to create vsgXchange::images::create() to utilize them all.
++    /// By default utilizes the stbi, dds and ktx ReaderWriters so that users only need to create geostudio::native::io::images::create() to utilize them all.
+     class VSGXCHANGE_DECLSPEC images : public vsg::Inherit<vsg::CompositeReaderWriter, images>
+     {
+     public:
+@@ -122,10 +122,10 @@
+         std::set<vsg::Path> _supportedExtensions;
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+-EVSG_type_name(vsgXchange::images);
+-EVSG_type_name(vsgXchange::stbi);
+-EVSG_type_name(vsgXchange::dds);
+-EVSG_type_name(vsgXchange::ktx);
+-EVSG_type_name(vsgXchange::openexr);
++EVSG_type_name(geostudio::native::io::images);
++EVSG_type_name(geostudio::native::io::stbi);
++EVSG_type_name(geostudio::native::io::dds);
++EVSG_type_name(geostudio::native::io::ktx);
++EVSG_type_name(geostudio::native::io::openexr);
+--- a/src/render/import/all/models.h
++++ b/src/render/import/all/models.h
+@@ -24,9 +24,9 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/ReaderWriter.h>
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+     /// Composite ReaderWriter that holds the used 3rd party model format loaders.
+     class VSGXCHANGE_DECLSPEC models : public vsg::Inherit<vsg::CompositeReaderWriter, models>
+@@ -35,6 +35,6 @@
+         models();
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+-EVSG_type_name(vsgXchange::models);
++EVSG_type_name(geostudio::native::io::models);
+--- a/src/render/import/3DTiles/3DTiles.cpp
++++ b/src/render/import/3DTiles/3DTiles.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/3DTiles.h>
++#include <geostudio/native/render/import/3DTiles/3DTiles.h>
+ 
+ #include <vsg/io/Path.h>
+ #include <vsg/io/mem_stream.h>
+@@ -24,7 +24,7 @@
+ #include <iostream>
+ #include <stack>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+@@ -700,8 +700,8 @@
+ {
+     auto non_const_options = const_cast<vsg::Options*>(options.get());
+ 
+-    auto tile = non_const_options->getRefObject<vsgXchange::Tiles3D::Tile>("tile");
+-    auto builder = non_const_options->getRefObject<vsgXchange::Tiles3D::Builder>("builder");
++    auto tile = non_const_options->getRefObject<geostudio::native::io::Tiles3D::Tile>("tile");
++    auto builder = non_const_options->getRefObject<geostudio::native::io::Tiles3D::Builder>("builder");
+ 
+     uint32_t lod_level = 0;
+     non_const_options->getValue("level", lod_level);
+--- a/src/render/import/3DTiles/Builder.cpp
++++ b/src/render/import/3DTiles/Builder.cpp
+@@ -21,7 +21,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/3DTiles.h>
++#include <geostudio/native/render/import/3DTiles/3DTiles.h>
+ 
+ #include <vsg/app/EllipsoidModel.h>
+ #include <vsg/io/read.h>
+@@ -43,7 +43,7 @@
+ #include <vsg/utils/GraphicsPipelineConfigurator.h>
+ #include <vsg/vk/ResourceRequirements.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ Tiles3D::Builder::Builder()
+ {
+--- a/src/render/import/3DTiles/b3dm.cpp
++++ b/src/render/import/3DTiles/b3dm.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/3DTiles.h>
++#include <geostudio/native/render/import/3DTiles/3DTiles.h>
+ 
+ #include <vsg/io/Path.h>
+ #include <vsg/io/mem_stream.h>
+@@ -24,7 +24,7 @@
+ #include <iostream>
+ #include <stack>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ // b3dm_FeatureTable
+ //
+--- a/src/render/import/3DTiles/cmpt.cpp
++++ b/src/render/import/3DTiles/cmpt.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/3DTiles.h>
++#include <geostudio/native/render/import/3DTiles/3DTiles.h>
+ 
+ #include <vsg/io/Path.h>
+ #include <vsg/io/mem_stream.h>
+@@ -24,7 +24,7 @@
+ #include <iostream>
+ #include <stack>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ vsg::ref_ptr<vsg::Object> Tiles3D::read_cmpt(std::istream& fin, vsg::ref_ptr<const vsg::Options> options, const vsg::Path& filename) const
+ {
+--- a/src/render/import/3DTiles/i3dm.cpp
++++ b/src/render/import/3DTiles/i3dm.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/3DTiles.h>
++#include <geostudio/native/render/import/3DTiles/3DTiles.h>
+ 
+ #include <vsg/io/Path.h>
+ #include <vsg/io/mem_stream.h>
+@@ -26,7 +26,7 @@
+ #include <iostream>
+ #include <stack>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/vendor/vsgXchange/src/CMakeLists.txt
++++ /dev/null
+@@ -1,105 +0,0 @@
+-
+-# vars used to enable subdirectories to extend the build of the vsgXchange library in a loosely coupled way
+-set(EXTRA_DEFINES)
+-set(EXTRA_INCLUDES)
+-
+-SET(HEADER_PATH ${VSGXCHANGE_SOURCE_DIR}/include/vsgXchange)
+-
+-set(HEADERS
+-    ${VSGXCHANGE_VERSION_HEADER}
+-    ${HEADER_PATH}/Export.h
+-    ${HEADER_PATH}/all.h
+-    ${HEADER_PATH}/cpp.h
+-    ${HEADER_PATH}/freetype.h
+-    ${HEADER_PATH}/images.h
+-    ${HEADER_PATH}/models.h
+-    ${HEADER_PATH}/gltf.h
+-    ${HEADER_PATH}/3DTiles.h
+-)
+-
+-set(SOURCES
+-    all/Version.cpp
+-    all/all.cpp
+-    cpp/cpp.cpp
+-    stbi/stbi.cpp
+-    dds/dds.cpp
+-    images/images.cpp
+-    bin/bin.cpp
+-)
+-
+-# add gltf
+-include(gltf/build_vars.cmake)
+-
+-# add 3D Tiles
+-include(3DTiles/build_vars.cmake)
+-
+-# add freetype if available
+-include(freetype/build_vars.cmake)
+-
+-# add assimp if available
+-include(assimp/build_vars.cmake)
+-
+-# add optional ktx
+-include(ktx/build_vars.cmake)
+-
+-# add optional GDAL component
+-include(gdal/build_vars.cmake)
+-
+-# add optional CURL component
+-include(curl/build_vars.cmake)
+-
+-# add optional OpenEXR component
+-include(openexr/build_vars.cmake)
+-
+-# create the version header
+-set(VSGXCHANGE_VERSION_HEADER "${VSGXCHANGE_BINARY_DIR}/include/vsgXchange/Version.h")
+-configure_file("${VSGXCHANGE_SOURCE_DIR}/src/all/Version.h.in" "${VSGXCHANGE_VERSION_HEADER}")
+-
+-
+-# create the vsgXchange library
+-add_library(vsgXchange ${HEADERS} ${SOURCES})
+-
+-# add definitions to enable building vsgXchange as part of submodule
+-add_library(vsgXchange::vsgXchange ALIAS vsgXchange)
+-set(vsgXchange_FOUND TRUE CACHE INTERNAL "vsgXchange found.")
+-set(CMAKE_DISABLE_FIND_PACKAGE_vsgXchange TRUE CACHE INTERNAL "Disable find_package(vsgXchange) as it's not necessary.")
+-
+-
+-set_property(TARGET vsgXchange PROPERTY VERSION ${VSGXCHANGE_VERSION_MAJOR}.${VSGXCHANGE_VERSION_MINOR}.${VSGXCHANGE_VERSION_PATCH})
+-set_property(TARGET vsgXchange PROPERTY SOVERSION ${VSGXCHANGE_SOVERSION})
+-set_property(TARGET vsgXchange PROPERTY POSITION_INDEPENDENT_CODE ON)
+-
+-target_compile_definitions(vsgXchange PRIVATE ${EXTRA_DEFINES})
+-
+-target_include_directories(vsgXchange
+-    PUBLIC
+-        $<BUILD_INTERFACE:${VSGXCHANGE_SOURCE_DIR}/include>
+-        $<BUILD_INTERFACE:${VSGXCHANGE_BINARY_DIR}/include>
+-        $<INSTALL_INTERFACE:include>
+-    PRIVATE
+-        ${EXTRA_INCLUDES}
+-)
+-
+-target_link_libraries(vsgXchange
+-    PUBLIC
+-        vsg::vsg
+-    PRIVATE
+-        ${EXTRA_LIBRARIES}
+-)
+-
+-install(TARGETS vsgXchange ${INSTALL_TARGETS_DEFAULT_FLAGS})
+-
+-if (BUILD_SHARED_LIBS)
+-    target_compile_definitions(vsgXchange INTERFACE VSGXCHANGE_SHARED_LIBRARY)
+-endif()
+-
+-install(DIRECTORY ${VSGXCHANGE_SOURCE_DIR}/include/vsgXchange DESTINATION include)
+-if (NOT(${VSGXCHANGE_BINARY_DIR} STREQUAL ${VSGXCHANGE_SOURCE_DIR}))
+-    install(DIRECTORY ${VSGXCHANGE_BINARY_DIR}/include/vsgXchange DESTINATION include)
+-endif()
+-
+-string(REPLACE ";" "\n" FIND_DEPENDENCY_OUT "${FIND_DEPENDENCY}")
+-vsg_add_cmake_support_files(
+-    CONFIG_TEMPLATE
+-        vsgXchangeConfig.cmake.in
+-)
+--- a/src/render/import/all/Version.cpp
++++ b/src/render/import/all/Version.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/Version.h>
++#include <geostudio/native/render/import/all/Version.h>
+ 
+ extern "C"
+ {
+@@ -37,7 +37,7 @@
+ 
+     int vsgXchangeBuiltAsSharedLibrary()
+     {
+-#ifdef vsgXchange_EXPORTS
++#ifdef GEOSTUDIO_IO_EXPORTS
+         return 1;
+ #else
+         return 0;
+--- a/src/render/import/all/Version.h.in
++++ b/src/render/import/all/Version.h.in
+@@ -12,7 +12,7 @@
+ 
+ #pragma once
+ 
+-#include <vsgXchange/Export.h>
++#include <geostudio/native/render/import/all/Export.h>
+ #include <vsg/core/Version.h>
+ 
+ #ifdef __cplusplus
+--- a/src/render/import/all/all.cpp
++++ b/src/render/import/all/all.cpp
+@@ -10,17 +10,17 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/3DTiles.h>
+-#include <vsgXchange/all.h>
+-#include <vsgXchange/bin.h>
+-#include <vsgXchange/cpp.h>
+-#include <vsgXchange/curl.h>
+-#include <vsgXchange/freetype.h>
+-#include <vsgXchange/gdal.h>
+-#include <vsgXchange/gltf.h>
+-#include <vsgXchange/images.h>
+-#include <vsgXchange/models.h>
+-#include <vsgXchange/assimp.h>
++#include <geostudio/native/render/import/3DTiles/3DTiles.h>
++#include <geostudio/native/render/import/all/all.h>
++#include <geostudio/native/render/import/bin/bin.h>
++#include <geostudio/native/render/import/cpp/cpp.h>
++#include <geostudio/native/render/import/curl/curl.h>
++#include <geostudio/native/render/import/freetype/freetype.h>
++#include <geostudio/native/render/import/gdal/gdal.h>
++#include <geostudio/native/render/import/gltf/gltf.h>
++#include <geostudio/native/render/import/images/images.h>
++#include <geostudio/native/render/import/all/models.h>
++#include <geostudio/native/render/import/assimp/assimp.h>
+ 
+ #include <vsg/io/Logger.h>
+ #include <vsg/io/VSG.h>
+@@ -33,40 +33,45 @@
+ #    include <osg2vsg/OSG.h>
+ #endif
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+-void vsgXchange::init()
++void geostudio::native::io::init()
+ {
+     static bool s_vsgXchange_initialized = false;
+     if (s_vsgXchange_initialized) return;
+     s_vsgXchange_initialized = true;
+ 
+-    vsg::debug("vsgXchange::init()");
++    vsg::debug("geostudio::native::io::init()");
+ 
+-    vsg::ObjectFactory::instance()->add<vsgXchange::all>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::curl>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::all>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::curl>();
+ 
+-    vsg::ObjectFactory::instance()->add<vsgXchange::cpp>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::cpp>();
+ 
+-    vsg::ObjectFactory::instance()->add<vsgXchange::stbi>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::dds>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::ktx>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::stbi>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::dds>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::ktx>();
+ 
+-    vsg::ObjectFactory::instance()->add<vsgXchange::bin>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::gltf>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::Tiles3D>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::bin>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::gltf>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::Tiles3D>();
+ 
+-    vsg::ObjectFactory::instance()->add<vsgXchange::openexr>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::freetype>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::assimp>();
+-    vsg::ObjectFactory::instance()->add<vsgXchange::GDAL>();
+-    //    vsg::ObjectFactory::instance()->add<vsgXchange::OSG>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::openexr>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::freetype>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::assimp>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::GDAL>();
++    // Read legacy serialized Reader types while newly written objects use the SDK namespace.
++    auto& creators = vsg::ObjectFactory::instance()->getCreateMap();
++    for (const char* type : {"all", "curl", "cpp", "stbi", "dds", "ktx", "bin", "gltf", "Tiles3D", "openexr", "freetype", "assimp", "GDAL"})
++    {
++        creators[std::string("vsgXchange::") + type] = creators.at(std::string("geostudio::native::io::") + type);
++    }
+ }
+ 
+ all::all()
+ {
+     // for convenience make sure the init() method is called
+-    vsgXchange::init();
++    geostudio::native::io::init();
+ 
+ #ifdef vsgXchange_curl
+     add(curl::create());
+--- a/src/render/import/assimp/Builder.cpp
++++ b/src/render/import/assimp/Builder.cpp
+@@ -11,9 +11,9 @@
+ </editor-fold> */
+ 
+ #include <vsg/all.h>
+-#include <vsgXchange/assimp.h>
+-
+-using namespace vsgXchange;
++#include <geostudio/native/render/import/assimp/assimp.h>
++
++using namespace geostudio::native::io;
+ 
+ #include <assimp/Importer.hpp>
+ #include <assimp/postprocess.h>
+@@ -38,7 +38,7 @@
+ 
+ #include <iostream>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+     inline std::ostream& operator<<(std::ostream& output, const assimp::SubgraphStats& stats)
+     {
+@@ -106,7 +106,7 @@
+     }
+ 
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+ assimp::Builder::Builder()
+ {
+@@ -596,7 +596,7 @@
+     aiColor3D color;
+     if (material->Get(pKey, type, idx, color) == AI_SUCCESS)
+     {
+-        value = vsgXchange::convert(color);
++        value = geostudio::native::io::convert(color);
+         vsg::convert(value, sourceMaterialColorSpace, targetMaterialCoordinateSpace);
+         return true;
+     }
+@@ -608,7 +608,7 @@
+     aiColor4D color;
+     if (material->Get(pKey, type, idx, color) == AI_SUCCESS)
+     {
+-        value = vsgXchange::convert(color);
++        value = geostudio::native::io::convert(color);
+         vsg::convert(value, sourceMaterialColorSpace, targetMaterialCoordinateSpace);
+         return true;
+     }
+@@ -651,20 +651,20 @@
+             defines.insert("VSG_WORKFLOW_SPECGLOSS");
+             getColor(material, AI_MATKEY_COLOR_DIFFUSE, pbr.diffuseFactor);
+ 
+-            if (!vsgXchange::getValue(material, AI_MATKEY_GLOSSINESS_FACTOR, pbr.specularFactor.a))
+-            {
+-                if (float shininess; vsgXchange::getValue(material, AI_MATKEY_SHININESS, shininess))
++            if (!geostudio::native::io::getValue(material, AI_MATKEY_GLOSSINESS_FACTOR, pbr.specularFactor.a))
++            {
++                if (float shininess; geostudio::native::io::getValue(material, AI_MATKEY_SHININESS, shininess))
+                     pbr.specularFactor.a = shininess / 1000;
+             }
+         }
+         else
+         {
+-            vsgXchange::getValue(material, AI_MATKEY_METALLIC_FACTOR, pbr.metallicFactor);
+-            vsgXchange::getValue(material, AI_MATKEY_ROUGHNESS_FACTOR, pbr.roughnessFactor);
++            geostudio::native::io::getValue(material, AI_MATKEY_METALLIC_FACTOR, pbr.metallicFactor);
++            geostudio::native::io::getValue(material, AI_MATKEY_ROUGHNESS_FACTOR, pbr.roughnessFactor);
+         }
+ 
+         getColor(material, AI_MATKEY_COLOR_EMISSIVE, pbr.emissiveFactor);
+-        vsgXchange::getValue(material, AI_MATKEY_GLTF_ALPHACUTOFF, pbr.alphaMaskCutoff);
++        geostudio::native::io::getValue(material, AI_MATKEY_GLTF_ALPHACUTOFF, pbr.alphaMaskCutoff);
+ 
+         aiString alphaMode;
+         if (material->Get(AI_MATKEY_GLTF_ALPHAMODE, alphaMode) == AI_SUCCESS && alphaMode == aiString("OPAQUE"))
+@@ -724,7 +724,7 @@
+         if (convertedMaterial.blending)
+             mat.alphaMask = 0.0f;
+ 
+-        vsgXchange::getValue(material, AI_MATKEY_GLTF_ALPHACUTOFF, mat.alphaMaskCutoff);
++        geostudio::native::io::getValue(material, AI_MATKEY_GLTF_ALPHACUTOFF, mat.alphaMaskCutoff);
+         getColor(material, AI_MATKEY_COLOR_AMBIENT, mat.ambient);
+         const auto diffuseResult = getColor(material, AI_MATKEY_COLOR_DIFFUSE, mat.diffuse);
+         const auto emissiveResult = getColor(material, AI_MATKEY_COLOR_EMISSIVE, mat.emissive);
+@@ -1038,7 +1038,7 @@
+             aiMatrix4x4 m = bone->mOffsetMatrix;
+             m.Transpose();
+ 
+-            jointSampler->offsetMatrices[i] = vsgXchange::convert(m);
++            jointSampler->offsetMatrices[i] = geostudio::native::io::convert(m);
+ 
+             // vsg::info("    bone[", i, "], bone->mName = ", bone->mName.C_Str());
+ 
+@@ -1200,7 +1200,7 @@
+         options->getValue(assimp::material_color_space, sourceMaterialColorSpace);
+     }
+ 
+-    vsg::debug("vsgXchange::assimp sourceVertexColorSpace = ", sourceVertexColorSpace, ", sourceMaterialColorSpace = ", sourceMaterialColorSpace);
++    vsg::debug("geostudio::native::io::assimp sourceVertexColorSpace = ", sourceVertexColorSpace, ", sourceMaterialColorSpace = ", sourceMaterialColorSpace);
+ 
+     std::string name = scene->mName.C_Str();
+ 
+@@ -1383,7 +1383,7 @@
+         aiMatrix4x4 m = node->mTransformation;
+         m.Transpose();
+ 
+-        auto matrix = vsgXchange::convert(m);
++        auto matrix = geostudio::native::io::convert(m);
+         vsg::ref_ptr<vsg::Node> transform;
+ 
+         if (boneTransform)
+@@ -1458,7 +1458,7 @@
+         aiMatrix4x4 m = node->mTransformation;
+         m.Transpose();
+ 
+-        auto transform = vsg::MatrixTransform::create(vsgXchange::convert(m));
++        auto transform = vsg::MatrixTransform::create(geostudio::native::io::convert(m));
+         transform->children = children;
+         if (!name.empty()) transform->setValue("name", name);
+ 
+@@ -1674,7 +1674,7 @@
+     if (scene->mNumLights > 0)
+     {
+         auto setColorAndIntensity = [&](const aiLight& light, vsg::Light& vsg_light) -> void {
+-            vsg_light.color = vsgXchange::convert(light.mColorDiffuse);
++            vsg_light.color = geostudio::native::io::convert(light.mColorDiffuse);
+             float maxValue = std::max(std::max(vsg_light.color.r, vsg_light.color.g), vsg_light.color.b);
+             if (maxValue > 0.0)
+             {
+--- a/src/render/import/assimp/assimp.cpp
++++ b/src/render/import/assimp/assimp.cpp
+@@ -12,13 +12,13 @@
+ 
+ 
+ #include <vsg/utils/CommandLine.h>
+-#include <vsgXchange/assimp.h>
++#include <geostudio/native/render/import/assimp/assimp.h>
+ 
+ #include <assimp/Importer.hpp>
+ #include <assimp/postprocess.h>
+ #include <assimp/scene.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ class assimp::Implementation
+ {
+--- a/src/render/import/assimp/assimp_fallback.cpp
++++ b/src/render/import/assimp/assimp_fallback.cpp
+@@ -10,9 +10,9 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/assimp.h>
++#include <geostudio/native/render/import/assimp/assimp.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/src/render/import/bin/bin.cpp
++++ b/src/render/import/bin/bin.cpp
+@@ -12,7 +12,7 @@
+ 
+ //#include <vsg/io/json.h>
+ 
+-#include <vsgXchange/bin.h>
++#include <geostudio/native/render/import/bin/bin.h>
+ 
+ #include <vsg/io/Path.h>
+ #include <vsg/io/mem_stream.h>
+@@ -21,7 +21,7 @@
+ 
+ #include <fstream>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ bin::bin()
+ {
+--- a/src/render/import/cpp/cpp.cpp
++++ b/src/render/import/cpp/cpp.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/cpp.h>
++#include <geostudio/native/render/import/cpp/cpp.h>
+ 
+ #include <vsg/io/AsciiOutput.h>
+ #include <vsg/io/VSG.h>
+@@ -18,7 +18,7 @@
+ 
+ #include <iostream>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ cpp::cpp()
+ {
+--- a/src/render/import/curl/curl.cpp
++++ b/src/render/import/curl/curl.cpp
+@@ -11,7 +11,7 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/read.h>
+-#include <vsgXchange/curl.h>
++#include <geostudio/native/render/import/curl/curl.h>
+ 
+ #include <curl/curl.h>
+ 
+@@ -19,9 +19,9 @@
+ #include <iostream>
+ #include <sstream>
+ 
+-using namespace vsgXchange;
+-
+-namespace vsgXchange
++using namespace geostudio::native::io;
++
++namespace geostudio::native::io
+ {
+ 
+     bool containsServerAddress(const vsg::Path& filename)
+@@ -68,7 +68,7 @@
+     protected:
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+@@ -260,12 +260,12 @@
+         }
+         else
+         {
+-            object = vsg::ReadError::create(vsg::make_string("vsgXchange::curl could not read file ", filename, ", CURLINFO_RESPONSE_CODE = ", response_code));
++            object = vsg::ReadError::create(vsg::make_string("geostudio::native::io::curl could not read file ", filename, ", CURLINFO_RESPONSE_CODE = ", response_code));
+         }
+     }
+     else
+     {
+-        object = vsg::ReadError::create(vsg::make_string("vsgXchange::curl could not read file ", filename, ", result = ", result, ", ", curl_easy_strerror(result)));
++        object = vsg::ReadError::create(vsg::make_string("geostudio::native::io::curl could not read file ", filename, ", result = ", result, ", ", curl_easy_strerror(result)));
+     }
+ 
+     if (_curl) curl_easy_cleanup(_curl);
+--- a/src/render/import/curl/curl_fallback.cpp
++++ b/src/render/import/curl/curl_fallback.cpp
+@@ -10,9 +10,9 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/curl.h>
++#include <geostudio/native/render/import/curl/curl.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/src/render/import/dds/dds.cpp
++++ b/src/render/import/dds/dds.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/images.h>
++#include <geostudio/native/render/import/images/images.h>
+ 
+ #include <vsg/core/Array.h>
+ #include <vsg/core/MipmapLayout.h>
+@@ -31,7 +31,7 @@
+ #endif
+ 
+ #define TINYDDSLOADER_IMPLEMENTATION
+-#include "tinyddsloader.h"
++#include <geostudio/native/render/import/dds/tinyddsloader.h>
+ 
+ #if defined(__GNUC__)
+ #    pragma GCC diagnostic pop
+@@ -136,7 +136,7 @@
+         if (!options) return;
+ 
+         vsg::CoordinateSpace coordinateSpace;
+-        if (options->getValue(vsgXchange::dds::image_format, coordinateSpace))
++        if (options->getValue(geostudio::native::io::dds::image_format, coordinateSpace))
+         {
+             if (coordinateSpace == vsg::CoordinateSpace::sRGB)
+                 format = vsg::uNorm_to_sRGB(format);
+@@ -319,7 +319,7 @@
+ 
+ } // namespace
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ dds::dds() :
+     _supportedExtensions{".dds"}
+--- a/src/render/import/freetype/freetype.cpp
++++ b/src/render/import/freetype/freetype.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/freetype.h>
++#include <geostudio/native/render/import/freetype/freetype.h>
+ 
+ #include <vsg/core/Exception.h>
+ #include <vsg/io/Logger.h>
+@@ -28,7 +28,7 @@
+ #include <iostream>
+ #include <set>
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+ 
+     inline bool between_or_equal(float a, float b, float c)
+@@ -78,9 +78,9 @@
+         mutable FT_Library _library = nullptr;
+     };
+ 
+-} // namespace vsgXchange
+-
+-using namespace vsgXchange;
++} // namespace geostudio::native::io
++
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/src/render/import/freetype/freetype_fallback.cpp
++++ b/src/render/import/freetype/freetype_fallback.cpp
+@@ -10,9 +10,9 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/freetype.h>
++#include <geostudio/native/render/import/freetype/freetype.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/src/render/import/gdal/GDAL.cpp
++++ b/src/render/import/gdal/GDAL.cpp
+@@ -11,15 +11,15 @@
+ </editor-fold> */
+ 
+ #include <vsg/io/Logger.h>
+-#include <vsgXchange/gdal.h>
++#include <geostudio/native/render/import/gdal/gdal.h>
+ 
+ #include <cstring>
+ #include <sstream>
+ 
+-namespace vsgXchange
+-{
+-
+-    class vsgXchange::GDAL::Implementation
++namespace geostudio::native::io
++{
++
++    class geostudio::native::io::GDAL::Implementation
+     {
+     public:
+         Implementation();
+@@ -31,39 +31,39 @@
+     protected:
+     };
+ 
+-} // namespace vsgXchange
++} // namespace geostudio::native::io
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+ // GDAL ReaderWriter facade
+ //
+-vsgXchange::GDAL::GDAL() :
+-    _implementation(new vsgXchange::GDAL::Implementation())
+-{
+-}
+-
+-vsgXchange::GDAL::~GDAL()
++geostudio::native::io::GDAL::GDAL() :
++    _implementation(new geostudio::native::io::GDAL::Implementation())
++{
++}
++
++geostudio::native::io::GDAL::~GDAL()
+ {
+     delete _implementation;
+ }
+ 
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::read(const vsg::Path& filename, vsg::ref_ptr<const vsg::Options> options) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::read(const vsg::Path& filename, vsg::ref_ptr<const vsg::Options> options) const
+ {
+     return _implementation->read(filename, options);
+ }
+ 
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::read(std::istream& fin, vsg::ref_ptr<const vsg::Options> options) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::read(std::istream& fin, vsg::ref_ptr<const vsg::Options> options) const
+ {
+     return _implementation->read(fin, options);
+ }
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::read(const uint8_t* ptr, size_t size, vsg::ref_ptr<const vsg::Options> options) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::read(const uint8_t* ptr, size_t size, vsg::ref_ptr<const vsg::Options> options) const
+ {
+     return _implementation->read(ptr, size, options);
+ }
+ 
+-bool vsgXchange::GDAL::getFeatures(Features& features) const
+-{
+-    vsgXchange::initGDAL();
++bool geostudio::native::io::GDAL::getFeatures(Features& features) const
++{
++    geostudio::native::io::initGDAL();
+ 
+     auto driverManager = GetGDALDriverManager();
+     int driverCount = driverManager->GetDriverCount();
+@@ -114,11 +114,11 @@
+ //
+ // GDAL ReaderWriter implementation
+ //
+-vsgXchange::GDAL::Implementation::Implementation()
+-{
+-}
+-
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::Implementation::read(const vsg::Path& filename, vsg::ref_ptr<const vsg::Options> options) const
++geostudio::native::io::GDAL::Implementation::Implementation()
++{
++}
++
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::Implementation::read(const vsg::Path& filename, vsg::ref_ptr<const vsg::Options> options) const
+ {
+     // GDAL tries to load all datatypes so up front catch VSG and OSG native formats.
+     vsg::Path ext = vsg::lowerCaseFileExtension(filename);
+@@ -128,15 +128,15 @@
+ 
+     if (!filenameToUse) return {};
+ 
+-    vsgXchange::initGDAL();
+-
+-    auto dataset = vsgXchange::openSharedDataSet(filenameToUse, GA_ReadOnly);
++    geostudio::native::io::initGDAL();
++
++    auto dataset = geostudio::native::io::openSharedDataSet(filenameToUse, GA_ReadOnly);
+     if (!dataset)
+     {
+         return {};
+     }
+ 
+-    auto types = vsgXchange::dataTypes(*dataset);
++    auto types = geostudio::native::io::dataTypes(*dataset);
+     if (types.size() > 1)
+     {
+         vsg::info("GDAL::read(", filename, ") multiple input data types not supported.");
+@@ -194,15 +194,15 @@
+     int width = dataset->GetRasterXSize();
+     int height = dataset->GetRasterYSize();
+ 
+-    auto image = vsgXchange::createImage2D(width, height, numComponents, dataType, vsg::dvec4(0.0, 0.0, 0.0, 1.0));
++    auto image = geostudio::native::io::createImage2D(width, height, numComponents, dataType, vsg::dvec4(0.0, 0.0, 0.0, 1.0));
+     if (!image) return {};
+ 
+     for (int component = 0; component < static_cast<int>(rasterBands.size()); ++component)
+     {
+-        vsgXchange::copyRasterBandToImage(*rasterBands[component], *image, component);
+-    }
+-
+-    vsgXchange::assignMetaData(*dataset, *image);
++        geostudio::native::io::copyRasterBandToImage(*rasterBands[component], *image, component);
++    }
++
++    geostudio::native::io::assignMetaData(*dataset, *image);
+ 
+     if (dataset->GetProjectionRef() && std::strlen(dataset->GetProjectionRef()) > 0)
+     {
+@@ -218,7 +218,7 @@
+     return image;
+ }
+ 
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::Implementation::read(std::istream& fin, vsg::ref_ptr<const vsg::Options> options) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::Implementation::read(std::istream& fin, vsg::ref_ptr<const vsg::Options> options) const
+ {
+     // if (!vsg::compatibleExtension(options, _supportedExtensions)) return {};
+ 
+@@ -242,7 +242,7 @@
+     return read(reinterpret_cast<const uint8_t*>(input.data()), input.size(), options);
+ }
+ 
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::Implementation::read(const uint8_t* ptr, size_t size, vsg::ref_ptr<const vsg::Options> options) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::Implementation::read(const uint8_t* ptr, size_t size, vsg::ref_ptr<const vsg::Options> options) const
+ {
+     std::string temp_filename("/vsimem/temp");
+     temp_filename.append(options->extensionHint.string());
+@@ -250,7 +250,7 @@
+     // create a GDAL Virtual File for memory block.
+     VSILFILE* vsFile = VSIFileFromMemBuffer(temp_filename.c_str(), static_cast<GByte*>(const_cast<uint8_t*>(ptr)), static_cast<vsi_l_offset>(size), 0);
+ 
+-    auto result = vsgXchange::GDAL::Implementation::read(temp_filename, options);
++    auto result = geostudio::native::io::GDAL::Implementation::read(temp_filename, options);
+ 
+     VSIFCloseL(vsFile);
+ 
+--- a/src/render/import/gdal/GDAL_fallback.cpp
++++ b/src/render/import/gdal/GDAL_fallback.cpp
+@@ -10,35 +10,35 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/gdal.h>
++#include <geostudio/native/render/import/gdal/gdal.h>
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+ // GDAL ReaderWriter fallback
+ //
+-class vsgXchange::GDAL::Implementation
++class geostudio::native::io::GDAL::Implementation
+ {
+ };
+-vsgXchange::GDAL::GDAL() :
++geostudio::native::io::GDAL::GDAL() :
+     _implementation(nullptr)
+ {
+ }
+-vsgXchange::GDAL::~GDAL()
++geostudio::native::io::GDAL::~GDAL()
+ {
+ }
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::read(const vsg::Path&, vsg::ref_ptr<const vsg::Options>) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::read(const vsg::Path&, vsg::ref_ptr<const vsg::Options>) const
+ {
+     return {};
+ }
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::read(std::istream&, vsg::ref_ptr<const vsg::Options>) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::read(std::istream&, vsg::ref_ptr<const vsg::Options>) const
+ {
+     return {};
+ }
+-vsg::ref_ptr<vsg::Object> vsgXchange::GDAL::read(const uint8_t*, size_t, vsg::ref_ptr<const vsg::Options>) const
++vsg::ref_ptr<vsg::Object> geostudio::native::io::GDAL::read(const uint8_t*, size_t, vsg::ref_ptr<const vsg::Options>) const
+ {
+     return {};
+ }
+-bool vsgXchange::GDAL::getFeatures(Features&) const
++bool geostudio::native::io::GDAL::getFeatures(Features&) const
+ {
+     return false;
+ }
+--- a/src/render/import/gdal/gdal_utils.cpp
++++ b/src/render/import/gdal/gdal_utils.cpp
+@@ -25,16 +25,16 @@
+ #include <vsg/core/ConstVisitor.h>
+ #include <vsg/core/Visitor.h>
+ 
+-#include <vsgXchange/gdal.h>
++#include <geostudio/native/render/import/gdal/gdal.h>
+ 
+ #include <cstring>
+ #include <functional>
+ #include <iostream>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ static bool s_GDAL_initialized = false;
+-bool vsgXchange::initGDAL()
++bool geostudio::native::io::initGDAL()
+ {
+     if (!s_GDAL_initialized)
+     {
+@@ -49,7 +49,7 @@
+     }
+ }
+ 
+-bool vsgXchange::compatibleDatasetProjections(const GDALDataset& lhs, const GDALDataset& rhs)
++bool geostudio::native::io::compatibleDatasetProjections(const GDALDataset& lhs, const GDALDataset& rhs)
+ {
+     if (&lhs == &rhs) return true;
+ 
+@@ -66,7 +66,7 @@
+     return (std::strcmp(lhs_projectionRef, rhs_projectionRef) == 0);
+ }
+ 
+-bool vsgXchange::compatibleDatasetProjectionsTransformAndSizes(const GDALDataset& lhs, const GDALDataset& rhs)
++bool geostudio::native::io::compatibleDatasetProjectionsTransformAndSizes(const GDALDataset& lhs, const GDALDataset& rhs)
+ {
+     if (!compatibleDatasetProjections(lhs, rhs)) return false;
+ 
+@@ -136,7 +136,7 @@
+     return vsg::t_vec4<T>(default_value<T>(value[0]), default_value<T>(value[1]), default_value<T>(value[2]), default_value<T>(value[3]));
+ }
+ 
+-vsg::ref_ptr<vsg::Data> vsgXchange::createImage2D(int width, int height, int numComponents, GDALDataType dataType, vsg::dvec4 def)
++vsg::ref_ptr<vsg::Data> geostudio::native::io::createImage2D(int width, int height, int numComponents, GDALDataType dataType, vsg::dvec4 def)
+ {
+     using TypeComponents = std::pair<GDALDataType, int>;
+     using CreateFunction = std::function<vsg::ref_ptr<vsg::Data>(uint32_t w, uint32_t h, vsg::dvec4 def)>;
+@@ -183,7 +183,7 @@
+     return (itr->second)(width, height, def);
+ }
+ 
+-bool vsgXchange::copyRasterBandToImage(GDALRasterBand& band, vsg::Data& image, int component)
++bool geostudio::native::io::copyRasterBandToImage(GDALRasterBand& band, vsg::Data& image, int component)
+ {
+     if (image.width() != static_cast<uint32_t>(band.GetXSize()) || image.height() != static_cast<uint32_t>(band.GetYSize()))
+     {
+@@ -251,7 +251,7 @@
+     return true;
+ }
+ 
+-bool vsgXchange::assignMetaData(GDALDataset& dataset, vsg::Object& object)
++bool geostudio::native::io::assignMetaData(GDALDataset& dataset, vsg::Object& object)
+ {
+     auto metaData = dataset.GetMetadata();
+     if (!metaData) return false;
+--- a/src/render/import/gdal/meta_utils.cpp
++++ b/src/render/import/gdal/meta_utils.cpp
+@@ -24,13 +24,13 @@
+ #include <vsg/core/Value.h>
+ #include <vsg/io/Logger.h>
+ 
+-#include <vsgXchange/gdal.h>
++#include <geostudio/native/render/import/gdal/gdal.h>
+ 
+ #include <cstring>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+-bool vsgXchange::getEXIF_LatitudeLongitudeAlititude(GDALDataset& dataset, double& latitude, double& longitude, double& altitude)
++bool geostudio::native::io::getEXIF_LatitudeLongitudeAlititude(GDALDataset& dataset, double& latitude, double& longitude, double& altitude)
+ {
+     auto metaData = dataset.GetMetadata();
+     if (!metaData) return false;
+@@ -55,21 +55,21 @@
+         {
+             str.clear();
+             str.str(value_str);
+-            str >> vsgXchange::dms_in_brackets(latitude);
++            str >> geostudio::native::io::dms_in_brackets(latitude);
+             success = true;
+         }
+         else if (value_str = match(*ptr, "EXIF_GPSLongitude="); value_str)
+         {
+             str.clear();
+             str.str(value_str);
+-            str >> vsgXchange::dms_in_brackets(longitude);
++            str >> geostudio::native::io::dms_in_brackets(longitude);
+             success = true;
+         }
+         else if (value_str = match(*ptr, "EXIF_GPSAltitude="); value_str)
+         {
+             str.clear();
+             str.str(value_str);
+-            str >> vsgXchange::dms_in_brackets(altitude);
++            str >> geostudio::native::io::dms_in_brackets(altitude);
+             success = true;
+         }
+     }
+@@ -77,7 +77,7 @@
+     return success;
+ }
+ 
+-bool vsgXchange::getEXIF_LatitudeLongitudeAlititude(const vsg::Object& object, double& latitude, double& longitude, double& altitude)
++bool geostudio::native::io::getEXIF_LatitudeLongitudeAlititude(const vsg::Object& object, double& latitude, double& longitude, double& altitude)
+ {
+     bool success = false;
+ 
+@@ -89,24 +89,24 @@
+     {
+         str.clear();
+         str.str(value_str);
+-        str >> vsgXchange::dms_in_brackets(latitude);
+-        vsg::info("vsgXchange::getEXIF_..    EXIF_GPSLatitude = ", value_str, " degrees = ", latitude);
++        str >> geostudio::native::io::dms_in_brackets(latitude);
++        vsg::info("geostudio::native::io::getEXIF_..    EXIF_GPSLatitude = ", value_str, " degrees = ", latitude);
+         success = true;
+     }
+     if (object.getValue("EXIF_GPSLongitude", value_str))
+     {
+         str.clear();
+         str.str(value_str);
+-        str >> vsgXchange::dms_in_brackets(longitude);
+-        vsg::info("vsgXchange::getEXIF_..    EXIF_GPSLongitude = ", value_str, " degrees = ", longitude);
++        str >> geostudio::native::io::dms_in_brackets(longitude);
++        vsg::info("geostudio::native::io::getEXIF_..    EXIF_GPSLongitude = ", value_str, " degrees = ", longitude);
+         success = true;
+     }
+     if (object.getValue("EXIF_GPSAltitude", value_str))
+     {
+         str.clear();
+         str.str(value_str);
+-        str >> vsgXchange::in_brackets(altitude);
+-        vsg::info("vsgXchange::getEXIF_..    EXIF_GPSAltitude = ", value_str, " altitude = ", altitude);
++        str >> geostudio::native::io::in_brackets(altitude);
++        vsg::info("geostudio::native::io::getEXIF_..    EXIF_GPSAltitude = ", value_str, " altitude = ", altitude);
+         success = true;
+     }
+     return success;
+--- a/src/render/import/gltf/Builder.cpp
++++ b/src/render/import/gltf/Builder.cpp
+@@ -21,7 +21,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/gltf.h>
++#include <geostudio/native/render/import/gltf/gltf.h>
+ 
+ #include <vsg/animation/AnimationGroup.h>
+ #include <vsg/animation/Joint.h>
+@@ -59,7 +59,7 @@
+ #   include <meshoptimizer.h>
+ #endif
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ gltf::Builder::Builder()
+ {
+@@ -1350,7 +1350,7 @@
+ 
+ 
+     std::map<std::string, vsg::ref_ptr<vsg::Data>> perVertexArrays;
+-    auto registerPerVertexArray = [&](vsgXchange::gltf::Attributes& attrib, VkVertexInputRate vertexInputRate, const std::string& attribute_name) -> vsg::ref_ptr<vsg::Data> {
++    auto registerPerVertexArray = [&](geostudio::native::io::gltf::Attributes& attrib, VkVertexInputRate vertexInputRate, const std::string& attribute_name) -> vsg::ref_ptr<vsg::Data> {
+ 
+         if (vertexInputRate != VK_VERTEX_INPUT_RATE_VERTEX) return {};
+ 
+--- a/src/render/import/gltf/gltf.cpp
++++ b/src/render/import/gltf/gltf.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/gltf.h>
++#include <geostudio/native/render/import/gltf/gltf.h>
+ 
+ #include <vsg/io/Path.h>
+ #include <vsg/io/mem_stream.h>
+@@ -22,7 +22,7 @@
+ 
+ #include <fstream>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/src/render/import/images/images.cpp
++++ b/src/render/import/images/images.cpp
+@@ -10,9 +10,9 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/images.h>
++#include <geostudio/native/render/import/images/images.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ images::images()
+ {
+--- a/src/render/import/ktx/ktx.cpp
++++ b/src/render/import/ktx/ktx.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/images.h>
++#include <geostudio/native/render/import/images/images.h>
+ 
+ #include <vsg/core/Exception.h>
+ #include <vsg/core/MipmapLayout.h>
+@@ -30,7 +30,7 @@
+ // https://github.com/KhronosGroup/3D-Formats-Guidelines/blob/main/KTXDeveloperGuide.md
+ // https://registry.khronos.org/vulkan/specs/latest/html/vkspec.html#resources-image-mip-level-sizing
+ 
+-namespace vsgXchange
++namespace geostudio::native::io
+ {
+ 
+     class ktx::Implementation
+@@ -85,9 +85,9 @@
+         static KTX_error_code imageIterator(int miplevel, int face, int width, int height, int depth, ktx_uint64_t faceLodSize, void* pixels, void* userdata);
+     };
+ 
+-} // namespace vsgXchange
+-
+-using namespace vsgXchange;
++} // namespace geostudio::native::io
++
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+@@ -153,7 +153,7 @@
+         case 8: return createImage<vsg::block64>(arrayDimensions, width, height, depth, data, layout, mipmapLayout);
+         case 16: return createImage<vsg::block128>(arrayDimensions, width, height, depth, data, layout, mipmapLayout);
+         default: {
+-            vsg::warn("vsgXchange::ktx : Unsupported compressed format, valueSize = ", valueSize);
++            vsg::warn("geostudio::native::io::ktx : Unsupported compressed format, valueSize = ", valueSize);
+             return {};
+         }
+         }
+@@ -226,7 +226,7 @@
+ 
+     if (format == VK_FORMAT_UNDEFINED)
+     {
+-        vsg::warn("vsgXchange::ktx : unabled to use ", filename, " due to incompatible vkFormat.");
++        vsg::warn("geostudio::native::io::ktx : unabled to use ", filename, " due to incompatible vkFormat.");
+         return {};
+     }
+ #if 0
+@@ -376,7 +376,7 @@
+ 
+         if (auto error_code = ktxTexture2_TranscodeBasis(texture, fmt, transcodeFlags); error_code != KTX_SUCCESS)
+         {
+-            vsg::warn("vsgXchange::ktx : unabled to transcode ", filename, ", error_code = ", ktxErrorString(error_code));
++            vsg::warn("geostudio::native::io::ktx : unabled to transcode ", filename, ", error_code = ", ktxErrorString(error_code));
+             return {};
+         }
+     }
+@@ -385,7 +385,7 @@
+ 
+     if (texture->vkFormat == VK_FORMAT_UNDEFINED)
+     {
+-        vsg::warn("vsgXchange::ktx : unabled to use ", filename, " due to incompatible vkFormat.");
++        vsg::warn("geostudio::native::io::ktx : unabled to use ", filename, " due to incompatible vkFormat.");
+         return {};
+     }
+ 
+--- a/src/render/import/ktx/ktx_fallback.cpp
++++ b/src/render/import/ktx/ktx_fallback.cpp
+@@ -10,9 +10,9 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/images.h>
++#include <geostudio/native/render/import/images/images.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/src/render/import/models/models.cpp
++++ b/src/render/import/models/models.cpp
+@@ -10,10 +10,10 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/gltf.h>
+-#include <vsgXchange/models.h>
++#include <geostudio/native/render/import/gltf/gltf.h>
++#include <geostudio/native/render/import/all/models.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ models::models()
+ {
+--- a/src/render/import/openexr/openexr.cpp
++++ b/src/render/import/openexr/openexr.cpp
+@@ -12,7 +12,7 @@
+ 
+ #include <vsg/io/FileSystem.h>
+ #include <vsg/io/stream.h>
+-#include <vsgXchange/images.h>
++#include <geostudio/native/render/import/images/images.h>
+ 
+ #include <OpenEXR/ImfChannelList.h>
+ #include <OpenEXR/ImfFrameBuffer.h>
+@@ -27,7 +27,7 @@
+ #    include <OpenEXR/half.h>
+ #endif
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ namespace
+ {
+--- a/src/render/import/openexr/openexr_fallback.cpp
++++ b/src/render/import/openexr/openexr_fallback.cpp
+@@ -1,6 +1,6 @@
+-#include <vsgXchange/images.h>
++#include <geostudio/native/render/import/images/images.h>
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+ //
+--- a/src/render/import/stbi/stbi.cpp
++++ b/src/render/import/stbi/stbi.cpp
+@@ -10,7 +10,7 @@
+ 
+ </editor-fold> */
+ 
+-#include <vsgXchange/images.h>
++#include <geostudio/native/render/import/images/images.h>
+ 
+ #include <vsg/io/FileSystem.h>
+ #include <vsg/io/Logger.h>
+@@ -64,14 +64,14 @@
+ #define STBI_REALLOC_SIZED(p, oldsz, newsz) cpp_realloc_sized(p, oldsz, newsz)
+ #define STBI_FREE(p) cpp_free(p)
+ 
+-#include "stb_image.h"
+-#include "stb_image_write.h"
++#include <geostudio/native/render/import/stbi/stb_image.h>
++#include <geostudio/native/render/import/stbi/stb_image_write.h>
+ 
+ #if defined(__GNUC__)
+ #    pragma GCC diagnostic pop
+ #endif
+ 
+-using namespace vsgXchange;
++using namespace geostudio::native::io;
+ 
+ static void writeToStream(void* context, void* data, int size)
+ {
+--- a/vendor/vsgXchange/src/vsgXchangeConfig.cmake.in
++++ /dev/null
+@@ -1,5 +0,0 @@
+-include(CMakeFindDependencyMacro)
+-
+-@FIND_DEPENDENCY_OUT@
+-
+-include("${CMAKE_CURRENT_LIST_DIR}/vsgXchangeTargets.cmake")

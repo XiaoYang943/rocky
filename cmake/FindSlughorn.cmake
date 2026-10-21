@@ -2,7 +2,7 @@
 # automatic FetchContent fallback; find_package alone never downloads anything.
 if(NOT TARGET slughorn::slughorn)
     include("${CMAKE_CURRENT_LIST_DIR}/../vcpkg-ports/slughorn/slughorn-version.cmake")
-    find_package(slughorn ${ROCKY_SLUGHORN_VERSION} CONFIG QUIET)
+    find_package(slughorn ${GEOSTUDIO_NATIVE_SLUGHORN_VERSION} CONFIG QUIET)
 endif()
 set(_Slughorn_target_found FALSE)
 if(TARGET slughorn::slughorn)

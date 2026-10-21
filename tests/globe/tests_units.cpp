@@ -3,14 +3,14 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/Units.h>
-#include <geostudio/native/globe/SRS.h>
+#include <geostudio/native/core/geo/Units.h>
+#include <geostudio/native/core/geo/SRS.h>
 #include <cmath>
 #include <limits>
 #include <type_traits>
 
-#define ROCKY_EXPOSE_JSON_FUNCTIONS
-#include <geostudio/native/globe/json.h>
+#define GEOSTUDIO_NATIVE_EXPOSE_JSON_FUNCTIONS
+#include <geostudio/native/core/io/json.h>
 
 using namespace geostudio::native;
 

@@ -1,0 +1,55 @@
+/**
+ * rocky c++
+ * Copyright 2025 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+#include <geostudio/native/render/entity/ECSNode.h>
+#include <geostudio/native/render/entity/ECSTypes.h>
+
+namespace geostudio::native
+{
+    /**
+    * VSG node that renders Node components (just plain vsg nodes)
+    */
+    class GEOSTUDIO_NATIVE_API NodeSystemNode : public vsg::Inherit<detail::SimpleSystemNodeBase, NodeSystemNode>
+    {
+    public:
+        NodeSystemNode(Registry& registry);
+
+        ~NodeSystemNode();
+
+        //! One-time initialization of the system        
+        void initialize(VSGContext) override;
+
+        //! Every frame update
+        void update(VSGContext) override;
+
+        //! VSG record traversal
+        void traverse(vsg::RecordTraversal&) const override;
+
+        //! VSG visitor traversals
+        void traverse(vsg::ConstVisitor& v) const override;
+        void traverse(vsg::Visitor& v) override;
+
+        // vsg::Compilable
+        void compile(vsg::Context& cc) override;
+
+    private:
+        // render leaf for collecting and drawing meshes
+        struct Drawable
+        {
+            vsg::Node* node = nullptr;
+            detail::TransformDetail* xformDetail = nullptr;
+            Drawable(vsg::Node* node_, detail::TransformDetail* xformDetail) : node(node_), xformDetail(xformDetail) {}
+        };
+
+        using DrawList = std::vector<Drawable>;
+        mutable DrawList _drawList;
+
+        void on_construct_NodeGraph(entt::registry& r, entt::entity e);
+        void on_update_NodeGraph(entt::registry& r, entt::entity e);
+    };
+}
+
+EVSG_type_name(geostudio::native::NodeSystemNode)

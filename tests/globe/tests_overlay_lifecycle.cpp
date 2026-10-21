@@ -4,12 +4,12 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/vsg/RTT.h>
-#include <geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h>
-#include <geostudio/native/globe/vsg/ecs/DecalSystem.h>
-#include <geostudio/native/globe/vsg/ecs/MeshSystem.h>
-#include <geostudio/native/globe/vsg/ecs/OpticsSystem.h>
-#include <geostudio/native/globe/vsg/ShaderDefines.h>
+#include <geostudio/native/render/vsg/RTT.h>
+#include <geostudio/native/render/entity/OverlayBakeSystem.h>
+#include <geostudio/native/render/entity/DecalSystem.h>
+#include <geostudio/native/render/entity/MeshSystem.h>
+#include <geostudio/native/render/entity/OpticsSystem.h>
+#include <geostudio/native/render/vsg/ShaderDefines.h>
 #include <atomic>
 #include <filesystem>
 #include <thread>
@@ -280,7 +280,7 @@ TEST_CASE("raster cache follows the bake projector not terrain depth", "[project
     bake->shutdown(context.get());
 }
 
-#ifdef ROCKY_HAS_DECALS
+#ifdef GEOSTUDIO_NATIVE_HAS_DECALS
 //! New, replaced, and recycled raster slots cannot publish in the frame that writes their descriptor.
 TEST_CASE("raster descriptor residency waits for a later frame", "[projection][rtt][texture]")
 {

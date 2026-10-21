@@ -1,0 +1,124 @@
+/**
+ * rocky c++
+ * Copyright 2023 Pelican Mapping
+ * MIT License
+ */
+#pragma once
+
+#include <geostudio/native/core/base/Common.h>
+#include <geostudio/native/core/geo/SRS.h>
+#include <geostudio/native/core/geo/GeoExtent.h>
+#include <geostudio/native/core/math/Math.h>
+#include <geostudio/native/core/base/Result.h>
+#include <geostudio/native/data/raster/Image.h>
+#include <geostudio/native/data/elevation/Heightfield.h>
+
+namespace geostudio::native
+{
+    class Image;
+    class GeoPoint;
+
+    /**
+     * A georeferenced image; i.e. an Image coupled with a GeoExtent.
+     */
+    class GEOSTUDIO_NATIVE_API GeoImage
+    {
+    public:
+
+        //! Construct an empty (invalid) geoimage
+        GeoImage();
+        GeoImage(const GeoImage&) = default;
+        GeoImage& operator=(const GeoImage&) = default;
+        GeoImage(const GeoImage&& rhs) noexcept { *this = rhs; }
+        GeoImage& operator=(GeoImage&&) noexcept;
+
+        //! Constructs a new goereferenced image.
+        GeoImage(std::shared_ptr<Image> image, const GeoExtent& extent);
+
+        //! Destructor
+        virtual ~GeoImage() { }
+
+        //! True if this is a valid geo image.
+        bool valid() const;
+        operator bool() const { return valid(); }
+
+        //! Gets a pointer to the underlying image
+        std::shared_ptr<Image> image() const;
+
+        //! Gets the geospatial extent of the image
+        const GeoExtent& extent() const;
+
+        //! Shortcut to get the spatial reference system describing
+        //! the projection of the image.
+        const SRS& srs() const;
+
+        //! Composites one or more source images into this image, overwriting the existing image.
+        //! @param sources GeoImages to composite, from bottom to top.
+        //! @param opacities Opacities to apply to each source image (defaults to 1.0f if vector sizes don't match)
+        void composite(const std::vector<GeoImage>& sources, const std::vector<float>& opacities = {});
+
+        //! Gets the units per pixel of this geoimage
+        double getUnitsPerPixel() const;
+
+        //! Gets the coordinate at the image's s,t
+        bool getCoord(int s, int t, double& out_x, double& out_y) const;
+
+        //! Gets the pixel at the image's x,y (must be in GeoImage's SRS)
+        //! s and t will return -1 if x and y are out of bounds respectively
+        bool getPixel(double x, double y, int& s, int& t) const;
+
+        using ReadResult = Result<Image::Pixel, std::nullopt_t>;
+
+        //! Read the value of a pixel at a geopoint.
+        ReadResult read(const GeoPoint& p, int layer=0) const;
+
+        //! Read the value of a pixel at the coordinate (x, y) which is
+        //! assumed to be in this GeoImage's SRS.
+        ReadResult read(double x, double y, int layer=0) const;
+
+        //! Clamp the input coordinate to the image's valid extent and then
+        //! read the value of a pixel at the coordinate (x, y) which is
+        //! assumed to be in the GeoImage's SRS.
+        ReadResult read_clamped(double x, double y, int layer=0) const;
+
+        //! Read the value of a pixel at the coordinate (x, y) which
+        //! is expressed in the provided SRS.
+        ReadResult read(const SRS& srs, double x, double y, int layer=0) const;
+
+        //! Read the value of a pixel at the coordinate (x, y) which
+        //! will be transformed using the provided operation before
+        //! reading.
+        ReadResult read(const SRSOperation& operation, double x, double y, int layer=0) const;
+
+    private:
+        GeoExtent _extent;
+        std::shared_ptr<Image> _image;
+    };
+
+    class GeoHeightfield
+    {
+    public:
+        using ReadResult = Result<float, std::nullopt_t>;
+
+        GeoHeightfield(const GeoImage& in_image) :
+            image(in_image), hf(in_image.image()) {
+        }
+
+        const GeoImage& image;
+        Heightfield hf;
+
+        ReadResult read(double x, double y) const {
+            if (!image.valid()) return ResultFail;
+            double u = image.extent().xOffset(x) / image.extent().width();
+            double v = (y - image.extent().ymin()) / image.extent().height();
+            // Tolerate transformation noise at exact tile boundaries, matching
+            // GeoImage::read's cross-profile sampling behavior.
+            constexpr double eps = 1e-6;
+            if (u < -eps || u > 1.0 + eps || v < -eps || v > 1.0 + eps)
+                return ResultFail;
+            return hf.heightAtUV(
+                (float)std::clamp(u, 0.0, 1.0),
+                (float)std::clamp(v, 0.0, 1.0));
+        }
+    };
+}

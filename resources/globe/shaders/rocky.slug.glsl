@@ -30,8 +30,8 @@
  * passes the equivalent derivative magnitude in so this include remains
  * legal when rocky.decal.h.glsl is also compiled into the decal cull shader.
  */
-#ifndef ROCKY_SLUG_GLSL
-#define ROCKY_SLUG_GLSL
+#ifndef GEOSTUDIO_NATIVE_SLUG_GLSL
+#define GEOSTUDIO_NATIVE_SLUG_GLSL
 
 uint slug_CalcRootCode(float y1, float y2, float y3)
 {
@@ -213,4 +213,4 @@ float slug_Render(
     return slug_CalcCoverage(xcov, ycov, xwgt, ywgt);
 }
 
-#endif // ROCKY_SLUG_GLSL
+#endif // GEOSTUDIO_NATIVE_SLUG_GLSL

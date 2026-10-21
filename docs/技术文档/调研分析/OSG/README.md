@@ -2,7 +2,7 @@
 
 OpenSceneGraph（OSG）是基于 OpenGL 的 Scene Graph 框架。它组织场景对象、渲染状态、Viewer、事件和插件 I/O；地理数据模型、地图 Layer 与 GIS 编辑并非这些通用对象自动提供的能力。osgEarth 在 OSG 上补充地理业务，VSG 则是另一套以 Vulkan 为基础的框架，不能当作替换动态库即可兼容的 OSG 新后端。
 
-本篇是 P0 职责与公开接口概览，未完成 P1 的 Cull/Draw、线程和插件内部调用链分析。固定来源为 OpenSceneGraph 3.6.5、Commit `a827840baf0786d72e11ac16d5338a4ee25779db`；本地来源见[manifest](../../../../../../third-party/osg/manifest.json)与[统一来源页](../来源与版本.md)，术语见[术语表](../../术语.md)。本轮未构建或运行 OSG。
+本篇是 P0 职责与公开接口概览，未完成 P1 的 Cull/Draw、线程和插件内部调用链分析。固定来源为 OpenSceneGraph 3.6.5、Commit `a827840baf0786d72e11ac16d5338a4ee25779db`；本地来源见[manifest](../../../../../../packages/osg/manifest.json)与[统一来源页](../来源与版本.md)，术语见[术语表](../../术语.md)。本轮未构建或运行 OSG。
 
 ## 模块分层
 
@@ -72,10 +72,10 @@ GeoStudio 本阶段可用这些知识分析 OSGB 来源、空间层级及导出�
 
 | 编号 | 本地入口 | 说明 |
 | --- | --- | --- |
-| O1 | [Node](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osg/Node)、[Geode](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osg/Geode)、[StateSet](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osg/StateSet) | 类型、StateSet 关联、Drawable 入口；P0 只读接口范围 |
-| O2 | [ViewerBase](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osgViewer/ViewerBase)：`frame`、`eventTraversal`、`updateTraversal`、`renderingTraversals` | Frame Loop 公开契约 |
-| O3 | [CullVisitor](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osgUtil/CullVisitor)、[模块清单](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/src/CMakeLists.txt)、[GUIEventHandler](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osgGA/GUIEventHandler) | 模块与关键连接；未展开完整 Cull/Draw |
-| O4 | [PagedLOD](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osg/PagedLOD)、[DatabasePager](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osgDB/DatabasePager)：`updateSceneGraph` | Paging 接口与合并阶段约束 |
-| O5 | [Registry](../../../../../../third-party/osg/source/OpenSceneGraph-3.6.5/include/osgDB/Registry)：`readNode`、`readNodeImplementation` | Reader/回调入口；插件动态加载实现留 P1 |
+| O1 | [Node](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osg/Node)、[Geode](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osg/Geode)、[StateSet](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osg/StateSet) | 类型、StateSet 关联、Drawable 入口；P0 只读接口范围 |
+| O2 | [ViewerBase](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osgViewer/ViewerBase)：`frame`、`eventTraversal`、`updateTraversal`、`renderingTraversals` | Frame Loop 公开契约 |
+| O3 | [CullVisitor](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osgUtil/CullVisitor)、[模块清单](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/src/CMakeLists.txt)、[GUIEventHandler](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osgGA/GUIEventHandler) | 模块与关键连接；未展开完整 Cull/Draw |
+| O4 | [PagedLOD](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osg/PagedLOD)、[DatabasePager](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osgDB/DatabasePager)：`updateSceneGraph` | Paging 接口与合并阶段约束 |
+| O5 | [Registry](../../../../../../packages/osg/source/OpenSceneGraph-3.6.5/include/osgDB/Registry)：`readNode`、`readNodeImplementation` | Reader/回调入口；插件动态加载实现留 P1 |
 
 返回[调研总览](../README.md)，或继续阅读 [osgEarth 概览](../OSG-Earth/README.md)。

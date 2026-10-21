@@ -1,5 +1,5 @@
-#include <geostudio/native/globe/Version.h>
-#if defined(ROCKY_HAS_CURL) || defined(ROCKY_HAS_HTTPLIB)
+#include <geostudio/native/core/base/Version.h>
+#if defined(GEOSTUDIO_NATIVE_HAS_CURL) || defined(GEOSTUDIO_NATIVE_HAS_HTTPLIB)
 #ifdef _WIN32
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -15,33 +15,33 @@
 #define CATCH_CONFIG_MAIN
 #include "catch.hpp"
 
-#include <geostudio/native/globe/rocky.h>
-#include <geostudio/native/globe/Log.h>
-#ifndef ROCKY_HAS_SLUGHORN
+#include <geostudio/native/runtime/engine/rocky.h>
+#include <geostudio/native/core/base/Log.h>
+#ifndef GEOSTUDIO_NATIVE_HAS_SLUGHORN
 #include <spdlog/sinks/ostream_sink.h>
 #endif
-#include <geostudio/native/globe/ecs/ProjectedTexture.h>
-#include <geostudio/native/globe/ecs/Overlay.h>
-#include <geostudio/native/globe/ecs/Decal.h>
-#include <geostudio/native/globe/ecs/TerrainAnchor.h>
-#include <geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h>
-#ifdef ROCKY_HAS_SLUGHORN
-#include <geostudio/native/globe/vsg/ecs/SlugResource.h>
-#include <geostudio/native/globe/vsg/ecs/SlugSystem.h>
+#include <geostudio/native/scene/entity/ProjectedTexture.h>
+#include <geostudio/native/scene/entity/Overlay.h>
+#include <geostudio/native/scene/entity/Decal.h>
+#include <geostudio/native/scene/entity/TerrainAnchor.h>
+#include <geostudio/native/render/entity/OverlayBakeSystem.h>
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
+#include <geostudio/native/render/entity/SlugResource.h>
+#include <geostudio/native/render/entity/SlugSystem.h>
 #endif
-#include <geostudio/native/globe/vsg/ecs/DecalSystem.h>
-#include <geostudio/native/globe/vsg/ecs/MeshSystem.h>
-#include <geostudio/native/globe/vsg/ecs/PolygonSystem.h>
-#include <geostudio/native/globe/vsg/ecs/LineSystem.h>
-#include <geostudio/native/globe/vsg/ecs/PointSystem.h>
-#include <geostudio/native/globe/vsg/ecs/ModelSystem.h>
-#include <geostudio/native/globe/vsg/ecs/TextureSystem.h>
-#include <geostudio/native/globe/vsg/ecs/OpticsSystem.h>
-#include <geostudio/native/globe/vsg/ecs/TransformDetail.h>
-#include <geostudio/native/globe/vsg/ecs/FeatureBuilder.h>
+#include <geostudio/native/render/entity/DecalSystem.h>
+#include <geostudio/native/render/entity/MeshSystem.h>
+#include <geostudio/native/render/entity/PolygonSystem.h>
+#include <geostudio/native/render/entity/LineSystem.h>
+#include <geostudio/native/render/entity/PointSystem.h>
+#include <geostudio/native/render/entity/ModelSystem.h>
+#include <geostudio/native/render/entity/TextureSystem.h>
+#include <geostudio/native/render/entity/OpticsSystem.h>
+#include <geostudio/native/render/entity/TransformDetail.h>
+#include <geostudio/native/render/entity/FeatureBuilder.h>
 
 // Public headers must not expose implementation-only shader definitions, even transitively.
-#ifdef ROCKY_DEFINES
+#ifdef GEOSTUDIO_NATIVE_DEFINES
 #error "Public Rocky headers must not include ShaderDefines.h"
 #endif
 
@@ -61,8 +61,8 @@
 #include <thread>
 #include <unordered_map>
 
-#define ROCKY_EXPOSE_JSON_FUNCTIONS
-#include <geostudio/native/globe/json.h>
+#define GEOSTUDIO_NATIVE_EXPOSE_JSON_FUNCTIONS
+#include <geostudio/native/core/io/json.h>
 
 using namespace geostudio::native;
 using namespace geostudio::native::detail;
@@ -486,7 +486,7 @@ TEST_CASE("polygon system owns only its derived mesh", "[polygon][projection]")
     registry.read([&](entt::registry& reg)
     {
         CHECK(reg.get<Overlay>(entity).mode == OverlayMode::Vector);
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
         CHECK_FALSE(reg.any_of<Mesh>(entity));
         CHECK_FALSE(reg.valid(firstGeometry));
         CHECK_FALSE(reg.valid(firstStyle));
@@ -979,7 +979,7 @@ TEST_CASE("legacy overlay adapter", "[projection]")
             overlay.mode = OverlayMode::Vector;
         });
         CHECK(reg.get<Overlay>(overlayEntity).mode == OverlayMode::Vector);
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
         CHECK_FALSE(reg.any_of<RenderTexture>(overlayEntity));
         CHECK_FALSE(reg.get<RenderParticipation>(overlayEntity).renderTexture);
 #else
@@ -1011,7 +1011,7 @@ TEST_CASE("legacy overlay adapter", "[projection]")
     });
 }
 
-#ifndef ROCKY_HAS_SLUGHORN
+#ifndef GEOSTUDIO_NATIVE_HAS_SLUGHORN
 TEST_CASE("vector overlays fall back to raster without repeated warnings", "[projection][overlay-fallback]")
 {
     std::ostringstream warnings;
@@ -1095,7 +1095,7 @@ TEST_CASE("vector overlays fall back to raster without repeated warnings", "[pro
 }
 #endif
 
-#ifdef ROCKY_HAS_SLUGHORN
+#ifdef GEOSTUDIO_NATIVE_HAS_SLUGHORN
 TEST_CASE("slug polygon auto-fits from ring bounds", "[projection][slug][polygon]")
 {
     Registry registry = Registry::create();
@@ -2325,7 +2325,7 @@ TEST_CASE("Math")
     CHECK(r == glm::fvec3(0.75f, 0.75f, 0));
 }
 
-#ifdef ROCKY_HAS_ZLIB
+#ifdef GEOSTUDIO_NATIVE_HAS_ZLIB
 TEST_CASE("Compression")
 {
     // generate a pseudo-random string of characters:
@@ -2786,13 +2786,13 @@ TEST_CASE("Map")
     }
 }
 
-#ifdef ROCKY_HAS_GDAL
+#ifdef GEOSTUDIO_NATIVE_HAS_GDAL
 TEST_CASE("GDAL")
 {
 }
-#endif // ROCKY_HAS_GDAL
+#endif // GEOSTUDIO_NATIVE_HAS_GDAL
 
-TEST_CASE("TMS")
+TEST_CASE("TMS", "[environment]")
 {
     auto layer = TMSImageLayer::create();
     layer->uri = "https://readymap.org/readymap/tiles/1.0.0/7/";
@@ -3001,108 +3001,7 @@ TEST_CASE("SRS")
         SRS::projMessageCallback = nullptr;
     }
 
-    SECTION("SRS with Vertical Datum")
-    {
-        std::string proj_error;
-        SRS::projMessageCallback = [&](int level, const char* msg) { proj_error = msg; };
 
-        SRS wgs84("epsg:4979"); // geographic WGS84 (3D)
-        REQUIRE(wgs84.valid());
-        REQUIRE(wgs84.hasVerticalDatumShift() == false);
-
-        SRS egm96("epsg:4326+5773"); // WGS84 with EGM96 vdatum
-        REQUIRE(egm96.valid());
-        REQUIRE(egm96.hasVerticalDatumShift() == true);
-
-        // this is legal but will print a warning because Z values will be lost.
-        // (you should use epsg::4979 instead)
-
-        SRS wgs84_2d("epsg:4326"); // 2D geographic
-        REQUIRE(wgs84_2d);
-        auto xform_with_warning = wgs84_2d.to(egm96);
-        CHECK(xform_with_warning);
-        CHECK(proj_error == "Warning, \"epsg:4326->epsg:4326+5773\" transforms from GEOGRAPHIC_2D_CRS to COMPOUND_CRS. Z values will be discarded. Use a GEOGRAPHIC_3D_CRS instead");
-        proj_error.clear();
-
-        // total equivalency:
-        REQUIRE(egm96.equivalentTo(wgs84_2d) == false);
-
-        // horizontal equivalency:
-        REQUIRE(egm96.horizontallyEquivalentTo(wgs84_2d) == true);
-        REQUIRE(wgs84.horizontallyEquivalentTo(wgs84_2d) == true);
-
-        // EGM96 test values are from:
-        // https://earth-info.nga.mil/index.php?dir=wgs84&action=egm96-geoid-calc
-        glm::dvec3 out(0, 0, 0);
-
-        // geodetic to vdatum:
-        {
-            //Log()->info("Note: if you see SRS/VDatum errors, check that you have the NGA grid in your share/proj or PROJ_DATA folder! https://github.com/OSGeo/PROJ-data/blob/master/us_nga/us_nga_egm96_15.tif");
-
-            SRS::projMessageCallback = [&](int level, const char* msg) { 
-                Log()->warn("PROJ: {} ... do you have the NGA grid in your PROJ_DATA or share/proj folder? You can download it from https://github.com/OSGeo/PROJ-data/blob/master/us_nga/us_nga_egm96_15.tif", msg);
-            };
-
-            auto xform = wgs84.to(egm96);
-            REQUIRE(xform.valid());
-
-            REQUIRE(xform(glm::dvec3(0, 0, 17.16), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-            REQUIRE(xform(glm::dvec3(90, 0, -63.24), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-            REQUIRE(xform(glm::dvec3(180, 0, 21.15), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-            REQUIRE(xform(glm::dvec3(-90, 0, -4.29), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-
-            // inverse
-            REQUIRE(xform.inverse(glm::dvec3(0, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, 17.16, E));
-            REQUIRE(xform.inverse(glm::dvec3(90, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, -63.24, E));
-            REQUIRE(xform.inverse(glm::dvec3(180, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, 21.15, E));
-            REQUIRE(xform.inverse(glm::dvec3(-90, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, -4.29, E));
-
-            SRS::projMessageCallback = nullptr;
-        }
-
-        // vdatum to geodetic:
-        {
-            auto xform = egm96.to(wgs84);
-            REQUIRE(xform.valid());
-
-            REQUIRE(xform(glm::dvec3(0, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, 17.16, E));
-            REQUIRE(xform(glm::dvec3(90, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, -63.24, E));
-            REQUIRE(xform(glm::dvec3(180, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, 21.15, E));
-            REQUIRE(xform(glm::dvec3(-90, 0, 0), out));
-            CHECK(glm::epsilonEqual(out.z, -4.29, E));
-
-            // inverse
-            REQUIRE(xform.inverse(glm::dvec3(0, 0, 17.16), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-            REQUIRE(xform.inverse(glm::dvec3(90, 0, -63.24), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-            REQUIRE(xform.inverse(glm::dvec3(180, 0, 21.15), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-            REQUIRE(xform.inverse(glm::dvec3(-90, 0, -4.29), out));
-            CHECK(glm::epsilonEqual(out.z, 0.0, E));
-        }
-
-        // vdatum to vdatum (noop)
-        {
-            auto xform = egm96.to(egm96);
-            REQUIRE(xform.valid());
-
-            glm::dvec3 out;
-            REQUIRE(xform(glm::dvec3(0, 0, 17.16), out));
-            CHECK(glm::epsilonEqual(out.z, 17.16, E));
-        }
-    }
 
     SECTION("SRS Metadata")
     {
@@ -3220,7 +3119,7 @@ TEST_CASE("SRS")
     }
 }
 
-#if defined(ROCKY_HAS_CURL) || defined(ROCKY_HAS_HTTPLIB)
+#if defined(GEOSTUDIO_NATIVE_HAS_CURL) || defined(GEOSTUDIO_NATIVE_HAS_HTTPLIB)
 namespace
 {
     //! Serves scripted loopback responses on one thread; destruction interrupts stalls and joins the server.
@@ -3413,7 +3312,7 @@ TEST_CASE("HTTP error cache permits recovery from temporary failures", "[io][htt
 }
 #endif
 
-#if defined(ROCKY_HAS_CURL) && !defined(ROCKY_HAS_HTTPLIB)
+#if defined(GEOSTUDIO_NATIVE_HAS_CURL) && !defined(GEOSTUDIO_NATIVE_HAS_HTTPLIB)
 //! Redirects and informational responses must not supply headers for the final response body.
 TEST_CASE("CURL publishes only final response headers", "[io][curl][http-headers]")
 {
@@ -3540,11 +3439,11 @@ TEST_CASE("IO options preserve network timeouts", "[io]")
 }
 
 //! Opt-in TLS integration: TLS_URL serves "OK" with a localhost-only certificate signed by the supplied TLS_CA PEM.
-//! Run with "[.tls]" and set ROCKY_TEST_TLS_URL and ROCKY_TEST_TLS_CA; no system trust changes are needed.
+//! Run with "[.tls]" and set GEOSTUDIO_NATIVE_TEST_TLS_URL and GEOSTUDIO_NATIVE_TEST_TLS_CA; no system trust changes are needed.
 TEST_CASE("HTTPS verifies peer trust and hostname", "[.tls]")
 {
-    const char* endpoint = std::getenv("ROCKY_TEST_TLS_URL");
-    const char* caFile = std::getenv("ROCKY_TEST_TLS_CA");
+    const char* endpoint = std::getenv("GEOSTUDIO_NATIVE_TEST_TLS_URL");
+    const char* caFile = std::getenv("GEOSTUDIO_NATIVE_TEST_TLS_CA");
     REQUIRE(endpoint != nullptr);
     REQUIRE(caFile != nullptr);
     REQUIRE(URI::supportsHTTPS());
@@ -3593,7 +3492,7 @@ TEST_CASE("HTTPS verifies peer trust and hostname", "[.tls]")
     }
 }
 
-TEST_CASE("IO")
+TEST_CASE("IO", "[environment]")
 {
     SECTION("HTTP")
     {
@@ -3665,7 +3564,7 @@ TEST_CASE("IO")
     }
 }
 
-TEST_CASE("Earth File")
+TEST_CASE("Earth File", "[environment]")
 {
     std::string earthFile = "https://raw.githubusercontent.com/gwaldron/osgearth/master/tests/readymap.earth";
     EarthFileImporter importer;
@@ -3732,4 +3631,110 @@ TEST_CASE("MapManipulator NaN fix")
     CHECK(rotCenterToTarget.y == 0.0);
     CHECK(rotCenterToTarget.z == 0.0);
     CHECK(rotCenterToTarget.w == 1.0);
+}
+
+TEST_CASE("SRS with Vertical Datum grid", "[requires-grid]")
+{
+    const double E = 0.1;
+
+        std::string proj_error;
+        SRS::projMessageCallback = [&](int level, const char* msg) { proj_error = msg; };
+
+        SRS wgs84("epsg:4979"); // geographic WGS84 (3D)
+        REQUIRE(wgs84.valid());
+        REQUIRE(wgs84.hasVerticalDatumShift() == false);
+
+        SRS egm96("epsg:4326+5773"); // WGS84 with EGM96 vdatum
+        REQUIRE(egm96.valid());
+        REQUIRE(egm96.hasVerticalDatumShift() == true);
+
+        // this is legal but will print a warning because Z values will be lost.
+        // (you should use epsg::4979 instead)
+
+        SRS wgs84_2d("epsg:4326"); // 2D geographic
+        REQUIRE(wgs84_2d);
+        auto xform_with_warning = wgs84_2d.to(egm96);
+        CHECK(xform_with_warning);
+        CHECK(proj_error == "Warning, \"epsg:4326->epsg:4326+5773\" transforms from GEOGRAPHIC_2D_CRS to COMPOUND_CRS. Z values will be discarded. Use a GEOGRAPHIC_3D_CRS instead");
+        proj_error.clear();
+
+        // total equivalency:
+        REQUIRE(egm96.equivalentTo(wgs84_2d) == false);
+
+        // horizontal equivalency:
+        REQUIRE(egm96.horizontallyEquivalentTo(wgs84_2d) == true);
+        REQUIRE(wgs84.horizontallyEquivalentTo(wgs84_2d) == true);
+
+        // EGM96 test values are from:
+        // https://earth-info.nga.mil/index.php?dir=wgs84&action=egm96-geoid-calc
+        glm::dvec3 out(0, 0, 0);
+
+        // geodetic to vdatum:
+        {
+            //Log()->info("Note: if you see SRS/VDatum errors, check that you have the NGA grid in your share/proj or PROJ_DATA folder! https://github.com/OSGeo/PROJ-data/blob/master/us_nga/us_nga_egm96_15.tif");
+
+            SRS::projMessageCallback = [&](int level, const char* msg) {
+                Log()->warn("PROJ: {} ... do you have the NGA grid in your PROJ_DATA or share/proj folder? You can download it from https://github.com/OSGeo/PROJ-data/blob/master/us_nga/us_nga_egm96_15.tif", msg);
+            };
+
+            auto xform = wgs84.to(egm96);
+            REQUIRE(xform.valid());
+
+            REQUIRE(xform(glm::dvec3(0, 0, 17.16), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform(glm::dvec3(90, 0, -63.24), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform(glm::dvec3(180, 0, 21.15), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform(glm::dvec3(-90, 0, -4.29), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+
+            // inverse
+            REQUIRE(xform.inverse(glm::dvec3(0, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 17.16, E));
+            REQUIRE(xform.inverse(glm::dvec3(90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -63.24, E));
+            REQUIRE(xform.inverse(glm::dvec3(180, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 21.15, E));
+            REQUIRE(xform.inverse(glm::dvec3(-90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -4.29, E));
+
+            SRS::projMessageCallback = nullptr;
+        }
+
+        // vdatum to geodetic:
+        {
+            auto xform = egm96.to(wgs84);
+            REQUIRE(xform.valid());
+
+            REQUIRE(xform(glm::dvec3(0, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 17.16, E));
+            REQUIRE(xform(glm::dvec3(90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -63.24, E));
+            REQUIRE(xform(glm::dvec3(180, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, 21.15, E));
+            REQUIRE(xform(glm::dvec3(-90, 0, 0), out));
+            CHECK(glm::epsilonEqual(out.z, -4.29, E));
+
+            // inverse
+            REQUIRE(xform.inverse(glm::dvec3(0, 0, 17.16), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform.inverse(glm::dvec3(90, 0, -63.24), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform.inverse(glm::dvec3(180, 0, 21.15), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+            REQUIRE(xform.inverse(glm::dvec3(-90, 0, -4.29), out));
+            CHECK(glm::epsilonEqual(out.z, 0.0, E));
+        }
+
+        // vdatum to vdatum (noop)
+        {
+            auto xform = egm96.to(egm96);
+            REQUIRE(xform.valid());
+
+            glm::dvec3 out;
+            REQUIRE(xform(glm::dvec3(0, 0, 17.16), out));
+            CHECK(glm::epsilonEqual(out.z, 17.16, E));
+        }
+
 }

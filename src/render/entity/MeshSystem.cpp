@@ -1,0 +1,896 @@
+
+/**
+ * rocky c++
+ * Copyright 2026 Pelican Mapping
+ * MIT License
+ */
+#include <geostudio/native/render/entity/MeshSystem.h>
+#include <geostudio/native/render/entity/OverlayRenderContext.h>
+#include <geostudio/native/render/vsg/ViewDependentState.h>
+#include <geostudio/native/render/vsg/ShaderDefines.h>
+#include <geostudio/native/scene/entity/ProjectedTexture.h>
+
+using namespace geostudio::native;
+using namespace geostudio::native::detail;
+
+#define MESH_VERT_SHADER "shaders/rocky.mesh.vert"
+#define MESH_FRAG_SHADER "shaders/rocky.mesh.frag"
+
+#define MESH_SET 0
+#define MESH_BINDING_UNIFORM   1 // layout(set=0, binding=1) in the shader
+#define MESH_BINDING_TEXTURE   2 // layout(set=0, binding=2) in the shader
+
+#define USE_DYNAMIC_STATE
+
+RenderTextureSourceStatus MeshSystemNode::renderTextureSourceStatus(
+    entt::registry& reg, entt::entity entity) const
+{
+    auto* mesh = reg.try_get<Mesh>(entity);
+    if (!mesh)
+        return {};
+
+    if (const auto* style = reg.try_get<MeshStyle>(mesh->style); style && style->texture != entt::null)
+    {
+        const auto* texture = reg.try_get<TextureResource>(style->texture);
+        if (!texture || !texture->ready)
+            return { RenderTextureSourceStatus::State::Waiting, "Waiting for mesh texture", true };
+    }
+
+    auto* geometry = reg.try_get<MeshGeometry>(mesh->geometry);
+    auto* detail = reg.try_get<MeshGeometryDetail>(mesh->geometry);
+    if (!geometry || !detail)
+        return { RenderTextureSourceStatus::State::Waiting, "Waiting for mesh geometry", true };
+
+    bool hasViewGeometry = false;
+    for (const auto& view : detail->views)
+    {
+        if (!view.geomNode || !view.root)
+            continue;
+
+        hasViewGeometry = true;
+        if (!view.geomNode->ready(_deviceID))
+            return { RenderTextureSourceStatus::State::Waiting, "Waiting for compiled mesh geometry", true };
+    }
+
+    return hasViewGeometry || geometry->vertices.empty() ? RenderTextureSourceStatus{} :
+        RenderTextureSourceStatus{ RenderTextureSourceStatus::State::Waiting, "Waiting for mesh view geometry", true };
+}
+
+void MeshSystemNode::expandRenderTextureBounds(
+    entt::registry& reg, entt::entity entity, RenderTextureBounds& bounds, const SRS& worldSRS, bool applySourceTransform)
+{
+    if (auto* mesh = reg.try_get<Mesh>(entity))
+        if (auto* geometry = reg.try_get<MeshGeometry>(mesh->geometry))
+            for (const auto& vertex : geometry->vertices)
+                expandRenderTextureSourcePoint(reg, entity, bounds, geometry->srs, vertex, worldSRS, applySourceTransform);
+}
+
+void MeshSystemNode::contributeRenderTextureRevision(
+    entt::registry& reg, entt::entity entity, RenderTextureRevision& revision)
+{
+    auto* mesh = reg.try_get<Mesh>(entity);
+    if (!mesh) return;
+
+    // Changing the referenced geometry or style is itself observable even if
+    // the newly referenced component happens to have the same generation.
+    detail::combineRenderTextureComponentBoth(revision, mesh);
+    detail::combineRenderTextureEntity(revision.bounds, mesh->geometry);
+    detail::combineRenderTextureEntity(revision.content, mesh->geometry);
+    detail::combineRenderTextureEntity(revision.content, mesh->style);
+
+    detail::combineRenderTextureComponentBoth(
+        revision, reg.try_get<MeshGeometry>(mesh->geometry));
+
+    if (auto* style = reg.try_get<MeshStyle>(mesh->style))
+    {
+        // Mesh styles affect pixels, not the source's geometric bounds.
+        detail::combineRenderTextureComponent(revision.content, style);
+        detail::combineRenderTextureEntity(revision.content, style->texture);
+        if (const auto* texture = reg.try_get<TextureResource>(style->texture))
+        {
+            detail::combineRenderTextureComponent(revision.content, texture);
+            detail::combineRenderTextureRevision(revision.content, texture->revision);
+            detail::combineRenderTextureRevision(revision.content, texture->ready);
+        }
+    }
+}
+
+namespace
+{
+    inline vsg::ref_ptr<vsg::ImageInfo> createEmptyTexture()
+    {
+        auto sampler = vsg::Sampler::create();
+        auto image = Image::create(Image::R8_UNORM, 1, 1);
+        return vsg::ImageInfo::create(sampler, moveImageToVSG(image));
+    }
+
+    vsg::ref_ptr<vsg::ShaderSet> createShaderSet(VSGContext vsgcontext)
+    {
+        vsg::ref_ptr<vsg::ShaderSet> shaderSet;
+
+        // load shaders
+        auto vertexShader = vsg::ShaderStage::read(
+            VK_SHADER_STAGE_VERTEX_BIT,
+            "main",
+            vsg::findFile(MESH_VERT_SHADER, vsgcontext->searchPaths),
+            vsgcontext->readerWriterOptions);
+
+        auto fragmentShader = vsg::ShaderStage::read(
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            "main",
+            vsg::findFile(MESH_FRAG_SHADER, vsgcontext->searchPaths),
+            vsgcontext->readerWriterOptions);
+
+        if (!vertexShader || !fragmentShader)
+        {
+            return { };
+        }
+
+        vsg::ShaderStages shaderStages{ vertexShader, fragmentShader };
+
+        shaderSet = vsg::ShaderSet::create(shaderStages);
+
+        // "binding" (3rd param) must match "layout(location=X) in" in the vertex shader
+        shaderSet->addAttributeBinding("in_vertex",      "", 0, VK_FORMAT_R32G32B32_SFLOAT, { });
+        shaderSet->addAttributeBinding("in_normal",      "", 1, VK_FORMAT_R32G32B32_SFLOAT, {});
+        shaderSet->addAttributeBinding("in_color",       "", 2, VK_FORMAT_R32G32B32A32_SFLOAT, {});
+        shaderSet->addAttributeBinding("in_uv",          "", 3, VK_FORMAT_R32G32_SFLOAT, {});
+
+        shaderSet->addDescriptorBinding("u_mesh", "", MESH_SET, MESH_BINDING_UNIFORM,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_VERTEX_BIT, {});
+
+        shaderSet->addDescriptorBinding("u_meshTexture", "", MESH_SET, MESH_BINDING_TEXTURE,
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, {});
+
+        // We need VSG's view-dependent data for lighting support
+        addViewDependentStateToShaderSet(shaderSet);
+
+        shaderSet->addDescriptorBinding("u_highlight", "", 2, 0,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1, VK_SHADER_STAGE_FRAGMENT_BIT, {});
+
+        // Note: 128 is the maximum size required by the Vulkan spec so don't increase it
+        shaderSet->addPushConstantRange("pc", "", VK_SHADER_STAGE_VERTEX_BIT, 0, 128);
+
+        return shaderSet;
+    }
+
+    // creates an empty, default style detail bind command, ready to be populated.
+    void initializeStyleDetail(vsg::PipelineLayout* layout, MeshStyleDetail& styleDetail)
+    {
+        // uniform: "mesh.styles" in the shader
+        styleDetail.styleUBOData = vsg::ubyteArray::create(sizeof(MeshUniform));
+        styleDetail.styleUBO = vsg::DescriptorBuffer::create(styleDetail.styleUBOData, MESH_BINDING_UNIFORM, 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER);
+
+        // uniform: "u_meshTexture" in the fragment shader
+        styleDetail.styleTexture = vsg::DescriptorImage::create(createEmptyTexture(), MESH_BINDING_TEXTURE, 0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+        // bind command:
+        styleDetail.bind = vsg::BindDescriptorSet::create();
+        styleDetail.bind->pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+        styleDetail.bind->firstSet = 0;
+        styleDetail.bind->layout = layout;
+        styleDetail.bind->descriptorSet = vsg::DescriptorSet::create(
+            styleDetail.bind->layout->setLayouts.front(),
+            vsg::Descriptors{ styleDetail.styleUBO, styleDetail.styleTexture });
+
+        MeshUniform& uniform = *static_cast<MeshUniform*>(styleDetail.styleUBOData->dataPointer());
+        uniform.style = MeshStyleUniform(); // default style
+    }
+}
+
+
+void MeshSystemNode::on_construct_Mesh(entt::registry& r, entt::entity e)
+{
+    (void)r.get_or_emplace<ActiveState>(e);
+    (void)r.get_or_emplace<Visibility>(e);
+    Mesh::dirty(r, e);
+}
+void MeshSystemNode::on_construct_MeshStyle(entt::registry& r, entt::entity e)
+{
+    r.emplace<MeshStyleDetail>(e);
+    MeshStyle::dirty(r, e);
+}
+void MeshSystemNode::on_construct_MeshGeometry(entt::registry& r, entt::entity e)
+{
+    r.emplace<MeshGeometryDetail>(e);
+    MeshGeometry::dirty(r, e);
+}
+
+void MeshSystemNode::on_destroy_MeshStyle(entt::registry& r, entt::entity e)
+{
+    r.remove<MeshStyleDetail>(e);
+}
+void MeshSystemNode::on_destroy_MeshStyleDetail(entt::registry& r, entt::entity e)
+{
+    auto& d = r.get<MeshStyleDetail>(e);
+    dispose(d.bind);
+    for (auto& pass : d.passes)
+        dispose(pass);
+}
+void MeshSystemNode::on_destroy_MeshGeometry(entt::registry& r, entt::entity e)
+{
+    r.remove<MeshGeometryDetail>(e);
+}
+void MeshSystemNode::on_destroy_MeshGeometryDetail(entt::registry& r, entt::entity e)
+{
+    for (auto& view : r.get<MeshGeometryDetail>(e).views)
+    {
+        dispose(view.root);
+        view = {};
+    }
+}
+
+
+void MeshSystemNode::on_update_Mesh(entt::registry& r, entt::entity e)
+{
+    Mesh::dirty(r, e);
+}
+void MeshSystemNode::on_update_MeshStyle(entt::registry& r, entt::entity e)
+{
+    MeshStyle::dirty(r, e);
+}
+void MeshSystemNode::on_update_MeshGeometry(entt::registry& r, entt::entity e)
+{
+    MeshGeometry::dirty(r, e);
+}
+
+
+MeshSystemNode::MeshSystemNode(Registry& registry) :
+    Inherit(registry)
+{
+    registry.write([&](entt::registry& r)
+        {
+            // install the ENTT callbacks for managing internal data:
+            r.on_construct<Mesh>().connect<&MeshSystemNode::on_construct_Mesh>(*this);
+            r.on_construct<MeshStyle>().connect<&MeshSystemNode::on_construct_MeshStyle>(*this);
+            r.on_construct<MeshGeometry>().connect<&MeshSystemNode::on_construct_MeshGeometry>(*this);
+
+            r.on_update<Mesh>().connect<&MeshSystemNode::on_update_Mesh>(*this);
+            r.on_update<MeshStyle>().connect<&MeshSystemNode::on_update_MeshStyle>(*this);
+            r.on_update<MeshGeometry>().connect<&MeshSystemNode::on_update_MeshGeometry>(*this);
+
+            r.on_destroy<MeshStyle>().connect<&MeshSystemNode::on_destroy_MeshStyle>(*this);
+            r.on_destroy<MeshStyleDetail>().connect<&MeshSystemNode::on_destroy_MeshStyleDetail>(*this);
+            r.on_destroy<MeshGeometry>().connect<&MeshSystemNode::on_destroy_MeshGeometry>(*this);
+            r.on_destroy<MeshGeometryDetail>().connect<&MeshSystemNode::on_destroy_MeshGeometryDetail>(*this);
+
+            // Set up the dirty tracking.
+            auto e = r.create();
+            r.emplace<Mesh::Dirty>(e);
+            r.emplace<MeshStyle::Dirty>(e);
+            r.emplace<MeshGeometry::Dirty>(e);
+        });
+}
+
+
+void
+MeshSystemNode::initialize(VSGContext vsgcontext)
+{
+    _deviceID = vsgcontext->device()->deviceID;
+
+    // make sure all required vulkan features are available:
+    bool supported = false;
+
+    auto pd = vsgcontext->device()->getPhysicalDevice();
+
+    if (pd->supportsDeviceExtension(VK_EXT_EXTENDED_DYNAMIC_STATE_EXTENSION_NAME) &&
+        pd->supportsDeviceExtension(VK_EXT_EXTENDED_DYNAMIC_STATE_2_EXTENSION_NAME) &&
+        pd->supportsDeviceExtension(VK_EXT_EXTENDED_DYNAMIC_STATE_3_EXTENSION_NAME))
+    {
+        supported = true;
+#if 0
+        auto supportedDS3 = pd->getFeatures<
+            VkPhysicalDeviceExtendedDynamicState3FeaturesEXT,
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_3_FEATURES_EXT>();
+
+        if (supportedDS3.extendedDynamicState3PolygonMode &&
+            supportedDS3.extendedDynamicState3ColorWriteMask)
+        {
+            supported = true;
+        }
+#endif
+    }
+
+    if (!supported)
+    {
+        status = Failure(Failure::ResourceUnavailable,
+            "MeshSystem requires the Vulkan extended dynamic state extension features "
+            "that not supported by the current Vulkan device.");
+        Log()->warn("MeshSystem not availabe! {}", status.error().message);
+        return;
+    }
+
+    auto shaderSet = createShaderSet(vsgcontext);
+
+    if (!shaderSet)
+    {
+        status = Failure(Failure::ResourceUnavailable,
+            "Mesh shaders are missing or corrupt. "
+            "Did you set GEOSTUDIO_NATIVE_FILE_PATH to point at the GeoStudio Native globe resource folder?");
+        return;
+    }
+
+    _pipelines.resize(1);
+
+    // create all pipeline permutations.
+    for (int feature_mask = 0; feature_mask < 1; ++feature_mask)
+    {
+        auto& c = _pipelines[feature_mask];
+
+        // Create the pipeline configurator for terrain; this is a helper object
+        // that acts as a "template" for terrain tile rendering state.
+        c.config = vsg::GraphicsPipelineConfig::create(shaderSet);
+
+        // Compile settings / defines. We need to clone this since it may be
+        // different defines for each configuration permutation.
+        c.config->shaderHints = vsgcontext->shaderCompileSettings ?
+            vsg::ShaderCompileSettings::create(*vsgcontext->shaderCompileSettings) :
+            vsg::ShaderCompileSettings::create();
+
+        // activate the arrays we intend to use
+        c.config->enableArray("in_vertex", VK_VERTEX_INPUT_RATE_VERTEX, 12);
+        c.config->enableArray("in_normal", VK_VERTEX_INPUT_RATE_VERTEX, 12);
+        c.config->enableArray("in_color", VK_VERTEX_INPUT_RATE_VERTEX, 16);
+        c.config->enableArray("in_uv", VK_VERTEX_INPUT_RATE_VERTEX, 8);
+
+        c.config->enableDescriptor("u_highlight");
+        enableViewDependentStateUniforms(c.config);
+        
+        struct SetPipelineStates : public vsg::Visitor
+        {
+            int feature_mask;
+            SetPipelineStates(int feature_mask_) : feature_mask(feature_mask_) { }
+            void apply(vsg::Object& object) override {
+                object.traverse(*this);
+            }
+            void apply(vsg::RasterizationState& state) override {
+                state.polygonMode = VK_POLYGON_MODE_FILL;
+                state.cullMode = VK_CULL_MODE_BACK_BIT;
+            }
+            void apply(vsg::DepthStencilState& state) override {
+                state.depthWriteEnable = VK_TRUE;
+            }
+            void apply(vsg::ColorBlendState& state) override {
+                state.attachments = vsg::ColorBlendState::ColorBlendAttachments{
+                    { true,
+                      VK_BLEND_FACTOR_SRC_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD,
+                      VK_BLEND_FACTOR_ONE, VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, VK_BLEND_OP_ADD,
+                      VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT }
+                };
+            }
+#ifdef USE_DYNAMIC_STATE
+            void apply(vsg::DynamicState& state) override {
+                state.dynamicStates.emplace_back(VK_DYNAMIC_STATE_POLYGON_MODE_EXT);
+                state.dynamicStates.emplace_back(VK_DYNAMIC_STATE_DEPTH_WRITE_ENABLE_EXT);
+                state.dynamicStates.emplace_back(VK_DYNAMIC_STATE_CULL_MODE_EXT);
+                state.dynamicStates.emplace_back(VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
+            }
+#endif
+        };
+
+#ifdef USE_DYNAMIC_STATE
+        c.config->pipelineStates.emplace_back(vsg::DynamicState::create());
+#endif
+
+        SetPipelineStates visitor(feature_mask);
+        c.config->accept(visitor);
+
+        // Initialize GraphicsPipeline from the data in the configuration.
+        c.config->init();
+
+        c.commands = vsg::Commands::create();
+        c.commands->addChild(c.config->bindGraphicsPipeline);
+        c.commands->addChild(vsg::BindViewDescriptorSets::create(VK_PIPELINE_BIND_POINT_GRAPHICS, c.config->layout, DESCRIPTOR_SET_VDS));
+    }
+
+    // Set up our default style detail, which is used when a MeshStyle is missing.
+    initializeHighlights(getPipelineLayout(Mesh()));
+    initializeStyleDetail(getPipelineLayout(Mesh()), _defaultStyleDetail);
+    requestCompile(_defaultStyleDetail.bind);
+}
+
+void
+MeshSystemNode::compile(vsg::Context& compileContext)
+{
+    if (status.failed()) return;
+
+    if (firstCompileForView(compileContext))
+    {
+        _registry.read([&](entt::registry& reg)
+            {
+                reg.view<MeshStyleDetail>().each([&](auto& styleDetail)
+                    {
+                        if (styleDetail.bind)
+                            styleDetail.bind->compile(compileContext);
+                    });
+
+                reg.view<MeshGeometryDetail>().each([&](auto& geomDetail)
+                {
+                    for (auto& geomView : geomDetail.views)
+                    {
+                        if (geomView.geomNode)
+                            geomView.geomNode->compile(compileContext);
+                    }
+                });
+            });
+    }
+
+    Inherit::compile(compileContext);
+}
+
+void
+MeshSystemNode::createOrUpdateGeometryForView(ViewIDType viewID, const MeshGeometry& geom, MeshGeometryDetail& geomDetail)
+{
+    // NB: registry is read-locked
+
+    auto& geomView = geomDetail.views[viewID];
+    auto& view = _viewInfo[viewID];
+
+    // If the view is removed, dispose of its nodes:
+    if (view.srsDef.empty())
+    {
+        if (geomView.root)
+        {
+            dispose(geomView.root);
+            dispose(geomView.geomNode);
+            geomView = {};
+        }
+        view.dirty = false;
+        return;
+    }
+
+    SRS srs(view.srsDef);
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(srs, void());
+
+    view.dirty = false;
+
+    if (geomView.geomNode)
+        dispose(geomView.geomNode);
+
+    geomView.geomNode = MeshGeometryNode::create();
+
+    vsg::ref_ptr<vsg::Node> root;
+    vsg::dmat4 localizer_matrix;
+
+    auto copyArrays = [&](auto& verts)
+        {
+            auto& gn = geomView.geomNode;
+
+            gn->_verts.resize(verts.size());
+            std::transform(verts.begin(), verts.end(), gn->_verts.begin(),
+                [](const glm::dvec3& v) { return to_vsg(v); });
+
+            gn->_colors.resize(std::max(geom.colors.size(), verts.size()));
+            std::transform(geom.colors.begin(), geom.colors.end(), gn->_colors.begin(),
+                [](const glm::fvec4& c) { return to_vsg(c); });
+
+            gn->_normals.resize(std::max(geom.normals.size(), verts.size()));
+            std::transform(geom.normals.begin(), geom.normals.end(), gn->_normals.begin(),
+                [](const glm::fvec3& n) { return to_vsg(n); });
+
+            gn->_uvs.resize(std::max(geom.uvs.size(), verts.size()));
+            std::transform(geom.uvs.begin(), geom.uvs.end(), gn->_uvs.begin(),
+                [](const glm::fvec2& uv) { return to_vsg(uv); });
+
+            gn->_indices = geom.indices;
+        };
+
+    if (geom.srs.valid())
+    {
+        if (geom.vertices.size() > 0)
+        {
+            glm::dvec3 precisionOffset(0, 0, 0);
+            auto xform = geom.srs.to(srs);
+
+            // transform and localize:
+            std::vector<glm::dvec3> copy(geom.vertices); // copy
+            xform.clampArray(copy.data(), copy.size());
+            xform.transformArray(copy.data(), copy.size());
+
+            precisionOffset = (copy.front() + copy.back()) * 0.5;
+            for (auto& point : copy)
+                point -= precisionOffset;
+
+            copyArrays(copy);
+
+            auto localizer = vsg::MatrixTransform::create(vsg::translate(to_vsg(precisionOffset)));
+            localizer->addChild(geomView.geomNode);
+            root = localizer;
+        }
+    }
+    else
+    {
+        if (geom.vertices.size() > 0)
+        {
+            copyArrays(geom.vertices);
+        }
+
+        root = geomView.geomNode;
+    }
+
+    geomView.root = root;
+
+    requestCompile(geomView.geomNode);
+}
+
+void
+MeshSystemNode::createOrUpdateGeometry(const MeshGeometry& geom, MeshGeometryDetail& geomDetail)
+{
+    // NB: registry is read-locked
+    for (ViewIDType viewID = 0; viewID < _viewInfo.size(); ++viewID)
+    {
+        createOrUpdateGeometryForView(viewID, geom, geomDetail);
+    }
+}
+
+
+void
+MeshSystemNode::createOrUpdateStyle(const MeshStyle& style, MeshStyleDetail& styleDetail, entt::registry& reg, VSGContext vsgcontext)
+{
+    // NB: registry is read-locked
+    bool needsCompile = false;
+    bool needsUpload = false;
+
+    const auto* texture = reg.try_get<TextureResource>(style.texture);
+    const auto* textureImage = texture && texture->ready ? texture->texture.get() : nullptr;
+    if (styleDetail.bind && textureImage != styleDetail.textureImage)
+    {
+        // Retire the old descriptor set as a whole. Never mutate an image binding
+        // that an in-flight draw may still use, or dispose another producer's image.
+        dispose(styleDetail.bind);
+        styleDetail.bind = {};
+    }
+
+    if (!styleDetail.bind)
+    {
+        auto layout = getPipelineLayout(Mesh());
+        initializeStyleDetail(layout, styleDetail);
+        needsCompile = true;
+    }
+
+    for (auto& pass : styleDetail.passes)
+        dispose(pass);
+
+#ifdef USE_DYNAMIC_STATE // TODO: query ACTUAL support and deal with it properly.
+    styleDetail.passes.clear();
+    styleDetail.passes.emplace_back(vsg::Commands::create());
+    styleDetail.passes[0]->addChild(styleDetail.bind);
+
+    // wireframe:
+    styleDetail.passes[0]->addChild(SetPolygonMode::create(vsgcontext->ext(),
+        style.wireframe ? VK_POLYGON_MODE_LINE : VK_POLYGON_MODE_FILL));
+
+    // cull mode
+    styleDetail.passes[0]->addChild(SetCullMode::create(vsgcontext->ext(),
+        style.drawBackfaces ? VK_CULL_MODE_NONE : VK_CULL_MODE_BACK_BIT));
+
+    if (style.twoPassAlpha == true && style.writeDepth == false)
+    {
+        Log()->warn("MeshStyle: twoPassAlpha requires writeDepth to be true; ignoring twoPassAlpha.");
+    }
+
+    // when both 2-pass alpha AND writeDepth are enabled, create a second pass.
+    // render all objects first with no depth-writes; then write the depth 
+    // later in a second pass.
+    if (style.twoPassAlpha && style.writeDepth)
+    {
+        styleDetail.passes.emplace_back(vsg::Commands::create());
+
+        // first pass: no depth writes, full color writes:
+        styleDetail.passes[0]->addChild(SetDepthWriteEnable::create(vsgcontext->ext(), VK_FALSE));
+        styleDetail.passes[0]->addChild(SetColorWriteMask::create(vsgcontext->ext(), 0x0F));
+
+        // second pass: depth writes, no color writes:
+        styleDetail.passes[1]->addChild(SetDepthWriteEnable::create(vsgcontext->ext(), VK_TRUE));
+        styleDetail.passes[1]->addChild(SetColorWriteMask::create(vsgcontext->ext(), 0x0));
+    }
+    else
+    {
+        // depth writes, default color mask
+        styleDetail.passes[0]->addChild(SetDepthWriteEnable::create(vsgcontext->ext(), style.writeDepth ? VK_TRUE : VK_FALSE));
+        styleDetail.passes[0]->addChild(SetColorWriteMask::create(vsgcontext->ext(), 0x0F));
+    }
+#endif
+
+    // update the uniform for this style:
+    MeshUniform& uniform = *static_cast<MeshUniform*>(styleDetail.styleUBOData->dataPointer());
+    uniform.style.populate(style, texture);
+    needsUpload = !needsCompile;
+
+    if (needsCompile && textureImage)
+    {
+        styleDetail.styleTexture->imageInfoList = vsg::ImageInfoList{ texture->texture };
+    }
+    styleDetail.texture = style.texture;
+    styleDetail.textureRevision = texture ? texture->revision : 0u;
+    styleDetail.textureComponentRevision = texture ? texture->componentRevision() : 0u;
+    styleDetail.textureImage = textureImage;
+    styleDetail.textureOrigin = texture ? texture->origin : TextureOrigin::LowerLeft;
+    styleDetail.textureAlphaMode = texture ? texture->alphaMode : TextureAlphaMode::Straight;
+
+    if (needsCompile)
+        requestCompile(styleDetail.bind);
+    else if (needsUpload)
+        requestUpload(styleDetail.styleUBO->bufferInfoList);
+}
+
+void
+MeshSystemNode::traverse(vsg::RecordTraversal& record) const
+{
+    if (status.failed()) return;
+
+    auto vp = record.getCommandBuffer()->viewDependentState->view->camera->getViewport();
+    RenderingState rs{
+        record.getCommandBuffer()->viewID,
+        record.getFrameStamp()->frameCount,
+        { vp.x, vp.y, vp.x + vp.width, vp.y + vp.height }
+    };
+
+    _styleDetailBins.clear();
+    _styleDetailBins.emplace_back(&_defaultStyleDetail);
+
+    auto renderRequest = getRenderRequest(record);
+
+    SRS srs;
+    record.getValue("rocky.worldsrs", srs);
+
+    auto geometryViewID = prepareGeometryView(
+        rs.viewID,
+        srs,
+        rs.frame,
+        renderRequest.purpose == RenderPurpose::RenderTexture);
+
+    // A cache-owning view must wait for update() to generate its geometry.
+    if (geometryViewID == rs.viewID && _viewInfo[rs.viewID].dirty)
+        return;
+
+    // Collect render leaves while locking the registry
+    _registry.read([&](entt::registry& reg)
+        {
+            reg.view<MeshStyle, MeshStyleDetail>().each([&](auto& style, auto& styleDetail)
+                {
+                    _styleDetailBins.emplace_back(&styleDetail);
+                    styleDetail.useTransparencyBin =
+                        style.transparencyBin && renderRequest.purpose == RenderPurpose::Main;
+                });
+
+            int count = 0;
+
+            auto renderEntity = [&](auto entity, auto& comp, auto& active, auto& visibility)
+                {
+                    if (!renderRequest.contains(entity))
+                        return;
+
+                    if (auto* participation = reg.try_get<RenderParticipation>(entity))
+                    {
+                        if ((renderRequest.purpose == RenderPurpose::Main && !participation->mainView) ||
+                            (renderRequest.purpose == RenderPurpose::RenderTexture && !participation->renderTexture))
+                            return;
+                    }
+
+                    auto* geomDetail = reg.try_get<MeshGeometryDetail>(comp.geometry);
+                    if (!geomDetail)
+                        return;
+
+                    auto& geomView = geomDetail->views[geometryViewID];
+
+                    if (geomView.root && visible(visibility, rs))
+                    {
+                        auto* styleDetail = reg.try_get<MeshStyleDetail>(comp.style);
+                        if (!styleDetail)
+                            styleDetail = &_defaultStyleDetail;
+
+                        auto* transformDetail = reg.try_get<TransformDetail>(entity);
+                        bool useTransform = !(renderRequest.purpose == RenderPurpose::RenderTexture && renderRequest.ignoreSourceTransforms);
+                        if (transformDetail)
+                        {
+                            bool passes = (renderRequest.purpose == RenderPurpose::RenderTexture) || transformDetail->views[rs.viewID].passingCull;
+                            if (useTransform && passes)
+                            {
+                                styleDetail->drawList.emplace_back(geomView.root, transformDetail, highlightBinding(entity));
+                                ++count;
+                            }
+                            else if (!useTransform)
+                            {
+                                styleDetail->drawList.emplace_back(geomView.root, nullptr, highlightBinding(entity));
+                                ++count;
+                            }
+                        }
+                        else
+                        {
+                            styleDetail->drawList.emplace_back(geomView.root, nullptr, highlightBinding(entity));
+                            ++count;
+                        }
+                    }
+                };
+
+            if (renderRequest.purpose == RenderPurpose::RenderTexture && !renderRequest.sources.empty())
+            {
+                for (auto source : renderRequest.sources)
+                {
+                    if (reg.all_of<Mesh, ActiveState, Visibility>(source))
+                    {
+                        auto&& [mesh, active, visibility] = reg.get<Mesh, ActiveState, Visibility>(source);
+                        renderEntity(source, mesh, active, visibility);
+                    }
+                }
+            }
+            else
+            {
+                auto iter = reg.view<Mesh, ActiveState, Visibility>();
+                iter.each(renderEntity);
+            }
+
+            // Render collected data.
+            if (count > 0)
+            {
+                for(auto& styleDetail : _styleDetailBins)
+                {
+                    if (!styleDetail->drawList.empty())
+                    {
+                        if (!styleDetail->renderer)
+                        {
+                            styleDetail->renderer = StyleRenderer<MeshStyleDetail>::create();
+                            styleDetail->renderer->pipeline = _pipelines[0].commands;
+                        }
+                        styleDetail->renderer->styleDetail = styleDetail;
+                        styleDetail->renderer->accept(record);
+                    }
+                }
+            }
+        });
+}
+
+void
+MeshSystemNode::traverse(vsg::ConstVisitor& v) const
+{
+    handleConstVisitor<Mesh, MeshGeometryDetail>(v);
+    Inherit::traverse(v);
+}
+
+void
+MeshSystemNode::traverse(vsg::Visitor& v)
+{
+    handleVisitor<MeshGeometryDetail>(v);
+    Inherit::traverse(v);
+}
+
+void
+MeshSystemNode::update(VSGContext vsgcontext)
+{
+    if (status.failed())
+        return;
+
+    // process any objects marked dirty
+    _registry.read([&](entt::registry& reg)
+        {
+            updateHighlights<Mesh>(reg);
+
+            MeshStyle::eachDirty(reg, [&](entt::entity e)
+                {
+                    if (reg.all_of<MeshStyle, MeshStyleDetail>(e))
+                    {
+                        const auto& [style, styleDetail] = reg.get<MeshStyle, MeshStyleDetail>(e);
+                        createOrUpdateStyle(style, styleDetail, reg, vsgcontext);
+                    }
+                });
+
+            // Texture publications may change without a style edit. Multiple
+            // consumers independently observe revisions; unchanged styles do no GPU work.
+            reg.view<MeshStyle, MeshStyleDetail>().each([&](auto& style, auto& detail)
+            {
+                if (!detail.textureMatches(style.texture, reg.try_get<TextureResource>(style.texture)))
+                    createOrUpdateStyle(style, detail, reg, vsgcontext);
+            });
+
+            MeshGeometry::eachDirty(reg, [&](entt::entity e)
+                {
+                    const auto& [geom, geomDetail] = reg.get<MeshGeometry, MeshGeometryDetail>(e);
+                    createOrUpdateGeometry(geom, geomDetail);
+                });
+
+            // Regenerate all geometry for any view that has changed (e.g., an SRS switch or adding a new view)
+            for (ViewIDType viewID = 0; viewID < _viewInfo.size(); ++viewID)
+            {
+                auto& view = _viewInfo[viewID];
+
+                // Check for view expiration (no record traversal)
+                auto frame = vsgcontext->viewer()->getFrameStamp()->frameCount;
+                if (!view.persistent && view.lastFrame < frame - 1u)
+                {
+                    view.srsDef.clear();
+                    view.geometryViewID = std::numeric_limits<ViewIDType>::max();
+                    view.dirty = true;
+                    view.lastFrame = std::numeric_limits<FrameCountType>::max();
+                }
+
+                if (view.dirty)
+                {
+                    reg.view<MeshGeometry, MeshGeometryDetail>().each([&](auto e, auto& geom, auto& geomDetail)
+                        {
+                            createOrUpdateGeometryForView(viewID, geom, geomDetail);
+                        });
+                }
+            }
+        });
+
+    Inherit::update(vsgcontext);
+}
+
+
+MeshGeometryNode::MeshGeometryNode()
+{
+    _drawCommand = vsg::DrawIndexed::create(
+        0, // index count
+        1, // instance count
+        0, // first index
+        0, // vertex offset
+        0  // first instance
+    );
+}
+
+void
+MeshGeometryNode::reserve(size_t num_verts)
+{
+    _verts.reserve(num_verts);
+    _normals.reserve(num_verts);
+    _colors.reserve(num_verts);
+    _uvs.reserve(num_verts);
+    _indices.reserve(num_verts);
+}
+
+void
+MeshGeometryNode::compile(vsg::Context& context)
+{
+    if (commands.empty())
+    {
+        if (_verts.size() == 0)
+            return;
+
+        if (_normals.size() < _verts.size())
+        {
+            _normals.assign(_verts.size(), vsg::vec3(0.0f, 0.0f, 0.0f));
+
+            for (size_t i = 0; i < _indices.size(); i += 3)
+            {
+                auto i0 = _indices[i];
+                auto i1 = _indices[i + 1];
+                auto i2 = _indices[i + 2];
+                auto v0 = _verts[i0];
+                auto v1 = _verts[i1];
+                auto v2 = _verts[i2];
+                auto edge1 = v1 - v0;
+                auto edge2 = v2 - v0;
+                auto faceNormal = vsg::cross(edge1, edge2);
+                _normals[i0] += faceNormal;
+                _normals[i1] += faceNormal;
+                _normals[i2] += faceNormal;
+            }
+            for (auto& n : _normals)
+            {
+                n = vsg::normalize(n);
+            }
+        }
+
+        if (_colors.empty())
+            _colors.assign(_verts.size(), _defaultColor);
+
+        if (_uvs.empty())
+            _uvs.assign(_verts.size(), vsg::vec2(0, 0));
+
+        auto vert_array = vsg::vec3Array::create(_verts.size(), _verts.data());
+        auto normal_array = vsg::vec3Array::create(_normals.size(), _normals.data());
+        auto color_array = vsg::vec4Array::create(_colors.size(), _colors.data());
+        auto uv_array = vsg::vec2Array::create(_uvs.size(), _uvs.data());
+        auto index_array = vsg::uintArray::create(_indices.size(), _indices.data());
+
+        assignArrays({ vert_array, normal_array, color_array, uv_array });
+        assignIndices(index_array);
+
+        _drawCommand->indexCount = (uint32_t)index_array->size();
+
+        commands.push_back(_drawCommand);
+    }
+
+    vsg::Geometry::compile(context);
+}

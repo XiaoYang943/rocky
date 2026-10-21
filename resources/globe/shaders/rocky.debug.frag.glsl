@@ -4,12 +4,12 @@
  * MIT License
  */
 #extension GL_EXT_fragment_shader_barycentric : enable
-#pragma import_defines(ROCKY_HAS_VK_BARYCENTRIC_EXTENSION)
+#pragma import_defines(GEOSTUDIO_NATIVE_HAS_VK_BARYCENTRIC_EXTENSION)
 
 
 void applyDebugTriangles(inout vec4 outColor, float strength)
 {
-#if defined(ROCKY_HAS_VK_BARYCENTRIC_EXTENSION) && defined(GL_EXT_fragment_shader_barycentric)
+#if defined(GEOSTUDIO_NATIVE_HAS_VK_BARYCENTRIC_EXTENSION) && defined(GL_EXT_fragment_shader_barycentric)
     // wireframe overlay
     vec3 b = fwidth(gl_BaryCoordEXT.xyz);
     vec3 edge = smoothstep(vec3(0.0), b, gl_BaryCoordEXT.xyz);

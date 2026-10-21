@@ -1,7 +1,7 @@
 set(APP_NAME geostudio-globe-tests)
 
 set(SOURCES tests.cpp tests_projection_lifecycle.cpp tests_tessellation.cpp tests_slug_fallback.cpp
-    tests_terrain_anchor.cpp tests_overlay_depth.cpp tests_overlay_lifecycle.cpp tests_texture.cpp tests_units.cpp catch.hpp)
+    tests_terrain_anchor.cpp tests_overlay_depth.cpp tests_overlay_lifecycle.cpp tests_texture.cpp tests_units.cpp tests_antimeridian.cpp catch.hpp)
 
 add_executable(${APP_NAME} ${SOURCES})
 
@@ -23,6 +23,11 @@ if (BUILD_WITH_JSON)
 endif()
 
 
-add_test(NAME geostudio-globe-tests COMMAND ${APP_NAME})
+add_test(NAME geostudio-globe-tests COMMAND ${APP_NAME} "~[environment]~[requires-grid]~[.]~[issue229-repro]")
+set_tests_properties(geostudio-globe-tests PROPERTIES LABELS "unit;offline" TIMEOUT 180)
+option(GEOSTUDIO_ENVIRONMENT_TESTS "Run network and PROJ grid tests" OFF)
+if(GEOSTUDIO_ENVIRONMENT_TESTS)
+    add_test(NAME environment-contracts COMMAND ${APP_NAME} "[environment],[requires-grid]")
+endif()
 
 set_target_properties(${APP_NAME} PROPERTIES FOLDER "tests")

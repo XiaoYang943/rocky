@@ -4,12 +4,12 @@
  * MIT License
  */
 #include "catch.hpp"
-#include <geostudio/native/globe/vsg/ecs/OpticsSystem.h>
-#include <geostudio/native/globe/vsg/ecs/OverlayBakeSystem.h>
-#include <geostudio/native/globe/vsg/ecs/TransformDetail.h>
-#include <geostudio/native/globe/vsg/terrain/TerrainNode.h>
-#include <geostudio/native/globe/vsg/terrain/GeometryPool.h>
-#include <geostudio/native/globe/vsg/VSGUtils.h>
+#include <geostudio/native/render/entity/OpticsSystem.h>
+#include <geostudio/native/render/entity/OverlayBakeSystem.h>
+#include <geostudio/native/render/entity/TransformDetail.h>
+#include <geostudio/native/render/terrain/TerrainNode.h>
+#include <geostudio/native/render/terrain/GeometryPool.h>
+#include <geostudio/native/render/vsg/VSGUtils.h>
 #include <limits>
 
 using namespace geostudio::native;

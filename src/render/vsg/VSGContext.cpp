@@ -1,0 +1,875 @@
+/**
+ * rocky c++
+ * Copyright 2025 Pelican Mapping
+ * MIT License
+ */
+#include <geostudio/native/render/vsg/VSGContext.h>
+#include <geostudio/native/render/vsg/VSGUtils.h>
+#include <geostudio/native/data/raster/Image.h>
+#include <geostudio/native/core/io/URI.h>
+#include <geostudio/native/core/geo/GeoExtent.h>
+#include <filesystem>
+#include <set>
+
+#include <spdlog/sinks/stdout_color_sinks.h>
+
+GEOSTUDIO_NATIVE_ABOUT(vulkanscenegraph, VSG_VERSION_STRING)
+
+#ifdef GEOSTUDIO_NATIVE_HAS_VSGXCHANGE
+#include <geostudio/native/render/import/all/all.h>
+GEOSTUDIO_NATIVE_ABOUT(vsgxchange, VSGXCHANGE_VERSION_STRING)
+#endif
+
+#ifdef GEOSTUDIO_NATIVE_HAS_GDAL
+#include <geostudio/native/drivers/gdal/GDAL.h>
+#endif
+
+using namespace geostudio::native;
+using namespace geostudio::native::detail;
+
+namespace
+{
+    //! Removes a view's compile contexts while CompileManager exclusively owns its compile traversal.
+    struct RemoveViewCompileContexts : public vsg::Inherit<vsg::Object, RemoveViewCompileContexts>
+    {
+        std::set<const vsg::View*> views;
+        bool completed = false;
+
+        //! Collects the retiring view and its owned shadow views; the caller keeps them alive during removal.
+        void add(const vsg::View* view)
+        {
+            if (view && views.insert(view).second && view->viewDependentState)
+            {
+                for (const auto& shadow : view->viewDependentState->shadowMaps)
+                    add(shadow.view);
+            }
+        }
+
+        //! Prunes contexts only during compilation; resource collection requires no additional resources.
+        void accept(vsg::Visitor& visitor) override
+        {
+            if (auto* compile = dynamic_cast<vsg::CompileTraversal*>(&visitor))
+            {
+                compile->contexts.remove_if([&](const vsg::ref_ptr<vsg::Context>& context)
+                    {
+                        auto view = context->view.ref_ptr();
+                        return views.count(view.get()) != 0 || (!view && context->viewDependentState);
+                    });
+                completed = true;
+            }
+        }
+    };
+
+    // custom VSG logger that redirects to spdlog.
+    class VSG_to_Spdlog_Logger : public vsg::Inherit<vsg::Logger, VSG_to_Spdlog_Logger>
+    {
+    public:
+        std::shared_ptr<spdlog::logger> vsg_logger;
+
+        VSG_to_Spdlog_Logger()
+        {
+            auto sink = std::make_shared<spdlog::sinks::stdout_color_sink_mt>();
+            vsg_logger = std::make_shared<spdlog::logger>("vsg", sink);
+            vsg_logger->set_pattern("%^[%n %l]%$ %v");
+        }
+
+    protected:
+        const char* ignore = "[rocky.ignore]";
+
+        void debug_implementation(const std::string_view& message) override {
+            if (message.rfind(ignore, 0) != 0) {
+                vsg_logger->set_level(Log()->level());
+                vsg_logger->debug(message);
+            }
+        }
+        void info_implementation(const std::string_view& message) override {
+            if (message.rfind(ignore, 0) != 0) {
+                vsg_logger->set_level(Log()->level());
+                vsg_logger->info(message);
+            }
+        }
+        void warn_implementation(const std::string_view& message) override {
+            if (message.rfind(ignore, 0) != 0) {
+                vsg_logger->set_level(Log()->level());
+                vsg_logger->warn(message);
+            }
+        }
+        void error_implementation(const std::string_view& message) override {
+            if (message.rfind(ignore, 0) != 0) {
+                vsg_logger->set_level(Log()->level());
+                vsg_logger->error(message);
+            }
+        }
+        void fatal_implementation(const std::string_view& message) override {
+            if (message.rfind(ignore, 0) != 0) {
+                vsg_logger->set_level(Log()->level());
+                vsg_logger->critical(message);
+            }
+        }
+    };
+
+    // recursive search for a vsg::ReaderWriters that matches the extension
+    // TODO: expand to include 'protocols' I guess
+    vsg::ref_ptr<vsg::ReaderWriter> findReaderWriter(const std::string& extension, const vsg::ReaderWriters& readerWriters)
+    {
+        vsg::ref_ptr<vsg::ReaderWriter> output;
+
+        for (auto& rw : readerWriters)
+        {
+            vsg::ReaderWriter::Features features;
+            auto crw = dynamic_cast<vsg::CompositeReaderWriter*>(rw.get());
+            if (crw)
+            {
+                output = findReaderWriter(extension, crw->readerWriters);
+            }
+            else if (rw->getFeatures(features))
+            {
+                auto j = features.extensionFeatureMap.find(extension);
+
+                if (j != features.extensionFeatureMap.end())
+                {
+                    if (j->second & vsg::ReaderWriter::FeatureMask::READ_ISTREAM)
+                    {
+                        output = rw;
+                    }
+                }
+            }
+
+            if (output)
+                break;
+        }
+
+        return output;
+    }
+
+#ifdef GEOSTUDIO_NATIVE_HAS_GDAL
+    /**
+    * VSG reader-writer that uses GDAL to read some image formats that are
+    * not supported by vsgXchange
+    */
+    class GDAL_VSG_ReaderWriter : public vsg::Inherit<vsg::ReaderWriter, GDAL_VSG_ReaderWriter>
+    {
+    public:
+        Features _features;
+
+        GDAL_VSG_ReaderWriter()
+        {
+            _features.extensionFeatureMap[vsg::Path(".webp")] = READ_ISTREAM;
+            _features.extensionFeatureMap[vsg::Path(".tif")] = READ_ISTREAM;
+            _features.extensionFeatureMap[vsg::Path(".jpg")] = READ_ISTREAM;
+            _features.extensionFeatureMap[vsg::Path(".png")] = READ_ISTREAM;
+        }
+
+        bool getFeatures(Features& out) const override
+        {
+            out = _features;
+            return true;
+        }
+
+        vsg::ref_ptr<vsg::Object> read(std::istream& in, vsg::ref_ptr<const vsg::Options> options = {}) const override
+        {
+            if (!options || _features.extensionFeatureMap.count(options->extensionHint) == 0)
+                return {};
+
+            std::stringstream buf;
+            buf << in.rdbuf() << std::flush;
+            std::string data = buf.str();
+
+            std::string gdal_driver =
+                options->extensionHint.string() == ".webp" ? "webp" :
+                options->extensionHint.string() == ".tif" ? "gtiff" :
+                options->extensionHint.string() == ".jpg" ? "jpeg" :
+                options->extensionHint.string() == ".png" ? "png" :
+                "";
+
+            auto result = GDAL_detail::readImage((unsigned char*)data.c_str(), data.length(), gdal_driver);
+
+            if (result.ok())
+                return moveImageToVSG(result.value());
+            else
+                return { };
+        }
+    };
+#endif
+
+    std::string inferContentTypeFromStream(std::istream& stream)
+    {
+        // Get the length of the stream
+        stream.seekg(0, std::ios::end);
+        unsigned int len = stream.tellg();
+        stream.seekg(0, std::ios::beg);
+
+        if (len < 16) return {};
+
+        // Read a 16 byte header
+        char data[16];
+        stream.read(data, 16);
+
+        // Reset reading
+        stream.seekg(0, std::ios::beg);
+
+        return URI::inferContentType(std::string(data, 16));
+    }
+
+    bool foundShaders(const vsg::Paths& searchPaths)
+    {
+        auto options = vsg::Options::create();
+        options->paths = searchPaths;
+        auto found = vsg::findFile(vsg::Path("shaders/rocky.terrain.vert"), options);
+        return !found.empty();
+    }    
+    
+    /**
+    * An update operation that maintains a priroity queue for update tasks.
+    * This sits in the VSG viewer's update operations queue indefinitely
+    * and runs once per frame. It chooses the highest priority task in its
+    * queue and runs it. It will run one task per frame so that we do not
+    * risk frame drops. It will automatically discard any tasks that have
+    * been abandoned (no Future exists).
+    */
+    struct PriorityUpdateQueue : public vsg::Inherit<vsg::Operation, PriorityUpdateQueue>
+    {
+        std::mutex _mutex;
+
+        struct Task {
+            Task() = default;
+            Task(const Task& rhs) = default;
+            Task(Task&& rhs) = default;
+            Task& operator=(const Task& rhs) = default;
+            Task& operator=(Task&& rhs) = default;
+            Task(vsg::Operation* a, std::function<float()> b) : function(a), get_priority(b) {}
+            vsg::ref_ptr<vsg::Operation> function;
+            std::function<float()> get_priority;
+        };
+        std::vector<Task> _queue;
+
+        // runs one task per frame.
+        void run() override
+        {
+            if (!_queue.empty())
+            {
+                Task task;
+                {
+                    std::scoped_lock lock(_mutex);
+
+                    // sort from low to high priority
+                    std::sort(_queue.begin(), _queue.end(),
+                        [](const Task& lhs, const Task& rhs)
+                        {
+                            if (lhs.get_priority == nullptr)
+                                return false;
+                            else if (rhs.get_priority == nullptr)
+                                return true;
+                            else
+                                return lhs.get_priority() < rhs.get_priority();
+                        }
+                    );
+
+                    while (!_queue.empty())
+                    {
+                        // pop the highest priority off the back.
+                        task = _queue.back();
+                        _queue.pop_back();
+
+                        // check for cancelation - if the task is already canceled, 
+                        // discard it and fetch the next one.
+                        auto po = dynamic_cast<Cancelable*>(task.function.get());
+                        if (po == nullptr || !po->canceled())
+                            break;
+                        else
+                            task = { };
+                    }
+                }
+
+                if (task.function)
+                {
+                    task.function->run();
+                }
+            }
+        }
+    };
+}
+
+
+
+
+VSGContextImpl::VSGContextImpl(vsg::ref_ptr<vsg::Viewer> viewer) :
+    geostudio::native::ContextImpl(),
+    _viewer(viewer)
+{
+    if (!_viewer)
+        _viewer = vsg::Viewer::create();
+
+    int argc = 0;
+    const char* argv[1] = { "rocky" };
+    ctor(argc, (char**)argv);
+}
+
+VSGContextImpl::VSGContextImpl(vsg::ref_ptr<vsg::Viewer> viewer, int& argc, char** argv) :
+    geostudio::native::ContextImpl(),
+    _viewer(viewer)
+{
+    if (!_viewer)
+        _viewer = vsg::Viewer::create();
+
+    ctor(argc, argv);
+}
+
+void
+VSGContextImpl::ctor(int& argc, char** argv)
+{
+    vsg::CommandLine args(&argc, argv);
+
+    // holds all registered loader plugins
+    readerWriterOptions = vsg::Options::create();
+
+    // hints to pass to all shader loaders (like defines)
+    shaderCompileSettings = vsg::ShaderCompileSettings::create();
+
+    // global data that systems can share and use
+    sharedRenderData = std::make_shared<SharedRenderData>();
+
+    _priorityUpdateQueue = PriorityUpdateQueue::create();
+
+    // initialize the deferred deletion collection.
+    // a large number of frames ensures objects will be safely destroyed and
+    // and we won't have too many deletions per frame.
+    _gc.resize(8);
+
+    // Reserve capacity for this so we can copy it without worry about reallocating
+    activeViewIDs.reserve(GEOSTUDIO_NATIVE_MAX_NUMBER_OF_VIEWS);
+
+    args.read(readerWriterOptions);
+
+    // redirect the VSG logger to our spdlog
+    vsg::Logger::instance() = new VSG_to_Spdlog_Logger();
+
+    // set the logging level from the command line
+    std::string log_level;
+    if (args.read("--log-level", log_level))
+    {
+        if (log_level == "debug") Log()->set_level(spdlog::level::debug);
+        else if (log_level == "info") Log()->set_level(spdlog::level::info);
+        else if (log_level == "warn") Log()->set_level(spdlog::level::warn);
+        else if (log_level == "error") Log()->set_level(spdlog::level::err);
+        else if (log_level == "critical") Log()->set_level(spdlog::level::critical);
+        else if (log_level == "off") Log()->set_level(spdlog::level::off);
+    }
+
+#ifdef GEOSTUDIO_NATIVE_HAS_GDAL
+    readerWriterOptions->add(GDAL_VSG_ReaderWriter::create());
+#endif
+
+#ifdef GEOSTUDIO_NATIVE_HAS_VSGXCHANGE
+    // Adds all the readerwriters in vsgxchange to the options data.
+    readerWriterOptions->add(geostudio::native::io::all::create());
+#endif
+
+    // For system fonts
+    readerWriterOptions->paths.push_back("C:/Windows/Fonts");
+    readerWriterOptions->paths.push_back("/usr/share/fonts/truetype");
+    readerWriterOptions->paths.push_back("/etc/fonts");
+    readerWriterOptions->paths.push_back("/usr/local/share/GeoStudioNative/resources/globe/data");
+
+    // establish search paths for shaders and data:
+    auto vsgPaths = vsg::getEnvPaths("VSG_FILE_PATH");
+    searchPaths.insert(searchPaths.end(), vsgPaths.begin(), vsgPaths.end());
+
+    auto rockyPaths = vsg::getEnvPaths("GEOSTUDIO_NATIVE_FILE_PATH");
+    searchPaths.insert(searchPaths.end(), rockyPaths.begin(), rockyPaths.end());
+
+    // add some default places to look for shaders and resources, relative to the executable.
+    const char* relative_paths_to_add[] = {
+        "../share/GeoStudioNative/resources/globe",                        // running from standard install location
+        "../../../../../resources/globe",          // running from visual studio with build folder inside repo
+        "../../../../../repo/resources/globe",     // running from visual studio with a repo folder :)
+        "../../../../resources/globe"              // running from visual studio with an in-source build :(
+    };
+
+    auto exec_path = std::filesystem::path(getExecutableLocation());
+    Log()->debug("Running from: {}", exec_path.string());
+
+    for (auto& relative_path : relative_paths_to_add)
+    {
+        auto path = (exec_path.remove_filename() / relative_path).lexically_normal();
+        if (!path.empty())
+            searchPaths.push_back(vsg::Path(path.generic_string()));
+    }
+
+    searchPaths.emplace_back("/usr/local/share/GeoStudioNative/resources/globe");
+
+    if (!foundShaders(searchPaths))
+    {
+        Log()->warn("Trouble: Rocky may not be able to find its shaders. "
+            "Consider setting one of the environment variables VSG_FILE_PATH or GEOSTUDIO_NATIVE_FILE_PATH.");
+
+        status = Failure(Failure::ResourceUnavailable, "Cannot find shaders - check your GEOSTUDIO_NATIVE_FILE_PATH");
+        return;
+    }
+
+    Log()->debug("Search paths:");
+    for (auto& path : searchPaths)
+        Log()->debug("  {}", path.string());
+
+    // Install a readImage function that uses the VSG facility
+    // for reading data. We may want to subclass Image with something like
+    // NativeImage that just hangs on to the vsg::Data instead of
+    // stripping it out and later converting it back; or that only transcodes
+    // it if it needs to. vsg::read_cast() might do some internal caching
+    // as well -- need to look into that.
+    io.services().readImageFromURI = [](const std::string& location, const geostudio::native::IOOptions& io)
+    {
+        auto result = URI(location).read(io);
+        if (result.ok())
+        {
+            std::istringstream buf(result.value().content.data);
+            return io.services().readImageFromStream(buf, result.value().content.type, io);
+        }
+        return Result<std::shared_ptr<Image>>(Failure(Failure::ResourceUnavailable, "Data is null"));
+    };
+
+    // map of mime-types to extensions that VSG can understand
+    static const std::unordered_map<std::string, std::string> ext_for_mime_type = {
+        { "image/bmp", ".bmp" },
+        { "image/gif", ".gif" },
+        { "image/jpg", ".jpg" },
+        { "image/jpeg", ".jpg" },
+        { "image/png", ".png" },
+        { "image/tga", ".tga" },
+        { "image/tif", ".tif" },
+        { "image/tiff", ".tif" },
+        { "image/webp", ".webp" }
+    };
+
+    // To read from a stream, we have to search all the VS readerwriters to
+    // find one that matches the 'extension' we want. We also have to put that
+    // extension in the options structure as a hint.
+    io.services().readImageFromStream = [options(readerWriterOptions)](std::istream& location, std::string contentType, const geostudio::native::IOOptions& io) -> Result<std::shared_ptr<Image>>
+        {
+            // try the mime-type mapping:
+            auto i = ext_for_mime_type.find(contentType);
+            if (i != ext_for_mime_type.end())
+            {
+                auto rw = findReaderWriter(i->second, options->readerWriters);
+                if (rw != nullptr)
+                {
+                    auto local_options = vsg::Options::create(*options);
+                    local_options->extensionHint = i->second;
+                    auto result = rw->read_cast<vsg::Data>(location, local_options);
+                    return makeImageFromVSG(result);
+                }
+            }
+
+            // mime-type didn't work; try the content type directly as an extension
+            if (!contentType.empty())
+            {
+                auto contentTypeAsExtension = contentType[0] != '.' ? ("." + contentType) : contentType;
+                auto rw = findReaderWriter(contentTypeAsExtension, options->readerWriters);
+                if (rw != nullptr)
+                {
+                    auto local_options = vsg::Options::create(*options);
+                    local_options->extensionHint = contentTypeAsExtension;
+                    auto result = rw->read_cast<vsg::Data>(location, local_options);
+                    return makeImageFromVSG(result);
+                }
+            }
+
+            // last resort, try checking the data itself
+            // TODO: maybe this should be a FIRST resort?
+            auto inferredContentType = inferContentTypeFromStream(location);
+            if (!inferredContentType.empty())
+            {
+                auto i = ext_for_mime_type.find(inferredContentType);
+                if (i != ext_for_mime_type.end())
+                {
+                    auto rw = findReaderWriter(i->second, options->readerWriters);
+                    if (rw != nullptr)
+                    {
+                        auto local_options = vsg::Options::create(*options);
+                        local_options->extensionHint = i->second;
+                        auto result = rw->read_cast<vsg::Data>(location, local_options);
+                        return makeImageFromVSG(result);
+                    }
+                }
+            }
+
+            return Failure(Failure::ServiceUnavailable, "No image reader for \"" + contentType + "\"");
+        };
+
+    // caches URI request results.
+    // the user may replace this with any custom cache.
+    io.services().contentCache = std::make_shared<geostudio::native::detail::LRUCache<std::string, Result<Content>>>(256);
+
+    // weak cache of resident image (and elevation) rasters
+    io.services().residentImageCache = std::make_shared<ResidentCache<TileLayerCacheKey, Image, GeoExtent>>();
+
+    // remembers failed URI requests so we don't repeat them
+    io.services().deadpool = std::make_shared<DealpoolService>(4096);
+
+
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(_viewer && _viewer->updateOperations, void());
+
+    // install an update operation on the viewer that invokes update() on this object.
+    _updateOperation = LambdaOperation::create([this]() { this->update(); });
+    _viewer->updateOperations->add(_updateOperation, vsg::UpdateOperations::ALL_FRAMES);
+}
+
+VSGContextImpl::~VSGContextImpl()
+{
+    if (_viewer && _updateOperation)
+    {
+        _viewer->updateOperations->remove(_updateOperation);
+    }
+
+#ifdef GEOSTUDIO_NATIVE_DEBUG_MEMCHECK
+    Log()->debug("~VSGContextImpl");
+#endif
+}
+
+vsg::ref_ptr<vsg::View>
+VSGContextImpl::createView(vsg::ref_ptr<vsg::Camera> camera, vsg::ref_ptr<vsg::Node> scene)
+{
+    auto view = vsg::View::create(camera, scene);
+    return trackView(view) ? view : vsg::ref_ptr<vsg::View>{};
+}
+
+bool
+VSGContextImpl::trackView(vsg::View* view)
+{
+    if (!view)
+        return false;
+
+    // VSG IDs are global, so a local view count alone cannot validate this array index.
+    if (view->viewID >= GEOSTUDIO_NATIVE_MAX_NUMBER_OF_VIEWS)
+    {
+        Log()->warn("Cannot use view {}: GEOSTUDIO_NATIVE_MAX_NUMBER_OF_VIEWS is {}",
+            view->viewID, GEOSTUDIO_NATIVE_MAX_NUMBER_OF_VIEWS);
+        return false;
+    }
+
+    std::scoped_lock lock(_viewsMutex);
+    for (auto i = _viewsInUse.begin(); i != _viewsInUse.end();)
+    {
+        auto live = i->ref_ptr();
+        if (live.get() == view)
+            return true;
+        if (!live)
+            i = _viewsInUse.erase(i);
+        else
+            ++i;
+    }
+    _viewsInUse.emplace_back(view);
+    return true;
+}
+
+std::size_t
+VSGContextImpl::numViewsInUse() const
+{
+    std::scoped_lock lock(_viewsMutex);
+    std::array<bool, GEOSTUDIO_NATIVE_MAX_NUMBER_OF_VIEWS> used{};
+    std::size_t count = 0;
+    for (auto& observer : _viewsInUse)
+    {
+        auto view = observer.ref_ptr();
+        if (view && view->viewID < used.size() && !used[view->viewID])
+        {
+            used[view->viewID] = true;
+            ++count;
+        }
+    }
+    return count;
+}
+
+vsg::ref_ptr<vsg::Device>
+VSGContextImpl::device()
+{
+    return _viewer->windows().size() > 0 ? _viewer->windows().front()->getOrCreateDevice() : nullptr;
+}
+
+VulkanExtensions*
+VSGContextImpl::ext()
+{
+    if (!_vulkanExtensions)
+    {
+        std::scoped_lock lock(_compileMutex);
+        if (!_vulkanExtensions)
+        {
+            GEOSTUDIO_NATIVE_HARD_ASSERT(device());
+            _vulkanExtensions = VulkanExtensions::create(device());
+        }
+    }
+    return _vulkanExtensions;
+}
+
+void
+VSGContextImpl::scheduleMeteredUpdate(vsg::Operation* operation, std::function<float()> getPriority)
+{
+    auto pq = dynamic_cast<PriorityUpdateQueue*>(_priorityUpdateQueue.get());
+    if (pq)
+    {
+        std::scoped_lock lock(pq->_mutex);
+        pq->_queue.emplace_back(operation, getPriority);
+    }
+}
+
+void
+VSGContextImpl::onNextUpdate(std::function<void(VSGContext)> function)
+{
+    // makes it illegal to call this function recursively
+    std::scoped_lock lock(_functionsToRunDuringNextUpdateMutex);
+    _functionsToRunDuringNextUpdate.emplace_back(function);
+}
+
+vsg::CompileResult
+VSGContextImpl::compile(vsg::ref_ptr<vsg::Object> compilable)
+{
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(compilable.valid(), {});
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(_viewer && _viewer->compileManager, {});
+
+    // Guard view retirement through result publication without blocking ordinary frame updates.
+    std::shared_lock viewLock(_viewCompileMutex);
+
+    // note: this can block (with a fence) until a compile traversal is available.
+    // Be sure to group as many compiles together as possible for maximum performance.
+    auto cr = _viewer->compileManager->compile(compilable);
+
+    if (cr)
+    {
+        // compile results are stored and processed later during update
+        std::unique_lock lock(_compileMutex);
+        _compileResult.add(cr);
+    }
+
+    return cr;
+}
+
+void
+VSGContextImpl::dispose(vsg::ref_ptr<vsg::Object> object)
+{
+    if (object)
+    {
+        // if the user installed a custom disposer, use it
+        if (disposer)
+        {
+            disposer(object);
+        }
+
+        // otherwise use our own
+        else
+        {
+            std::unique_lock lock(_gc_mutex);
+            _gc.back().emplace_back(object);
+        }
+
+        requestFrame();
+    }
+}
+
+void
+VSGContextImpl::upload(const vsg::BufferInfoList& bufferInfos, bool now)
+{
+    // A way to upload GPU buffers without using the dirty()/DYNAMIC_DATA mechanism,
+    // which gets slow with a large number of buffers.
+    // inspired by: https://github.com/vsg-dev/VulkanSceneGraph/discussions/1572
+    vsg::BufferInfoList validBufferInfos;
+    validBufferInfos.reserve(bufferInfos.size());
+
+    for (auto& bi : bufferInfos)
+    {
+        if (bi && bi->data)
+        {
+            bi->data->dirty();
+            validBufferInfos.emplace_back(bi);
+        }
+    }
+
+    if (!validBufferInfos.empty())
+    {
+        auto& tasks = _viewer->recordAndSubmitTasks;
+        for (auto& task : tasks)
+        {
+            task->transferTask->assign(validBufferInfos);
+
+            if (now)
+            {
+                task->transferTask->transferData(vsg::TransferTask::TRANSFER_ALL);
+            }
+        }
+        
+        requestFrame();
+    }
+}
+
+void
+VSGContextImpl::upload(const vsg::ImageInfoList& imageInfos, bool now)
+{
+    // A way to upload images without using the dirty()/DYNAMIC_DATA mechanism,
+    // which gets slow with a large number of buffers.
+    // inspired by: https://github.com/vsg-dev/VulkanSceneGraph/discussions/1572
+    vsg::ImageInfoList validImageInfos;
+    validImageInfos.reserve(imageInfos.size());
+    for (auto& bi : imageInfos)
+    {
+        if (bi && bi->imageView && bi->imageView->image && bi->imageView->image->data)
+        {
+            bi->imageView->image->data->dirty();
+            validImageInfos.emplace_back(bi);
+        }
+    }
+
+    if (!validImageInfos.empty())
+    {
+        auto& tasks = _viewer->recordAndSubmitTasks;
+        for (auto& task : tasks)
+        {
+            task->transferTask->assign(validImageInfos);
+
+            if (now)
+            {
+                task->transferTask->transferData(vsg::TransferTask::TRANSFER_ALL);
+            }
+        }
+
+        requestFrame();
+    }
+}
+
+void
+VSGContextImpl::requestFrame()
+{
+    ++renderRequests;
+}
+
+void
+VSGContextImpl::update()
+{
+    // Every-time update functions
+    onUpdate.fire(this);
+
+    // One-time update functions
+    // Swap-and-run lets update functions re-queue themselves
+    if (!_functionsToRunDuringNextUpdate.empty())
+    {
+        std::vector<std::function<void(VSGContext)>> temp;
+        {
+            std::scoped_lock lock(_functionsToRunDuringNextUpdateMutex);
+            temp.swap(_functionsToRunDuringNextUpdate);
+        }
+        for (auto& f : temp)
+        {
+            f(this);
+        }
+    }
+
+    // One-shot update priority queue
+    _priorityUpdateQueue->run();
+
+    // Merge compilation results
+    {
+        std::unique_lock lock(_compileMutex);
+        if (_compileResult)
+        {
+            if (_compileResult.requiresViewerUpdate())
+            {
+                vsg::updateViewer(*_viewer, _compileResult);
+            }
+            _compileResult.reset();
+
+            requestFrame();
+        }
+    }
+
+    // process the garbage collector
+    {
+        std::unique_lock lock(_gc_mutex);
+        // unref everything in the oldest collection:
+        _gc.front().clear();
+        // move the empty collection to the back:
+        _gc.emplace_back(std::move(_gc.front()));
+        _gc.pop_front();
+    }
+
+    // keep the frames running if a database pager is active
+    auto& tasks = viewer()->recordAndSubmitTasks;
+    if (!tasks.empty() && tasks[0]->databasePager && tasks[0]->databasePager->numActiveRequests > 0)
+    {
+        requestFrame();
+    }
+}
+
+
+// Call this when adding a new rendergraph to the scene.
+void
+VSGContextImpl::compileRenderGraph(vsg::ref_ptr<vsg::RenderGraph> renderGraph, vsg::ref_ptr<vsg::Window> window)
+{
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(renderGraph, void());
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(window, void());
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(viewer(), void());
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(viewer()->compileManager, void());
+
+    auto view = detail::find<vsg::View>(renderGraph);
+
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(view, void());
+
+    // Keep later resource compilation compatible with this view's render target.
+    if (renderGraph->framebuffer)
+        viewer()->compileManager->add(*renderGraph->framebuffer, vsg::ref_ptr<vsg::View>(view));
+    else
+        viewer()->compileManager->add(*window, vsg::ref_ptr<vsg::View>(view));
+
+    // Compile the new render pass for this view.
+    // The lambda idiom is taken from vsgexamples/dynamicviews
+    auto result = viewer()->compileManager->compile(renderGraph, 
+        [view](vsg::Context& compileContext) -> bool
+        {
+            return compileContext.view.ref_ptr() == view;
+        });
+
+    // if something was compiled, we need to update the viewer:
+    if (result.requiresViewerUpdate())
+    {
+        vsg::updateViewer(*viewer(), result);
+    }
+}
+
+bool
+VSGContextImpl::removeViewCompileContexts(vsg::View* view)
+{
+    if (!view)
+        return true;
+
+    std::unique_lock viewLock(_viewCompileMutex);
+    auto removal = RemoveViewCompileContexts::create();
+    removal->add(view);
+
+    if (_viewer && _viewer->compileManager && _viewer->status->active())
+    {
+        // VSG currently owns one compile traversal and has no remove API. Run through its manager
+        // so removal waits for in-flight compilation and also applies to later background compiles.
+        auto result = _viewer->compileManager->compile(removal);
+        if (!removal->completed)
+        {
+            Log()->warn("Cannot remove view {} compile contexts: {}", view->viewID, result.message);
+            return false;
+        }
+    }
+
+    std::unique_lock lock(_compileMutex);
+    for (auto* removed : removal->views)
+        _compileResult.views.erase(removed);
+
+    return true;
+}
+
+void
+VSGContextImpl::recompileDescriptorSet(vsg::ref_ptr<vsg::DescriptorSet> descriptorSet)
+{
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(descriptorSet, void());
+    GEOSTUDIO_NATIVE_SOFT_ASSERT_AND_RETURN(viewer(), void());
+
+    viewer()->deviceWaitIdle();
+    descriptorSet->release();
+    compile(descriptorSet);
+    //vsg::Context context(device());
+    //descriptorSet->compile(context);
+}

@@ -1,44 +1,68 @@
 # SDK 架构与迁移
 
-当前 GeoStudioNative 0.2.0，主任务为 [NativeSDK-002](任务/002-Namespace与模块重组.md)。此前 P0 的行为与验证保留在 [NativeSDK-001](任务/001-NativeSDK整合P0.md)，不以旧验收覆盖新 ABI。
+当前 GeoStudioNative 0.3.0，主任务 [NativeSDK-003](任务/003-能力模块重组与代码测试.md)。头源同目录、按能力组织，来源以 provenance 映射保留；没有保留 globe／io／tiles3d 三个顶层源码组件。
 
-## 模块关系
+## 依赖与职责
 
 ```mermaid
 graph TD
-    UI[React / Tauri] -->|IPC| Demo[native-gis-demo]
-    Demo --> Native[GeoStudio::Native]
-    Native --> Globe[Globe / geostudio::native]
-    Native --> IO[IO / geostudio::native::io]
-    Native --> Tiles[Tiles3D / geostudio::native::tiles3d]
-    Globe --> IO
-    Globe --> VSG[VulkanSceneGraph]
-    IO --> VSG
-    Tiles --> VSG
-    Tiles --> Cesium[Cesium Native]
-    Globe --> GDAL[GDAL / PROJ]
+    Host[React / Tauri 宿主] --> Runtime
+    Demo[Demo 的可选 ImGui adapter] --> Runtime
+    Runtime --> Render
+    Runtime --> RuntimeTiles[RuntimeTiles DLL]
+    Render --> Streaming
+    Render --> Drivers
+    Render --> Import[Import DLL]
+    Render --> Scene
+    Streaming --> Scene
+    Drivers --> Scene
+    Scene --> Data
+    Data --> Core
+    RuntimeTiles --> CesiumAdapter[私有 Cesium adapter]
+    CesiumAdapter --> Cesium[外部 Cesium Native]
+    Import --> VSG
+    Render --> VSG
 ```
 
-src/globe、src/io、src/tiles3d 分别构建。公开 header 在 include/geostudio/native 下；Tiles3D runtime header 在 src/tiles3d/include，只用于私有构建。examples／tests／resources 独立，不把外部依赖源码并入自有 namespace。
+`src/core` 包含 base／geo／math／async／cache／io；`src/data` 包含 vector／raster／elevation；`src/scene` 定义 Map、Layer、Entity 和 Viewpoint；`src/drivers` 按数据源分组；`src/streaming` 负责 Terrain 数据组装；`src/render` 负责 VSG 表达、分页和渲染算法；`src/runtime` 只负责装配、运行和生命周期。
 
-## API 与 ABI
+VSG 的分类职责和 osgEarth 的 Drivers 边界用于指导结构，具体分层以本工程的真实 include 和链接依赖为准。此轮抽离 Terrain Picking 到 render/view，使 DisplayManager／MapManipulator 无需反向包含 Application。Core/Data 的公开链接不依赖 VSG，Core 仍因现有 Context 实现使用 GDAL、PROJ、CURL；完全独立的微型 Core package 不是本轮交付。
 
-Rocky 的实际 C++ namespace 为 geostudio::native，I/O 为 geostudio::native::io，TilesetAdapter 和 runtime 为 geostudio::native::tiles3d。没有旧 C++ namespace alias。第 2 轮进一步移除 ROCKY_NAMESPACE／ROCKY_VSG_NAMESPACE 宏，源码直接使用 geostudio::native；原始版权与许可注释保持。底层 feature macros 和 Shader 文件名保留来源前缀，避免无关资源协议重命名。
+原 vsgXchange 中把输入转换为 VSG Object 的 Reader 放在 render/import；GIS 原始数据访问在 drivers，不把两者混为一个 data 层。原 vsgCs 的 HTTP、异步、坐标、模型和资源代码分散到对应能力的 cesium 子目录；为隔离 C++20、GLM 与 Cesium 对象布局，这些实现由一个私有 target 编译，不能链接进公开 C++17 能力库。
 
-GeoStudio::Globe 是 static library，GeoStudio::IO 和 GeoStudio::Tiles3D 是 shared library。Globe ABI 标识递增至 61；I/O SO 标识递增至 4；SDK package 0.2 采用 SameMinorVersion，不接受旧 0.1 consumer。新安装目录为 out/install-modules，旧安装目录和旧运行包保留。外部工具链、CRT 与依赖组合必须一致。
+## 文件、公开接口和 ABI
 
-VSG 类型注册采用新 fully qualified name。I/O ObjectFactory 同时保留旧 vsgXchange Reader 类型字符串读取映射；新对象写出新名字。这是序列化名称兼容，不是 C++ namespace alias。Map／Layer JSON 配置键和 3D Tiles 数据协议没有改名；不宣称任意旧自定义 VSG scene snapshot 都兼容。
+头文件与实现放在同一职责目录。`cmake/capability-sources.cmake` 显式列出公共能力源文件；`cmake/capability-headers.json` 记录每个 header 的源位置、include 名和 public 标志。构建时生成 include 视图，不移动原文件、不维护第二份手写 header。
 
-## 生命周期与资源
+消费者示例：
 
-沿用已验证 Adapter 行为：Device 创建前配置双方能力，绑定宿主 Viewer／View／Camera，在 render thread 每帧 pump 和 update。移除时 close，继续 pump 至 retired，GPU idle 后释放；最后主动 shutdown runtime，避免 DLL detach 才销毁 Vulkan 对象。
+```cpp
+#include <geostudio/native/core/geo/SRS.h>
+#include <geostudio/native/drivers/gdal/GDALImageLayer.h>
+#include <geostudio/native/runtime/engine/Application.h>
+#include <geostudio/native/runtime/engine/TilesetAdapter.h>
+```
 
-Cesium Native 保持 private linkage，其 GLM_FORCE_XYZW_ONLY 和 C++20 不进入公共 consumer。Globe 与宿主共享 ImGui context。没有增加第二套 Viewer，也没有新增 Demo UI 功能。
+旧 include 路径不继续安装；CMake 的 Globe／IO／Tiles3D target alias 暂时映射到 Runtime／Import／RuntimeTiles，方便已有消费方按次序迁移，不表示保留旧组件。namespace 保持 `geostudio::native`、`geostudio::native::io`、`geostudio::native::tiles3d`。VSG Reader 的旧序列化类型字符串继续保留读取映射，Map／Layer JSON 和 3D Tiles 数据协议不改名。
 
-资源从 resources/globe、resources/tiles3d 安装到 share/GeoStudioNative/resources；GEOSTUDIO_NATIVE_FILE_PATH 指向 globe，VSG_FILE_PATH 指向 tiles3d。GLSL/C++ 共用 defines 从资源源文件生成 include 副本，不能手改生成 header。
+SDK package 升至 0.3.0，ABI 标识 62；安装路径 `out/install-capabilities`。七个能力库为 static，Import／RuntimeTiles 为 DLL。默认 consumer 为 C++17，Cesium 私有实现为 C++20。不同 package、CRT 或 GLM 配置不能混用。
 
-## 来源与兼容迁移
+## ImGui 由宿主管理
 
-模块清单、完整原件差异与旧路径映射见 [provenance](../../provenance/README.md)。原示例源码保留并同步 namespace，见[示例索引](../../examples/README.md)。仅清理被新构建取代的入口及未使用的上游 CI／依赖编排，不移除用户文档或 Git 历史。
+SDK 的 Application、View、VSGContext、ECSNode 已移除 ImGui context、自动 GUI 安装和 Widget 绘制。纯 Label 状态仍属于 Scene；LabelSystem 的 ImGui 绘制、Widget、RenderImGui 和事件翻译放在 Demo 的 `native/ui`，仅由需要它的宿主链接。Demo 调用 `geostudio::host::installImGui`，不再调用 Application::install(renderer)。
 
-Demo build/native-modules 只消费新安装包；新运行包 out/desktop-native-modules。修改 SDK 后先构建 SDK，再构建／stage／打包 Demo。环境及完整命令见[安装构建与使用](安装构建与使用.md)。
+原 vsgCs 默认禁用且无调用的 readRemoteTexture／vsgImGui::Texture 包装已移除；通用 readRemoteImage 保留。历史实现仍可从完整来源差异追溯。SDK package 不查找 imgui，bootstrap 默认也不编译它；需要旧 Demo 时显式 `-WithHostUi` 或 `-Only imgui`。
+
+未来 Tauri＋React 可以继续使用独立进程／Native Window 的现有宿主边界；本轮没有新增 JS 绑定或跨线程渲染 API。保留 Viewer、View、Camera 的共享关系，TilesetAdapter 的 close／pump／retired／shutdown 顺序不变。
+
+## 宏、资源和可选能力
+
+自有活动源码、CMake、测试、示例和 GLSL 的 ROCKY_* 改为 GEOSTUDIO_NATIVE_*。公共 static API 使用 GEOSTUDIO_NATIVE_API，RuntimeTiles DLL 使用 GEOSTUDIO_NATIVE_EXPORT，避免导出宏冲突。版本比较宏补上正确括号并加编译断言。资源文件名和数据协议保留原名；外部 VSG／Cesium／第三方宏不强制重命名。
+
+Slughorn 的实际 Adapter 和 SlugSystem 保留源码，默认不编译；其纯算法回归继续执行。MBTiles、Azure、Bing 等仍受原 feature guard 控制，不因文件归类宣称启用新格式。保留来源中的实验代码和旧示例作为参考，不把它们加入默认 SDK 构建。
+
+## 检查与来源
+
+[代码测试](../../tests/README.md)覆盖基础算法、现有渲染相关 CPU 逻辑、Reader、局部资源协议和小型 fixture。架构检查拒绝反向 include、UI 泄漏、私有 header 安装和旧宏。独立 package consumer 检查公开 header、类型注册、Core/Data 单独链接和 GLM 隔离。
+
+[capability-migration.json](../../provenance/capability-migration.json)记录旧路径到新路径；每个来源的 005-capabilities.patch 是对固定原件的完整差异，旧 patches 保留历史。版权和许可内容不改。当前不做 GPU、性能、渲染回归或人工验收，不能将 CPU 通过扩展为这些结论。

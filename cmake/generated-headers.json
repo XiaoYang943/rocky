@@ -1,0 +1,7 @@
+{
+  "geostudio/native/globe/Version.h": "geostudio/native/core/base/Version.h",
+  "geostudio/native/io/Version.h": "geostudio/native/render/import/all/Version.h",
+  "geostudio/native/tiles3d/Config.h": "geostudio/native/render/tileset/cesium/Config.h",
+  "geostudio/native/tiles3d/Export.h": "geostudio/native/core/base/cesium/Export.h",
+  "geostudio/native/Export.h": "geostudio/native/runtime/engine/Export.h"
+}

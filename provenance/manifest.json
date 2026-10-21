@@ -1,6 +1,6 @@
 {
-  "schemaVersion": 2,
-  "sdkVersion": "0.2.0",
+  "schemaVersion": 3,
+  "sdkVersion": "0.3.0",
   "sources": [
     {
       "name": "rocky",
@@ -10,14 +10,30 @@
       "archiveSha256": "e68ad90921ae238308e34d37efb87c97d8bd6a11081814eccca7af094b0e24d1",
       "patches": [
         {
-          "path": "004-modules.patch",
-          "sha256": "685e2d19d2f130535ad3959db7d1e2db369e6ca60866b04a0f7f99118b50e7f0",
+          "path": "005-capabilities.patch",
+          "sha256": "d8f449e6e04ba9f8f244eb30ffc22d0e3f0125444cd613af9dde16c141c019d4",
           "layout": "final-paths",
           "base": "fixed upstream archive"
         }
       ],
       "fileManifest": "provenance/rocky/module-files.json",
-      "fileManifestSha256": "04621290076c4d734a86dc884bb49c45597dca92522ae08ee0e203c1cd0d6b2d"
+      "fileManifestSha256": "77978e6560547571cf5a4dabda263ef9ce6c9aad29c348f4b556d5351982d823",
+      "binaryDeletions": [
+        {
+          "operation": "delete",
+          "upstreamPath": "data/imagery/boston-inset-utm.tif",
+          "upstreamSha256": "409575e500d302a840270d2ca30c3d5874e7052c3d00f7bd236ee40c0467ad5b",
+          "upstreamBytes": 392924,
+          "removedPath": "examples/globe/data/imagery/boston-inset-utm.tif"
+        },
+        {
+          "operation": "delete",
+          "upstreamPath": "data/imagery/world.tif",
+          "upstreamSha256": "51302f5262bec17da62173063991fefb80e2515ed99eda9ef9378454a29e4d2e",
+          "upstreamBytes": 487120,
+          "removedPath": "examples/globe/data/imagery/world.tif"
+        }
+      ]
     },
     {
       "name": "vsgCs",
@@ -27,14 +43,23 @@
       "archiveSha256": "ee2a1524d3a103ed9d410f7062fea1e05582067ec521fb2a5794d2dd46d2aca0",
       "patches": [
         {
-          "path": "004-modules.patch",
-          "sha256": "fd727150103500bfafef108cf3caa5619a09d37b9b88c3d58bc05b91b644739f",
+          "path": "005-capabilities.patch",
+          "sha256": "5c52364fc0aa2d5e8db08e51c3881d25259971e1afe4e2b33b0cf91620dee03f",
           "layout": "final-paths",
           "base": "fixed upstream archive"
         }
       ],
       "fileManifest": "provenance/vsgCs/module-files.json",
-      "fileManifestSha256": "75fa852f1954d582c878b1830cec48d4a073e31b3e89f4dfac1a7c43e67db0a6"
+      "fileManifestSha256": "72a05dc2adba539e3fdcd666362bf8817a3f73ab77b7ca81852f70765f704eb0",
+      "binaryDeletions": [
+        {
+          "operation": "delete",
+          "upstreamPath": "data/models/maersk_container_ship.glb",
+          "upstreamSha256": "eb385692bb074daf97082f8a5d6eef1004d1a54241a231822f20d52d348092bd",
+          "upstreamBytes": 36534828,
+          "removedPath": "examples/tiles3d/data/models/maersk_container_ship.glb"
+        }
+      ]
     },
     {
       "name": "vsgXchange",
@@ -44,32 +69,59 @@
       "archiveSha256": "addd7c5ab859b54a5144b5f40bd5c1a1d614df806aa43b4cd5a2f80dae8ae3d6",
       "patches": [
         {
-          "path": "004-modules.patch",
-          "sha256": "97b522527c68a80b0571e651bc7d4f48eb41819cd947704d9386ecaa80c535cd",
+          "path": "005-capabilities.patch",
+          "sha256": "c70e851d27ec7e784d7135a6a702ec28141adcb35d043525762694a79be9893e",
           "layout": "final-paths",
           "base": "fixed upstream archive"
         }
       ],
       "fileManifest": "provenance/vsgXchange/module-files.json",
-      "fileManifestSha256": "fa029fda51b8cfdfac6d1ee2433c46598627e2da2ccd93ffc8af77fd73ba7854"
+      "fileManifestSha256": "10ca9d22e6d3f80ac6064b40ad48bb8ef184862787c26211d99d7341f75b6598",
+      "binaryDeletions": []
     }
   ],
   "migrationMap": "provenance/module-migration.json",
   "sourceScopes": [
     "src",
-    "include",
     "resources",
-    "examples",
-    "tests",
-    "tools"
+    "tests"
   ],
   "ownedFiles": {
-    "src/io/CMakeLists.txt": "22bf7ecd7521e3131756057bf3c11c7acdc749bea3e3f3240a1f80764becef17",
-    "src/tiles3d/CMakeLists.txt": "98512146d5e56b74f68cd034a14703fd8918d6bc322f9678eef01e3aa62cb6be",
-    "src/tiles3d/TilesetAdapter.cpp": "5e994a99c43ee4f15c1d0a6e6a87cbd3f8b86bf24384f92cb9c0f21d9d8c02e4",
-    "include/geostudio/native/tiles3d/TilesetAdapter.h": "d147188df8ceed576f38309a1f2a2e362e935329dd2ceed59c188673102eced3",
-    "examples/README.md": "5c678b64485cde1e5316f3d8a8cc9b97cce96f232d2b86ce4d07692667ce5a31",
-    "examples/package-consumer/CMakeLists.txt": "86ae87a847e86e17a063cbed1acb91806431d2c7679dd7db37951d6c361abb35",
-    "examples/package-consumer/main.cpp": "5d0eff092957623752a7c72b60dbc58594f534906ee93c3d0838569d17eaf1e2"
+    "src/README.md": "de6f090a70f0301609b47ccb44aa1be6bc608cd7481c48cb20d21754b68c540d",
+    "src/core/CMakeLists.txt": "1b287311bad309bb512f15dd0eb59841e940c13a82ad9e55aae7bd794d0dc2bd",
+    "src/core/README.md": "662cef75596180dc0ed7f0653aedd58db69d7f55d6a3e8150b4dcd6438910934",
+    "src/data/CMakeLists.txt": "7cdc54557a03466adf87f39394764f3d0341fd1a4c21c3e7df6f220b48f3d2e3",
+    "src/data/README.md": "e68fa1fa4c792b346680026f192dadc9ee89cfbb6383fe6f556d878fe1827a69",
+    "src/drivers/CMakeLists.txt": "360c3dd8552d41ac76da807e0ca6fb6d1779a1a6ea4c577ce036601d8e85ef52",
+    "src/drivers/README.md": "ff1733465fda91236c70246745f2c91d6156b5552466bb5e5102d5df3ac0f476",
+    "src/render/CMakeLists.txt": "21baad7fbdf7d1d6d35cb8cc9fe14b260228d65f207eb05c676d4356e2c7beab",
+    "src/render/README.md": "d6efc4e87e629f514899b82005a439f05537b60bfbfc3545cccbc2fce09ad986",
+    "src/runtime/CMakeLists.txt": "707b84b0826ace48447a8ea32b67cb9c2c0029f537d732c4efd5d1738826c6f5",
+    "src/runtime/README.md": "3b1b1152efd536c05e6fe9f89668dfddcd8510baa8cc95d3eb0f921a00cec13b",
+    "src/scene/CMakeLists.txt": "cb878a2784b1f7c8e91a4aa669ec09c9c4e19338073056c41b902b3764845573",
+    "src/scene/README.md": "6d25b1f35db87d47ef75a5b0742dd2fe09fe09f79e4e13fd805eb188fb1e1583",
+    "src/streaming/CMakeLists.txt": "7feaac54843fef2b0b119890d50b0aafe4908b085f26ac82b3380c02deef03e1",
+    "src/streaming/README.md": "20151e9be53aceeed03604ccc29db5a102838539763bbaeee91bf7004c06141f",
+    "src/runtime/engine/TilesetAdapter.cpp": "12d51c9bc4689ed8072d3befaab6de2088bfa71d724c39df2bd913615c45e85b",
+    "src/runtime/engine/TilesetAdapter.h": "653f2f60c6ada55fbfd2c893552652c0239df67e9b3bc8f44d088d1900163998",
+    "src/render/import/CMakeLists.txt": "5122bba27f27d68642a85b5c42a680164f094610308de6dc423f767e3f3899b2",
+    "src/render/view/TerrainPicking.cpp": "6ccab67c41168e6b0e2414649bee3ecf2b8457a0a47d2178c7069fbb5a72a421",
+    "src/drivers/tms/TerrainRgbLayer.h": "fb829e9d9c10fcf6788a80ae320d26e8dcdaf8cefb9f5d04c1d4677391bef4d0",
+    "tests/README.md": "123d31c9ebd29a2dcf4ebb2952860faf981e937d10f0c3c52bdda404ae41af74",
+    "tests/architecture/check_boundaries.py": "134da03432cf887e8eab2c6100308c7d30126812e8c88871ad88d1ce2ad70060",
+    "tests/architecture/check_package_contents.py": "606127bcbc917bc1387389eb1a6f7a94d5b8f4a6178669d93f2d1740b24a69c8",
+    "tests/capabilities/CMakeLists.txt": "3b7af340d17956309b2f066605bfaa21446c991c21fb992c9a089874662ef79f",
+    "tests/capabilities/test_core_data.cpp": "8537f3b148ba656268330410abefadd672740dca3fd59710a6c4f371e03798cb",
+    "tests/capabilities/test_layer_contracts.cpp": "0dc0f7ba6d3a4ad1aa1444b288ab397ddb3c40d2135bbcf8860e0f807df3889b",
+    "tests/capabilities/test_readers.cpp": "75d9beceea8d07e1c818ebd2079d32af494168720818ce16af97c6e40cdebdcc",
+    "tests/capabilities/test_streaming.cpp": "dfcd4460a41f332f633ed359a3f908264babf33ded08acd89ab3d5479fd3e9f7",
+    "tests/package-consumer/CMakeLists.txt": "30e14dcd51813260a4ac2f6e70c3ee6082c35bdd4eae95718231cf847599df19",
+    "tests/package-consumer/core.cpp": "4d7c8d7fc99de3d46ed83e80228afaa668915c7a4591c5d1a08a26ba201f2f71",
+    "tests/package-consumer/main.cpp": "4075ad0ef1685c798bb4f6a27063dbd87f20d67b87b46ca0c4c2f29b0a4a6faa",
+    "tests/capabilities/fixtures/empty.geojson": "6d18edfe75b3149104038dcbca4d0096bbcb923f0f9fa4b49f4815344e75bb90",
+    "tests/capabilities/fixtures/pixels.png": "78253200c249d4d84293b2a1e6fc803adedeba8645f38d6bc2f6734a2dfacec9",
+    "tests/capabilities/fixtures/polygon.geojson": "7e5432858e2189abaa46e58cb36ef4c182a4d73a9faa97dcaf7d262f6a7eda88",
+    "tests/capabilities/fixtures/README.md": "6347a5ed7134c9ea825616dd42428ce2413df3815bb62b4c752e788d84ac99b6",
+    "tests/capabilities/fixtures/triangle.obj": "32dfb0a798728f3cb486b0ca5743a437e28c7594f8a63c630fa23b47407d7278"
   }
 }

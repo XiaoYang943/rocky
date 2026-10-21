@@ -1,4 +1,4 @@
-#include <geostudio/native/globe/vsg/ecs/slug/SlugAdapter.h>
+#include <geostudio/native/render/entity/slug/SlugAdapter.h>
 #include <filesystem>
 #include <iostream>
 #include <utility>
