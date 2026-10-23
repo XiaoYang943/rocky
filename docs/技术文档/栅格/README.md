@@ -188,4 +188,4 @@ Rocky 的 MBTiles 驱动公开 read 返回 Image，不能因为名字叫 MBTiles
 | R5 | [TerrainTileModelFactory.cpp](../../../src/rocky/TerrainTileModelFactory.cpp)：`addColorLayers`；[TerrainTilePager.cpp](../../../src/rocky/vsg/terrain/TerrainTilePager.cpp)：`requestLoadData` | Layer 选择和 Color Compositing |
 | R6 | [MBTiles.h](../../../src/rocky/MBTiles.h)、[MBTilesImageLayer.h](../../../src/rocky/MBTilesImageLayer.h)、[CMakeLists.txt](../../../CMakeLists.txt) | MBTiles 影像接口与依赖 |
 
-协议背景：[OSGeo TMS](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification)、[GDAL 栅格 API](https://gdal.org/en/stable/api/raster_c_api.html)。继续阅读：[三维地形](../三维地形/README.md)、[坐标系统](../坐标系统/README.md)。维护入口：[主任务](../任务/001-Rocky架构与技术实现梳理.md)。
+协议背景：[OSGeo TMS](https://wiki.osgeo.org/wiki/Tile_Map_Service_Specification)、[GDAL 栅格 API](https://gdal.org/en/stable/api/raster_c_api.html)。继续阅读：[三维地形](../三维地形/README.md)、[坐标系统](../坐标系统/README.md)。维护入口：[当前说明](../README.md)。

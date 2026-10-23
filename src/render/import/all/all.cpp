@@ -21,6 +21,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 #include <geostudio/native/render/import/images/images.h>
 #include <geostudio/native/render/import/all/models.h>
 #include <geostudio/native/render/import/assimp/assimp.h>
+#include <geostudio/native/render/import/osgb/OSGB.h>
 
 #include <vsg/io/Logger.h>
 #include <vsg/io/VSG.h>
@@ -53,6 +54,7 @@ void geostudio::native::io::init()
     vsg::ObjectFactory::instance()->add<geostudio::native::io::ktx>();
 
     vsg::ObjectFactory::instance()->add<geostudio::native::io::bin>();
+    vsg::ObjectFactory::instance()->add<geostudio::native::io::OSGB>();
     vsg::ObjectFactory::instance()->add<geostudio::native::io::gltf>();
     vsg::ObjectFactory::instance()->add<geostudio::native::io::Tiles3D>();
 
@@ -82,6 +84,7 @@ all::all()
     add(vsg::glsl::create());
 
     add(bin::create());
+    add(OSGB::create());
     add(gltf::create());
     add(Tiles3D::create());
 

@@ -1,0 +1,361 @@
+--- a/src/vsg/core/IntrusiveAllocator.cpp
++++ b/src/vsg/core/IntrusiveAllocator.cpp
+@@ -798,7 +798,9 @@
+     {
+         if (memoryBlock->totalReservedSize() == 0)
+         {
+-            count += memoryBlock->totalAvailableSize();
++            count += memoryBlock->totalMemorySize();
++            if (memoryBlockWithSpace == memoryBlock) memoryBlockWithSpace.reset();
++            if (parent) parent->memoryBlocks.erase(memoryBlock->memory);
+         }
+         else
+         {
+@@ -1007,6 +1009,7 @@
+ 
+ size_t IntrusiveAllocator::deleteEmptyMemoryBlocks()
+ {
++    std::scoped_lock<std::mutex> lock(mutex);
+     size_t count = 0;
+     for (auto& blocks : allocatorMemoryBlocks)
+     {
+@@ -1017,6 +1020,7 @@
+ 
+ size_t IntrusiveAllocator::totalAvailableSize() const
+ {
++    std::scoped_lock<std::mutex> lock(mutex);
+     size_t count = 0;
+     for (auto& blocks : allocatorMemoryBlocks)
+     {
+@@ -1027,6 +1031,7 @@
+ 
+ size_t IntrusiveAllocator::totalReservedSize() const
+ {
++    std::scoped_lock<std::mutex> lock(mutex);
+     size_t count = 0;
+     for (auto& blocks : allocatorMemoryBlocks)
+     {
+@@ -1037,6 +1042,7 @@
+ 
+ size_t IntrusiveAllocator::totalMemorySize() const
+ {
++    std::scoped_lock<std::mutex> lock(mutex);
+     size_t count = 0;
+     for (auto& blocks : allocatorMemoryBlocks)
+     {
+--- a/include/vsg/app/TransferTask.h
++++ b/include/vsg/app/TransferTask.h
+@@ -46,6 +46,16 @@
+ 
+         /// transfer any vsg::Data entries that have been updated to the associated GPU memory.
+         virtual TransferResult transferData(TransferMask transferMask);
++
++        // 仅回收 fence 已完成的 staging；调用者在更新阶段串行调用，不等待 GPU。
++        struct ResourceUsage
++        {
++            VkDeviceSize stagingBytes = 0;
++            VkDeviceSize releasedStagingBytes = 0;
++            uint64_t orphanedEntries = 0;
++            uint64_t pendingFrames = 0;
++        };
++        ResourceUsage releaseUnusedResources();
+ 
+         virtual bool containsDataToTransfer(TransferMask transferMask) const;
+ 
+@@ -100,6 +110,7 @@
+             ref_ptr<Semaphore> transferCompleteSemaphore;
+             ref_ptr<Semaphore> transferConsumerCompletedSemaphore;
+ 
++            uint64_t pruneOrphans();
+             bool requiresCopy(uint32_t deviceID) const;
+             bool containsDataToTransfer() const { return !dataMap.empty() || !imageInfoSet.empty(); }
+         };
+--- a/src/vsg/app/TransferTask.cpp
++++ b/src/vsg/app/TransferTask.cpp
+@@ -36,6 +36,62 @@
+     }
+ 
+     // level = Logger::LOGGER_INFO;
++}
++
++// 清理独占引用不依赖新上传到来；仍有宿主引用的条目保持有效。
++uint64_t TransferTask::DataToCopy::pruneOrphans()
++{
++    uint64_t removed = 0;
++    for (auto b = dataMap.begin(); b != dataMap.end();)
++    {
++        for (auto i = b->second.begin(); i != b->second.end();)
++        {
++            if (i->second->referenceCount() == 1) { i = b->second.erase(i); ++removed; }
++            else ++i;
++        }
++        if (b->second.empty()) b = dataMap.erase(b); else ++b;
++    }
++    for (auto i = imageInfoSet.begin(); i != imageInfoSet.end();)
++    {
++        if ((*i)->referenceCount() == 1) { i = imageInfoSet.erase(i); ++removed; }
++        else ++i;
++    }
++    return removed;
++}
++
++TransferTask::ResourceUsage TransferTask::releaseUnusedResources()
++{
++    std::scoped_lock<std::mutex> lock(_mutex);
++    ResourceUsage usage;
++    for (auto* data : {&_earlyDataToCopy, &_lateDataToCopy})
++    {
++        // 上一提交仍在使用资源时推迟回收；下一次维护继续轮询。
++        bool completed = true;
++        for (auto& frame : data->frames)
++        {
++            if (frame->waitOnFence && frame->fence)
++            {
++                if (frame->fence->status() != VK_SUCCESS) { completed = false; ++usage.pendingFrames; continue; }
++                frame->fence->resetFenceAndDependencies();
++                frame->waitOnFence = false;
++            }
++        }
++        if (completed) usage.orphanedEntries += data->pruneOrphans();
++        for (auto& frame : data->frames)
++        {
++            if (completed && !data->containsDataToTransfer() && frame->staging)
++            {
++                usage.releasedStagingBytes += frame->staging->size;
++                if (frame->transferCommandBuffer) frame->transferCommandBuffer->reset();
++                frame->staging = {};
++                frame->buffer_data = nullptr;
++                frame->copyRegions.clear();
++                frame->copyRegions.shrink_to_fit();
++            }
++            if (frame->staging) usage.stagingBytes += frame->staging->size;
++        }
++    }
++    return usage;
+ }
+ 
+ bool TransferTask::containsDataToTransfer(TransferMask transferMask) const
+@@ -357,6 +413,11 @@
+ 
+     uint32_t deviceID = device->deviceID;
+ 
++    bool transfersCompleted = true;
++    for (const auto& frame : dataToCopy.frames)
++        if (frame->waitOnFence && frame->fence && frame->fence->status() != VK_SUCCESS) transfersCompleted = false;
++    if (transfersCompleted) dataToCopy.pruneOrphans();
++
+     // check to see if any copies are require.
+     if (!dataToCopy.requiresCopy(deviceID))
+     {
+@@ -465,7 +526,7 @@
+     VkResult result = VK_SUCCESS;
+ 
+     // allocate staging buffer if required
+-    if (!staging || staging->size < totalSize)
++    if (!staging || staging->size < totalSize || staging->size / 4 > std::max(totalSize, minimumStagingBufferSize))
+     {
+         if (totalSize < minimumStagingBufferSize)
+         {
+--- a/include/vsg/vk/DescriptorPools.h
++++ b/include/vsg/vk/DescriptorPools.h
+@@ -43,6 +43,9 @@
+         // allocate vkDescriptorSet
+         ref_ptr<DescriptorSet::Implementation> allocateDescriptorSet(DescriptorSetLayout* descriptorSetLayout);
+ 
++        // 调用者须独占编译上下文，仅删除无活跃 DescriptorSet 的池。
++        uint32_t releaseUnusedPools();
++
+         /// write the internal details to stream.
+         void report(std::ostream& out, indentation indent = {}) const;
+ 
+--- a/src/vsg/vk/DescriptorPools.cpp
++++ b/src/vsg/vk/DescriptorPools.cpp
+@@ -20,6 +20,25 @@
+ DescriptorPools::DescriptorPools(ref_ptr<Device> in_device) :
+     device(in_device)
+ {
++}
++
++uint32_t DescriptorPools::releaseUnusedPools()
++{
++    uint32_t released = 0;
++    for (auto i = descriptorPools.begin(); i != descriptorPools.end();)
++    {
++        uint32_t availableSets = 0;
++        DescriptorPoolSizes sizes;
++        (*i)->available(availableSets, sizes);
++        if ((*i)->referenceCount() == 1 && availableSets == (*i)->maxSets)
++        {
++            released += (*i)->maxSets;
++            i = descriptorPools.erase(i);
++        }
++        else ++i;
++    }
++    if (descriptorPools.empty()) minimum_maxSets = 0;
++    return released;
+ }
+ 
+ DescriptorPools::~DescriptorPools()
+--- a/include/vsg/app/CompileManager.h
++++ b/include/vsg/app/CompileManager.h
+@@ -99,6 +99,19 @@
+         /// compile all the command graphs in a task
+         CompileResult compileTask(ref_ptr<RecordAndSubmitTask> task, ResourceRequirements& resourceRequirements);
+ 
++        struct ResourceUsage
++        {
++            bool busy = false;
++            VkDeviceSize deviceReservedBytes = 0;
++            VkDeviceSize deviceAvailableBytes = 0;
++            VkDeviceSize stagingReservedBytes = 0;
++            VkDeviceSize stagingAvailableBytes = 0;
++            VkDeviceSize releasedBytes = 0;
++            uint32_t releasedDescriptorSets = 0;
++        };
++        // 非阻塞获取全部空闲编译上下文；忙时不碰共享描述符池，后续维护重试。
++        ResourceUsage releaseUnusedResources();
++
+         /// mechanism for releasing and reusing used resources
+         ref_ptr<ResourceScavenger> resourceScavenger;
+ 
+--- a/src/vsg/app/CompileManager.cpp
++++ b/src/vsg/app/CompileManager.cpp
+@@ -11,6 +11,7 @@
+ </editor-fold> */
+ 
+ #include <vsg/app/CompileManager.h>
++#include <vsg/vk/DescriptorPools.h>
+ #include <vsg/app/RecordAndSubmitTask.h>
+ #include <vsg/app/View.h>
+ #include <vsg/app/Viewer.h>
+@@ -143,6 +144,54 @@
+ #else
+     numCompileTraversals = 1;
+ #endif
++}
++
++CompileManager::ResourceUsage CompileManager::releaseUnusedResources()
++{
++    ResourceUsage usage;
++    auto traversals = compileTraversals->take_all();
++    // 任一统计分配抛异常时仍归还上下文，避免后续工作线程永久等待。
++    auto returnTraversals = [&traversals](CompileTraversals* queue) { queue->add(traversals.begin(), traversals.end()); };
++    std::unique_ptr<CompileTraversals, decltype(returnTraversals)> restore(compileTraversals.get(), returnTraversals);
++    if (traversals.size() != numCompileTraversals)
++    {
++        usage.busy = true;
++        return usage;
++    }
++    for (auto& traversal : traversals)
++        for (auto& context : traversal->contexts)
++            if (context->requiresWaitForCompletion)
++            {
++                if (!context->fence || context->fence->status() != VK_SUCCESS) { usage.busy = true; return usage; }
++                context->fence->resetFenceAndDependencies();
++                context->requiresWaitForCompletion = false;
++            }
++    std::set<MemoryBufferPools*> devices, staging;
++    std::set<DescriptorPools*> descriptors;
++    for (auto& traversal : traversals)
++    {
++        for (auto& context : traversal->contexts)
++        {
++            context->reset();
++            if (context->deviceMemoryBufferPools) devices.insert(context->deviceMemoryBufferPools);
++            if (context->stagingMemoryBufferPools) staging.insert(context->stagingMemoryBufferPools);
++            if (context->descriptorPools) descriptors.insert(context->descriptorPools);
++        }
++    }
++    for (auto* pools : descriptors) usage.releasedDescriptorSets += pools->releaseUnusedPools();
++    for (auto* pools : devices)
++    {
++        usage.releasedBytes += pools->releaseUnusedPools();
++        usage.deviceReservedBytes += pools->computeMemoryTotalReserved();
++        usage.deviceAvailableBytes += pools->computeMemoryTotalAvailable();
++    }
++    for (auto* pools : staging)
++    {
++        usage.releasedBytes += pools->releaseUnusedPools();
++        usage.stagingReservedBytes += pools->computeMemoryTotalReserved();
++        usage.stagingAvailableBytes += pools->computeMemoryTotalAvailable();
++    }
++    return usage;
+ }
+ 
+ CompileManager::~CompileManager()
+@@ -370,22 +419,21 @@
+         run_compile_traversal();
+     }
+ 
++    if (result.result == VK_SUCCESS)
++    {
++        ++successfulCompileCount;
++    }
++    else
++    {
++        ++failedCompileCount;
++
++        for (auto& context : compileTraversal->contexts)
++        {
++            context->reset();
++        }
++    }
++
+     compileTraversals->add(compileTraversal);
+-
+-    if (result.result == VK_SUCCESS)
+-    {
+-        ++successfulCompileCount;
+-    }
+-    else
+-    {
+-        ++failedCompileCount;
+-
+-        for (auto& context : compileTraversal->contexts)
+-        {
+-            context->reset();
+-        }
+-    }
+-
+     return result;
+ }
+ 
+--- a/src/vsg/vk/Context.cpp
++++ b/src/vsg/vk/Context.cpp
+@@ -88,13 +88,15 @@
+ // vsg::Context
+ //
+ Context::Context(Device* in_device, const ResourceRequirements& in_resourceRequirements) :
+-    deviceID(in_device->deviceID),
++    deviceID(in_device ? in_device->deviceID : 0),
+     device(in_device),
+     resourceRequirements(in_resourceRequirements),
+     scratchBufferSize(0)
+ {
+     //semaphore = vsg::Semaphore::create(device);
+     scratchMemory = ScratchMemory::create(4096);
++    // 无 Device 的 Context 仅允许 CPU 队列寿命管理和 reset，不执行编译或 GPU 操作。
++    if (!device) return;
+ 
+     vsg::debug("Context::Context() ", this);
+ 
+@@ -177,6 +179,9 @@
+     commands.clear();
+ 
+     bufferInfosToCopy.clear();
++    imageInfosToCopy.clear();
++    buildAccelerationStructureCommands.clear();
++    scratchBufferSize = 0;
+ 
+     copyImageCmd.reset();
+     copyBufferCmd.reset();
+--- a/include/vsg/vk/Context.h
++++ b/include/vsg/vk/Context.h
+@@ -66,6 +66,7 @@
+     class VSG_DECLSPEC Context : public Inherit<Object, Context>
+     {
+     public:
++        // nullptr 仅用于 CPU 队列/reset；所有 GPU 方法仍要求有效 Device。
+         explicit Context(Device* in_device, const ResourceRequirements& in_resourceRequirements = {});
+ 
+         Context(const Context& context);

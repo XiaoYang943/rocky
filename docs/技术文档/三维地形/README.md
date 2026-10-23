@@ -225,4 +225,4 @@ if (result.ok())
 | H8  | [TerrainSettings.h](../../../src/rocky/vsg/terrain/TerrainSettings.h)、[TerrainState.cpp](../../../src/rocky/vsg/terrain/TerrainState.cpp)                                                                                                                         | 参数、Texture 和 Uniform        |
 | H9  | [ElevationSampler.h](../../../src/rocky/ElevationSampler.h)、[ElevationSampler.cpp](../../../src/rocky/ElevationSampler.cpp)、[TerrainNode.h](../../../src/rocky/vsg/terrain/TerrainNode.h)、[tests_terrain_anchor.cpp](../../../src/tests/tests_terrain_anchor.cpp) | 源采样、借用生命周期与表面查询       |
 
-编码背景：[Mapbox Terrain-RGB](https://docs.mapbox.com/data/tilesets/reference/mapbox-terrain-rgb-v1/)。其他导航：[坐标系统](../坐标系统/README.md)、[Layer 与 Tile](../图层与瓦片/README.md)、[矢量](../矢量/README.md)、[主任务](../任务/001-Rocky架构与技术实现梳理.md)。
+编码背景：[Mapbox Terrain-RGB](https://docs.mapbox.com/data/tilesets/reference/mapbox-terrain-rgb-v1/)。其他导航：[坐标系统](../坐标系统/README.md)、[Layer 与 Tile](../图层与瓦片/README.md)、[矢量](../矢量/README.md)、[当前说明](../README.md)。

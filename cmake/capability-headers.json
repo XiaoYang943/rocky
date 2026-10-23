@@ -1362,5 +1362,70 @@
     "include": "geostudio/native/render/geospatial/cesium/WorldNode.h",
     "legacy": "geostudio/native/tiles3d/WorldNode.h",
     "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGB.h",
+    "include": "geostudio/native/render/import/osgb/OSGB.h",
+    "public": true
+  },
+  {
+    "path": "src/render/import/osgb/OSGBPaging.h",
+    "include": "geostudio/native/render/import/osgb/OSGBPaging.h",
+    "public": true
+  },
+  {
+    "path": "src/render/import/osgb/OSGBResources.h",
+    "include": "geostudio/native/render/import/osgb/OSGBResources.h",
+    "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGBFiles.h",
+    "include": "geostudio/native/render/import/osgb/OSGBFiles.h",
+    "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGBIndex.h",
+    "include": "geostudio/native/render/import/osgb/OSGBIndex.h",
+    "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGBDecode.h",
+    "include": "geostudio/native/render/import/osgb/OSGBDecode.h",
+    "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGBArtifacts.h",
+    "include": "geostudio/native/render/import/osgb/OSGBArtifacts.h",
+    "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGBSerialization.h",
+    "include": "geostudio/native/render/import/osgb/OSGBSerialization.h",
+    "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGBOverview.h",
+    "include": "geostudio/native/render/import/osgb/OSGBOverview.h",
+    "public": false
+  },
+  {
+    "path": "src/render/import/osgb/OSGBDataset.h",
+    "include": "geostudio/native/render/import/osgb/OSGBDataset.h",
+    "public": false
+  },
+  {
+    "path": "src/render/vsg/CompileResultUtils.h",
+    "include": "geostudio/native/render/vsg/CompileResultUtils.h",
+    "public": false
+  },
+  {
+    "path": "src/runtime/engine/ResourceMaintenance.h",
+    "include": "geostudio/native/runtime/engine/ResourceMaintenance.h",
+    "public": true
+  },
+  {
+    "path": "src/render/import/osgb/OSGBLOD.h",
+    "include": "geostudio/native/render/import/osgb/OSGBLOD.h",
+    "public": false
   }
 ]

@@ -144,4 +144,4 @@ Rocky 提供默认 `Application`，也允许宿主管理 VSG 的窗口、View �
 | B6 | [Registry.h](../../../src/rocky/ecs/Registry.h)、[Common.h](../../../src/rocky/Common.h) | 锁和共享所有权模式 |
 | B7 | [CMakeLists.txt](../../../CMakeLists.txt)、[Application.h](../../../src/rocky/vsg/Application.h) | 可选 UI 与应用入口 |
 
-验证状态：本轮已核对上述定义及相关实现；未运行这些接口。可通过[总体架构](../总体架构/README.md)的最小应用与三条数据链路继续学习。维护记录见[主任务](../任务/001-Rocky架构与技术实现梳理.md)。
+验证状态：本轮已核对上述定义及相关实现；未运行这些接口。可通过[总体架构](../总体架构/README.md)的最小应用与三条数据链路继续学习。维护记录见[当前说明](../README.md)。

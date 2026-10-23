@@ -176,4 +176,4 @@ if (operation.valid() && operation.transform(x, y))
 | C6 | [MapNode.cpp](../../../src/rocky/vsg/MapNode.cpp)：`srs`；[Profile.h](../../../src/rocky/Profile.h)；[ImageLayer.cpp](../../../src/rocky/ImageLayer.cpp) | 数据参考、Tiling 与世界参考 |
 | C7 | [Ellipsoid.cpp](../../../src/rocky/Ellipsoid.cpp)：`geodeticToGeocentric`、`topocentricToGeocentricMatrix`；[SRS.cpp](../../../src/rocky/SRS.cpp)：`topocentricToWorldMatrix` | 双精度椭球转换与 ENU |
 
-继续阅读：[Layer 与 Tile](../图层与瓦片/README.md)、[三维地形](../三维地形/README.md)、[矢量](../矢量/README.md)。维护入口：[主任务](../任务/001-Rocky架构与技术实现梳理.md)。
+继续阅读：[Layer 与 Tile](../图层与瓦片/README.md)、[三维地形](../三维地形/README.md)、[矢量](../矢量/README.md)。维护入口：[当前说明](../README.md)。

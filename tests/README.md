@@ -31,6 +31,20 @@ P0 先在旧结构上运行三组测试作为基线，再执行源码迁移；�
 
 不启用 Slughorn 外部后端、MBTiles Vector 新能力，不覆盖 Vulkan draw、Shader 编译、屏幕拾取画面、LOD 视觉质量、并发渲染退场和性能。这些需要后续独立渲染验收；旧 Demo 人工通过不能代表当前重组产物通过。
 
+OSGB 额外覆盖 CPU Shader 编译及真实 DatabasePager 的工作线程读取／Merge：固定 build fixture 含两个根与同名子文件，验证粗细子图挂接、失败 fallback、关闭拒绝和新 Reader 重开。空 PagedLOD 编译结果必须触发宿主 Viewer 更新。该测试显式提交页请求、使用空 GPU Compile Context，不覆盖视锥选择或真实 GPU 编译，不把队列测试称为完整渲染测试。新增的微型输入复用 `.build/capabilities-r1/tests/capabilities/osgb-fixtures`，仅创建缺失文件并核验已有 bytes。
+
+OSGB 优化回归继续使用小样本，覆盖以下行为；具体运行结果以当前构建输出为准，不以测试数量代替覆盖：
+
+- 索引：真实中文 CP936/GBK SHP 字段、源相对路径与重定位、CRS/原点不一致、二维范围不伪造三维球、内容变化但大小/mtime 相同的缓存失效，以及输出目录/发布锁边界。
+- 解码与资源：有界并发文件读取、取消准入/读取、外部页不被隐式展开；不可变资源按内容值复用，并发同键、不同材质状态与 Shader 身份隔离。
+- 色彩与纹理：颜色/数值语义隔离，Data/Image/ImageView 格式一致，mip、Origin、Alpha 和压缩格式边界；概览采用 sRGB/Linear 区域滤波及预乘 Alpha，检查透明边缘和源图不变。
+- 分页：有限根优先级、根/细节公平调度、关闭丢弃、近期驻留回收、就绪字节与每帧 Merge 预算、实际视口/FOV 调整；不通过删除粗模满足预算。
+- 派生与概览：源/外部图片变更失效、路径重绑、半成品发布保护、几何边界保留、预算/取消；SDK `buildDataset` 的 `.osgbset → region → 原始细模` 链保留真实驻留 Draw、纹理及 Options，重复构建复用有效制品；新 Reader 页缓存命中跳过解码，关闭旧 Reader 不影响新分页。
+
+派生测试输出复用 fixture 下的 `index-tests`、`built-dataset`、`derived-pages` 等明确受管位置，失败内容保留；不扫描或转换 HL 全量数据，不启动窗口或 GPU。CPU 解码、Shader 和队列结果仍不能证明首屏时间、颜色像素、LOD 接缝、显存或真实交互性能。
+
+内存与 LOD 的 P0 回归补充：`test_osgb_lod.cpp` 比较实际 OSG PagedLOD 遍历与 VSG Record 选择，覆盖横竖视口、FOV、非对称/正交投影、离轴距离、模型缩放及保守球不影响源范围。`test_osgb_paging.cpp` 覆盖多级纹理、两层关闭重开、读取/编译中取消、未知小页与已知大页预算恢复、父子过渡和各阶段计数归零。`test_resource_maintenance.cpp` 直接观察 allocator 空块析构、并发分配/维护，以及没有后续上传时孤儿数据的释放。上述 GPU 对象使用无 Device 路径；fence、显存与进程峰值仍由 Demo 新包人工验收。
+
 ## 执行
 
 在 SDK 根执行 `./scripts/build.ps1 -WithTests` 和 `./scripts/verify-package.ps1`。前者失败即停止安装，后者使用安装包编译。架构检查亦可单独执行 `python -B tests/architecture/check_boundaries.py`。版本／模块变化后先补合约测试，再改实现；失败应修复实际原因，不删除断言或无依据增加容差。

@@ -114,5 +114,6 @@ set(GN_RENDER_SOURCES
 )
 
 set(GN_RUNTIME_SOURCES
+    "${PROJECT_SOURCE_DIR}/src/runtime/engine/ResourceMaintenance.cpp"
     "${PROJECT_SOURCE_DIR}/src/runtime/engine/Application.cpp"
 )

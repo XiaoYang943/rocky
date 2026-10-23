@@ -2,6 +2,14 @@
   "schemaVersion": 1,
   "sources": [
     {
+      "name": "osg2vsg",
+      "repo": "vsg-dev/osg2vsg",
+      "commit": "8494fc6cb25d8d74cc41a8737f77e8a639ea39fb",
+      "directory": "osg2vsg-8494fc6cb25d8d74cc41a8737f77e8a639ea39fb",
+      "url": "https://codeload.github.com/vsg-dev/osg2vsg/zip/8494fc6cb25d8d74cc41a8737f77e8a639ea39fb",
+      "archiveSha256": "d236a2dfb78bfb14a0173c985c6c286cab755187aec30b7ea92004082c4e8fa4"
+    },
+    {
       "name": "vulkan-headers",
       "repo": "KhronosGroup/Vulkan-Headers",
       "commit": "2cd90f9d20df57eac214c148f3aed885372ddcfe",
@@ -71,7 +79,11 @@
       "commit": "e4718bf078a26930e0b6f5932d2537b689fa3969",
       "url": "https://codeload.github.com/vsg-dev/VulkanSceneGraph/zip/e4718bf078a26930e0b6f5932d2537b689fa3969",
       "directory": "VulkanSceneGraph-e4718bf078a26930e0b6f5932d2537b689fa3969",
-      "archiveSha256": "92cc0ac5397376383a567922520a9e0d560acffbf0ed0c286f52012a8bc89261"
+      "archiveSha256": "92cc0ac5397376383a567922520a9e0d560acffbf0ed0c286f52012a8bc89261",
+      "patch": "provenance/vsg/001-resource-retirement.patch",
+      "patchSha256": "c8e1f75f6540793a7c35fb5e3257c8ef658b01aa37d9308443236a1959f322a3",
+      "patchFiles": "provenance/vsg/files.json",
+      "patchFilesSha256": "53234981cbced62313efd534ac5bf2cc795d818e74b158d75b0c8f831b726efb"
     },
     {
       "name": "vsgXchange",

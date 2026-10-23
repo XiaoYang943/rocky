@@ -2,6 +2,8 @@
 file(READ "${PROJECT_SOURCE_DIR}/provenance/manifest.json" GN_PROVENANCE)
 set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/provenance/manifest.json")
 install(FILES provenance/manifest.json DESTINATION share/GeoStudioNative/provenance)
+install(FILES provenance/vsg/001-resource-retirement.patch provenance/vsg/files.json
+    DESTINATION share/GeoStudioNative/provenance/vsg)
 string(JSON GN_SOURCE_COUNT LENGTH "${GN_PROVENANCE}" sources)
 math(EXPR GN_SOURCE_LAST "${GN_SOURCE_COUNT} - 1")
 foreach(INDEX RANGE ${GN_SOURCE_LAST})

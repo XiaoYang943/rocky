@@ -18,6 +18,17 @@ for source in manifest["sources"]:
         assert path.resolve().is_relative_to(package.resolve()), relative
         assert hashlib.sha256(path.read_bytes()).hexdigest() == identity, relative
         expected.add(relative)
+lock_bytes = (package / "dependencies.lock.json").read_bytes()
+assert lock_bytes == (ROOT / "dependencies.lock.json").read_bytes(), "dependency lock differs from source"
+for dependency in json.loads(lock_bytes.decode("utf-8-sig"))["sources"]:
+    if "patch" not in dependency:
+        continue
+    for key, hash_key in (("patch", "patchSha256"), ("patchFiles", "patchFilesSha256")):
+        relative = dependency[key]
+        path = package / relative
+        assert relative.startswith("provenance/") and path.resolve().is_relative_to((package / "provenance").resolve()), relative
+        assert hashlib.sha256(path.read_bytes()).hexdigest() == dependency[hash_key], relative
+        expected.add(relative)
 actual = {p.relative_to(package).as_posix() for p in (package / "provenance").rglob("*") if p.is_file()}
 assert actual == expected, f"Unexpected provenance contents: {actual ^ expected}"
 for relative in expected:

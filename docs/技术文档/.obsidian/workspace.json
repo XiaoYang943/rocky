@@ -13,13 +13,36 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "调研分析/README.md",
-                "mode": "source",
+                "file": "矢量/README.md",
+                "mode": "preview",
                 "source": false
               },
               "icon": "lucide-file",
               "title": "README"
-            }
+            },
+            "group": "5406be3ea4add0ec"
+          }
+        ]
+      },
+      {
+        "id": "d8fd0afeab8dc369",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "c7e259c693b4e7ab",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "矢量/README.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "README 的大纲"
+            },
+            "group": "5406be3ea4add0ec"
           }
         ]
       }
@@ -190,6 +213,14 @@
   },
   "active": "25cb4841880cc8c0",
   "lastOpenFiles": [
+    "矢量/QGIS-Vector.md",
+    "调研分析/QGIS",
+    "三维模型/OSGB/README.md",
+    "调研分析/MapLibre-Native/README.md",
+    "调研分析/MapLibre-Native/新建 文本文档.txt",
+    "调研分析/MapLibre-Native",
+    "调研分析/OSG-Verse/README.md",
+    "调研分析/README.md",
     "调研分析/Jan",
     "调研分析/新建文件夹",
     "调研分析/VSG/README.md",

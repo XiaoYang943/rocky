@@ -175,4 +175,4 @@ if (opened.ok() && layer->profile.valid())
 | T6 | [TileLayer.cpp](../../../src/rocky/TileLayer.cpp)：`getOrCreateTile`；[TileKey.h](../../../src/rocky/TileKey.h)：`TileLayerCacheKey` | Resident Cache 身份 |
 | T7 | [ElevationLayer.cpp](../../../src/rocky/ElevationLayer.cpp)、[tests_antimeridian.cpp](../../../src/tests/tests_antimeridian.cpp) | 高程差异及边界测试入口 |
 
-数据路线：[栅格](../栅格/README.md)、[三维地形](../三维地形/README.md)、[矢量](../矢量/README.md)。维护入口：[主任务](../任务/001-Rocky架构与技术实现梳理.md)。
+数据路线：[栅格](../栅格/README.md)、[三维地形](../三维地形/README.md)、[矢量](../矢量/README.md)。维护入口：[当前说明](../README.md)。

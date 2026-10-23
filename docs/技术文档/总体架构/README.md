@@ -185,4 +185,4 @@ int main(int argc, char** argv)
 | A6 | [FeatureBuilder.h](../../../src/rocky/vsg/ecs/FeatureBuilder.h)、[EntityNode.h](../../../src/rocky/vsg/ecs/EntityNode.h)、[NodeLayer.h](../../../src/rocky/vsg/NodeLayer.h) | Feature Geometry、Entity 集合和模型 Node 路线 |
 | A7 | [Application.cpp](../../../src/rocky/vsg/Application.cpp)：`frame`；[VSGContext.h](../../../src/rocky/vsg/VSGContext.h)：`requestFrame` | Frame Loop、按需渲染和更新 |
 
-继续阅读：[坐标系统](../坐标系统/README.md)、[Layer 与 Tile](../图层与瓦片/README.md)、[技术文档入口](../README.md)。后续深入范围见[方案](../梳理方案.md)及[主任务](../任务/001-Rocky架构与技术实现梳理.md)。
+继续阅读：[坐标系统](../坐标系统/README.md)、[Layer 与 Tile](../图层与瓦片/README.md)、[技术文档入口](../README.md)。后续深入范围见[方案](../梳理方案.md)及[当前说明](../README.md)。

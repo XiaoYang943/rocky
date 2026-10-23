@@ -4,6 +4,7 @@
  * MIT License
  */
 #include <geostudio/native/render/vsg/VSGContext.h>
+#include "CompileResultUtils.h"
 #include <geostudio/native/render/vsg/VSGUtils.h>
 #include <geostudio/native/data/raster/Image.h>
 #include <geostudio/native/core/io/URI.h>
@@ -769,7 +770,7 @@ VSGContextImpl::update()
         std::unique_lock lock(_compileMutex);
         if (_compileResult)
         {
-            if (_compileResult.requiresViewerUpdate())
+            if (detail::needsViewerUpdate(_compileResult, _viewer))
             {
                 vsg::updateViewer(*_viewer, _compileResult);
             }
@@ -826,7 +827,7 @@ VSGContextImpl::compileRenderGraph(vsg::ref_ptr<vsg::RenderGraph> renderGraph, v
         });
 
     // if something was compiled, we need to update the viewer:
-    if (result.requiresViewerUpdate())
+    if (detail::needsViewerUpdate(result, viewer()))
     {
         vsg::updateViewer(*viewer(), result);
     }

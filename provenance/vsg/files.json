@@ -1,0 +1,47 @@
+[
+  {
+    "path": "src/vsg/core/IntrusiveAllocator.cpp",
+    "upstreamSha256": "ce4d32872e287ff2d4501c2b80b7cc688431947e86ba45d42f74c3158654102b",
+    "sha256": "9d9f29be6213af0b8beb8d5c56e4eaa73400b33100b298f2ca4e55da3491e8c6"
+  },
+  {
+    "path": "include/vsg/app/TransferTask.h",
+    "upstreamSha256": "798423759d202382b68fc072f4c506b99517344655fef66442264aface8c5c27",
+    "sha256": "49c23705940cce16fa9a63e588293ef792c7f36d517f5ce9b30e280da9e96cc2"
+  },
+  {
+    "path": "src/vsg/app/TransferTask.cpp",
+    "upstreamSha256": "7f83712c61ebd585a9c8f637cb8d824e9f279f2f8c5583e028857a9e106fc186",
+    "sha256": "c152d497cea0632497e00c270fcf8fec06be5ce09d9c79c6faaba9edc6772dc3"
+  },
+  {
+    "path": "include/vsg/vk/DescriptorPools.h",
+    "upstreamSha256": "f03bf00b9ab9f3d9658ee27b30def58d870886468fae5f33d1a7759e7af5e169",
+    "sha256": "beb99a6da21dd766f29d596267d53f97e7b0fca1171d005c954ab6dc6502ae90"
+  },
+  {
+    "path": "src/vsg/vk/DescriptorPools.cpp",
+    "upstreamSha256": "29188f7d0d0bda46dee13c60975021430378f76cd5d9c5bbeb18ccebbf0d0d54",
+    "sha256": "da7d5eee848236e9b06d6ca0e129ac252818d73e6910de48e64b6ca2f05471ea"
+  },
+  {
+    "path": "include/vsg/app/CompileManager.h",
+    "upstreamSha256": "42e66c802dc761571236817bb806b4e9cfae4594f4f10155b9de5f5d5d5aea16",
+    "sha256": "b5fa68d987191804eca54c9f46d464870f5f35d8193e0b84eaec365286232d99"
+  },
+  {
+    "path": "src/vsg/app/CompileManager.cpp",
+    "upstreamSha256": "9d589fecaba044bb89a844cb44962a2127414af08be8f010ddb793eeaebb6e2f",
+    "sha256": "b5387694299f19d93a503c19fe8213f1e1999b02c1b2b2b82855e5fc2cd093c3"
+  },
+  {
+    "path": "src/vsg/vk/Context.cpp",
+    "upstreamSha256": "4c3d0f83be74065a86cd7df7f6f11f27d8275b6d1902e76c17b3e0af4b6e8218",
+    "sha256": "46086629c403b179f9478decf9623fa7d7ed7e86976f96fc9aed6568e614c583"
+  },
+  {
+    "path": "include/vsg/vk/Context.h",
+    "upstreamSha256": "b197ea3bf349f2ac5b39a0a83aa6f3586810baf0860d53e2677f5eaae82344d4",
+    "sha256": "27768e1f46f31ce73f5dbfdb566a6e0ed8c0ee1edffa0ddcc87c1b99fcf9c7d3"
+  }
+]

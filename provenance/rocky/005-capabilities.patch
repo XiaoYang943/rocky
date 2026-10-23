@@ -306,7 +306,7 @@
  
 -This project (Rocky) is a 3D geospatial rendering engine. It renders 3D maps and globes complete with 
 -imagery, elevation, and GIS feature data.
-+执行工作区 AGENTS 和 [公共规约](../../docs/开发规范/README.md)。repoId 为 geostudio-native，独立 Git 根；当前任务 [NativeSDK-004](docs/design/任务/004-宿主适配迁移与发行内容整理.md)。旧任务保留历史事实，不代替本版本验收。
++执行工作区 AGENTS 和 [公共规约](../../docs/开发规范/README.md)。repoId 为 geostudio-native，独立 Git 根；当前能力、分层与限制见 [SDK 架构](docs/design/SDK架构与迁移.md)，构建和消费见 [使用说明](docs/design/安装构建与使用.md)。
  
 -The underlying rendering engine is VulkanSceneGraph (VSG) which itself is based on Vulkan.
 +## 源码与构建
@@ -316,7 +316,7 @@
 +- 源码按 src/core、data、scene、drivers、streaming、render、runtime 分类，头源同目录。公开 header 由 cmake/capability-headers.json 显式导出；源码和生成视图不能同时手改。
 +- 构建入口 scripts/build.ps1，安装到 out/install-capabilities。只用锁定外部依赖，不恢复上游嵌套 project 或任意升级消费版本。
 +- 公共 API 保持 C++17，私有 Cesium adapter 使用 C++20；GLM 编译定义、Cesium 类型与 UI 依赖不能泄漏给宿主。
-+- SDK 不依赖 ImGui；需要它的宿主单独编译 ../../demo/native-gis-demo/native/ui。新增 UI 功能不得回到 src。
++- SDK 不依赖 ImGui；需要它的宿主自行管理适配；当前 Tauri Demo 不编译 native/ui。新增 UI 功能不得回到 src。
 +- namespace／公开对象布局变化需更新 SDK ABI／版本并重建 consumer。完整来源 patch 与映射遵守 GEOSTUDIO.md 和 provenance。
  
 +## 修改与验证
@@ -369,7 +369,7 @@
 +- 先建立相关代码回归，再做实现迁移；小型 fixture 应明确输入与期望，不能用宽松判定掩盖失败。架构检查和独立 package consumer 为模块迁移关卡。
 +- 本轮仅做 CPU 代码测试和 Demo 编译，不启动软件、窗口或 GPU 测试；人工验收由用户完成。
 +- 文件删除按工作区限制逐个明确路径；不批量删除，不清空失败证据或旧制品。
-+- 文档放 docs/design；会话结束记录实际验证、阻塞和下一步。提交、推送、发布分别授权。
++- 设计维护于 docs/design 的既有正文；过程和自检在对话交付，不新建任务流水。提交、推送、发布分别授权。
 --- a/CMakeLists.txt
 +++ b/CMakeLists.txt
 @@ -1,130 +1,3 @@
@@ -516,7 +516,7 @@
 +GeoStudio desktop 的原生 GIS SDK，当前 API 版本 **0.3.0**、ABI 标识 **62**。源码来自固定的 Rocky、vsgXchange、vsgCs，按能力归类；主体 namespace 为 `geostudio::native`，Reader 和 Tiles runtime 分别沿用子 namespace `io`、`tiles3d`。VSG、Cesium Native、GDAL、PROJ 等外部依赖保持固定版本与原 namespace。
  
 -Rocky will render an accurate 3D or 2D map with real geospatial imagery and elevation data. It supports thousands of map projections and many popular geodata sources including GeoTIFF, TMS, OpenStreetMap, WMTS, WMS, and Azure Maps. Rocky's data model is inspired by the osgEarth SDK, a 3D GIS toolkit created in 2008 and still in wide use today.
-+当前实施范围、授权和验证见 [NativeSDK-004](docs/design/任务/004-宿主适配迁移与发行内容整理.md)。旧任务 001／002 的历史验收不自动覆盖本版本。
++当前实施范围、授权和验证见 [NativeSDK-004](docs/design/SDK架构与迁移.md)。旧任务 001／002 的历史验收不自动覆盖本版本。
  
 -![Windows](https://github.com/pelicanmapping/rocky/actions/workflows/ci-windows-minimal.yml/badge.svg)
 -![Linux](https://github.com/pelicanmapping/rocky/actions/workflows/ci-linux-minimal.yml/badge.svg)
@@ -20355,7 +20355,7 @@
  #if defined( DEBUG_PARSER )
 --- a/src/runtime/engine/Application.cpp
 +++ b/src/runtime/engine/Application.cpp
-@@ -3,31 +3,27 @@
+@@ -3,31 +3,29 @@
   * Copyright 2026 Pelican Mapping
   * MIT License
   */
@@ -20376,11 +20376,13 @@
 -#include <rocky/vsg/ecs/OpticsSystem.h>
 -#include <rocky/vsg/ecs/TerrainAnchorSystem.h>
 +#include <geostudio/native/runtime/engine/Application.h>
++#include <geostudio/native/runtime/engine/ResourceMaintenance.h>
 +#include <geostudio/native/render/view/MapManipulator.h>
 +#include <geostudio/native/render/vsg/ShaderDefines.h>
 +#include <geostudio/native/render/vsg/SkyNode.h>
 +#include <geostudio/native/render/entity/TransformSystem.h>
 +#include <geostudio/native/drivers/earth/EarthFileImporter.h>
++#include <geostudio/native/render/import/osgb/OSGBPaging.h>
 +
 +#include <geostudio/native/render/vsg/FrustumGridSystem.h>
 +#include <geostudio/native/render/entity/DecalSystem.h>
@@ -20406,7 +20408,7 @@
  
  namespace
  {
-@@ -37,7 +33,7 @@
+@@ -37,7 +35,7 @@
      {
          // Leave room for terrain color/elevation, optional shadow-map resources,
          // UBOs, and SSBOs in the same pipeline layout/stages.
@@ -20415,7 +20417,7 @@
          constexpr std::uint32_t arrayCount = 3u; // RTT + Slug curve + Slug band
  #else
          constexpr std::uint32_t arrayCount = 1u; // RTT only
-@@ -98,7 +94,7 @@
+@@ -98,7 +96,7 @@
  
      struct CloseWindowEventHandler : public vsg::Inherit<vsg::Visitor, CloseWindowEventHandler>
      {
@@ -20424,7 +20426,7 @@
  
          void apply(vsg::CloseWindowEvent& e) override
          {
-@@ -129,7 +125,7 @@
+@@ -129,7 +127,7 @@
              }
          }
  
@@ -20433,7 +20435,7 @@
      };
  
  
-@@ -213,7 +209,7 @@
+@@ -213,7 +211,7 @@
  
      if (commandLine.read("--version"))
      {
@@ -20442,7 +20444,7 @@
          exit(0);
      }
  
-@@ -226,7 +222,7 @@
+@@ -226,7 +224,7 @@
      if (commandLine.read("--help"))
      {
          std::cout
@@ -20451,7 +20453,7 @@
              << argv[0] << std::endl
              << "    [--map <filename>]        // load a JSON map file" << std::endl
              << "    [--earth-file <filename>] // import an osgEarth earth file" << std::endl
-@@ -268,14 +264,14 @@
+@@ -268,14 +266,14 @@
  
      scene = vsg::Group::create();
  
@@ -20468,7 +20470,7 @@
          scene->addChild(skyNode);
  
          // if the user didn't disable terrain lighting...enable it.
-@@ -354,14 +350,14 @@
+@@ -354,14 +352,14 @@
      computeSystemsNode = ECSNode::create(registry, false);
      compute->addChild(computeSystemsNode);
  
@@ -20488,7 +20490,7 @@
      // Producer/consumer ordering is significant:
      //  1. The main ECSNode publishes shared textures before MeshSystem updates.
      //  2. OverlayBakeSystem updates RTT resources and fits shared projectors.
-@@ -373,16 +369,16 @@
+@@ -373,16 +371,16 @@
      overlayBakeSystem->renderSourceSystems = systemsNode.get();
      computeSystemsNode->add(overlayBakeSystem);
  
@@ -20508,7 +20510,7 @@
  #endif
  
      auto xformSystem = systemsNode->get<TransformSystemNode>();
-@@ -394,7 +390,7 @@
+@@ -394,7 +392,7 @@
  
      scene->addChild(systemsNode);
  
@@ -20517,7 +20519,7 @@
      // Graphics diagnostics belong after terrain/ECS drawing, never in the decal compute traversal.
      scene->addChild(decalSystem->debugNode());
  #endif
-@@ -435,7 +431,7 @@
+@@ -435,7 +433,7 @@
          }
      }
  
@@ -20526,7 +20528,7 @@
      // Stop bake jobs while their hosts and the deferred GPU disposer are still
      // alive, after recording has stopped and the device has become idle.
      if (computeSystemsNode)
-@@ -488,11 +484,11 @@
+@@ -488,11 +486,11 @@
          // Set up a compute CG the application can use.
          // Share the same queue family as the graphics command graph for now.
          Window& mainWindow = display.window(0);
@@ -20542,7 +20544,16 @@
  
          const auto requestedCapacity = projectedTextureCapacity;
          projectedTextureCapacity = clampProjectedTextureCapacity(
-@@ -588,7 +584,7 @@
+@@ -540,6 +538,8 @@
+         }
+ 
+         viewer->assignRecordAndSubmitTaskAndPresentation(commandGraphs);
++        // 在首次编译前挂载，沿用 Viewer 的编译管理器与资源回收器。
++        io::prepareOSGBPaging(*viewer);
+ 
+ #if 1
+         // Configure a descriptor pool size that's appropriate for terrain
+@@ -588,7 +588,7 @@
                  {
                      if (auto* overlayBake = computeSystemsNode->get<OverlayBakeSystemNode>())
                          overlayBake->worldSRS = mapNode->srs();
@@ -20551,7 +20562,7 @@
                      if (auto* slug = computeSystemsNode->get<SlugSystemNode>())
                          slug->worldSRS = mapNode->srs();
  #endif
-@@ -611,8 +607,8 @@
+@@ -611,8 +611,8 @@
  std::uint64_t
  Application::frameCount() const
  {
@@ -20562,7 +20573,23 @@
      return viewer->getFrameStamp()->frameCount;
  }
  
-@@ -764,72 +760,10 @@
+@@ -677,6 +677,7 @@
+ 
+         // Update the scene graph (see AppUpdateOperation)
+         viewer->update();
++        maintainResources(viewer);
+ 
+         // it's possible that an update operation will shut down the viewer:
+         if (!viewer->active())
+@@ -721,6 +722,7 @@
+ 
+         // update traversal (see AppUpateOperation)
+         viewer->update();
++        maintainResources(viewer);
+ 
+         // it's possible that an update operation will shut down the viewer:
+         if (!viewer->active())
+@@ -764,72 +766,10 @@
  }
  
  
@@ -20636,7 +20663,7 @@
  
      // wait until the device is idle to avoid changing state while it's being used
      vsgcontext->viewer()->deviceWaitIdle();
-@@ -874,7 +808,7 @@
+@@ -874,7 +814,7 @@
  void
  Application::onAddView(Window& window, View& view)
  {
@@ -20645,7 +20672,7 @@
  
      // The shared compute branch is outside the view's scene; resolve its picking dependencies once at assembly.
      view.setComputeGraph(compute.get());
-@@ -887,53 +821,6 @@
+@@ -887,53 +827,6 @@
      display.setManipulatorForView(manip, view.vsgView);
      view.eventHandlersInstalled.emplace_back(manip);
  
@@ -20699,7 +20726,7 @@
  }
  
  void
-@@ -955,63 +842,3 @@
+@@ -955,63 +848,3 @@
  
  
  
@@ -22195,7 +22222,7 @@
 +EVSG_type_name(geostudio::native::SkyNode)
 --- a/src/render/vsg/VSGContext.cpp
 +++ b/src/render/vsg/VSGContext.cpp
-@@ -3,29 +3,29 @@
+@@ -3,29 +3,30 @@
   * Copyright 2025 Pelican Mapping
   * MIT License
   */
@@ -22205,6 +22232,7 @@
 -#include <rocky/URI.h>
 -#include <rocky/GeoExtent.h>
 +#include <geostudio/native/render/vsg/VSGContext.h>
++#include "CompileResultUtils.h"
 +#include <geostudio/native/render/vsg/VSGUtils.h>
 +#include <geostudio/native/data/raster/Image.h>
 +#include <geostudio/native/core/io/URI.h>
@@ -22239,7 +22267,7 @@
  
  namespace
  {
-@@ -142,7 +142,7 @@
+@@ -142,7 +143,7 @@
          return output;
      }
  
@@ -22248,7 +22276,7 @@
      /**
      * VSG reader-writer that uses GDAL to read some image formats that are
      * not supported by vsgXchange
-@@ -294,7 +294,7 @@
+@@ -294,7 +295,7 @@
  
  
  VSGContextImpl::VSGContextImpl(vsg::ref_ptr<vsg::Viewer> viewer) :
@@ -22257,7 +22285,7 @@
      _viewer(viewer)
  {
      if (!_viewer)
-@@ -306,7 +306,7 @@
+@@ -306,7 +307,7 @@
  }
  
  VSGContextImpl::VSGContextImpl(vsg::ref_ptr<vsg::Viewer> viewer, int& argc, char** argv) :
@@ -22266,7 +22294,7 @@
      _viewer(viewer)
  {
      if (!_viewer)
-@@ -337,7 +337,7 @@
+@@ -337,7 +338,7 @@
      _gc.resize(8);
  
      // Reserve capacity for this so we can copy it without worry about reallocating
@@ -22275,7 +22303,7 @@
  
      args.read(readerWriterOptions);
  
-@@ -356,34 +356,34 @@
+@@ -356,34 +357,34 @@
          else if (log_level == "off") Log()->set_level(spdlog::level::off);
      }
  
@@ -22319,7 +22347,7 @@
      };
  
      auto exec_path = std::filesystem::path(getExecutableLocation());
-@@ -396,14 +396,14 @@
+@@ -396,14 +397,14 @@
              searchPaths.push_back(vsg::Path(path.generic_string()));
      }
  
@@ -22338,7 +22366,7 @@
          return;
      }
  
-@@ -417,7 +417,7 @@
+@@ -417,7 +418,7 @@
      // stripping it out and later converting it back; or that only transcodes
      // it if it needs to. vsg::read_cast() might do some internal caching
      // as well -- need to look into that.
@@ -22347,7 +22375,7 @@
      {
          auto result = URI(location).read(io);
          if (result.ok())
-@@ -444,7 +444,7 @@
+@@ -444,7 +445,7 @@
      // To read from a stream, we have to search all the VS readerwriters to
      // find one that matches the 'extension' we want. We also have to put that
      // extension in the options structure as a hint.
@@ -22356,7 +22384,7 @@
          {
              // try the mime-type mapping:
              auto i = ext_for_mime_type.find(contentType);
-@@ -498,7 +498,7 @@
+@@ -498,7 +499,7 @@
  
      // caches URI request results.
      // the user may replace this with any custom cache.
@@ -22365,7 +22393,7 @@
  
      // weak cache of resident image (and elevation) rasters
      io.services().residentImageCache = std::make_shared<ResidentCache<TileLayerCacheKey, Image, GeoExtent>>();
-@@ -507,7 +507,7 @@
+@@ -507,7 +508,7 @@
      io.services().deadpool = std::make_shared<DealpoolService>(4096);
  
  
@@ -22374,7 +22402,7 @@
  
      // install an update operation on the viewer that invokes update() on this object.
      _updateOperation = LambdaOperation::create([this]() { this->update(); });
-@@ -521,7 +521,7 @@
+@@ -521,7 +522,7 @@
          _viewer->updateOperations->remove(_updateOperation);
      }
  
@@ -22383,7 +22411,7 @@
      Log()->debug("~VSGContextImpl");
  #endif
  }
-@@ -540,10 +540,10 @@
+@@ -540,10 +541,10 @@
          return false;
  
      // VSG IDs are global, so a local view count alone cannot validate this array index.
@@ -22398,7 +22426,7 @@
          return false;
      }
  
-@@ -566,7 +566,7 @@
+@@ -566,7 +567,7 @@
  VSGContextImpl::numViewsInUse() const
  {
      std::scoped_lock lock(_viewsMutex);
@@ -22407,7 +22435,7 @@
      std::size_t count = 0;
      for (auto& observer : _viewsInUse)
      {
-@@ -594,7 +594,7 @@
+@@ -594,7 +595,7 @@
          std::scoped_lock lock(_compileMutex);
          if (!_vulkanExtensions)
          {
@@ -22416,7 +22444,7 @@
              _vulkanExtensions = VulkanExtensions::create(device());
          }
      }
-@@ -623,8 +623,8 @@
+@@ -623,8 +624,8 @@
  vsg::CompileResult
  VSGContextImpl::compile(vsg::ref_ptr<vsg::Object> compilable)
  {
@@ -22427,7 +22455,16 @@
  
      // Guard view retirement through result publication without blocking ordinary frame updates.
      std::shared_lock viewLock(_viewCompileMutex);
-@@ -802,14 +802,14 @@
+@@ -769,7 +770,7 @@
+         std::unique_lock lock(_compileMutex);
+         if (_compileResult)
+         {
+-            if (_compileResult.requiresViewerUpdate())
++            if (detail::needsViewerUpdate(_compileResult, _viewer))
+             {
+                 vsg::updateViewer(*_viewer, _compileResult);
+             }
+@@ -802,14 +803,14 @@
  void
  VSGContextImpl::compileRenderGraph(vsg::ref_ptr<vsg::RenderGraph> renderGraph, vsg::ref_ptr<vsg::Window> window)
  {
@@ -22447,7 +22484,16 @@
  
      // Keep later resource compilation compatible with this view's render target.
      if (renderGraph->framebuffer)
-@@ -864,8 +864,8 @@
+@@ -826,7 +827,7 @@
+         });
+ 
+     // if something was compiled, we need to update the viewer:
+-    if (result.requiresViewerUpdate())
++    if (detail::needsViewerUpdate(result, viewer()))
+     {
+         vsg::updateViewer(*viewer(), result);
+     }
+@@ -864,8 +865,8 @@
  void
  VSGContextImpl::recompileDescriptorSet(vsg::ref_ptr<vsg::DescriptorSet> descriptorSet)
  {

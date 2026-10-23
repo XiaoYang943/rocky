@@ -1306,7 +1306,7 @@
  #ifdef __cplusplus
 --- a/src/render/import/all/all.cpp
 +++ b/src/render/import/all/all.cpp
-@@ -10,17 +10,17 @@
+@@ -10,17 +10,18 @@
  
  </editor-fold> */
  
@@ -1332,10 +1332,11 @@
 +#include <geostudio/native/render/import/images/images.h>
 +#include <geostudio/native/render/import/all/models.h>
 +#include <geostudio/native/render/import/assimp/assimp.h>
++#include <geostudio/native/render/import/osgb/OSGB.h>
  
  #include <vsg/io/Logger.h>
  #include <vsg/io/VSG.h>
-@@ -33,40 +33,45 @@
+@@ -33,40 +34,46 @@
  #    include <osg2vsg/OSG.h>
  #endif
  
@@ -1371,6 +1372,7 @@
 -    vsg::ObjectFactory::instance()->add<vsgXchange::gltf>();
 -    vsg::ObjectFactory::instance()->add<vsgXchange::Tiles3D>();
 +    vsg::ObjectFactory::instance()->add<geostudio::native::io::bin>();
++    vsg::ObjectFactory::instance()->add<geostudio::native::io::OSGB>();
 +    vsg::ObjectFactory::instance()->add<geostudio::native::io::gltf>();
 +    vsg::ObjectFactory::instance()->add<geostudio::native::io::Tiles3D>();
  
@@ -1399,6 +1401,14 @@
  
  #ifdef vsgXchange_curl
      add(curl::create());
+@@ -77,6 +84,7 @@
+     add(vsg::glsl::create());
+ 
+     add(bin::create());
++    add(OSGB::create());
+     add(gltf::create());
+     add(Tiles3D::create());
+ 
 --- a/src/render/import/assimp/Builder.cpp
 +++ b/src/render/import/assimp/Builder.cpp
 @@ -11,9 +11,9 @@

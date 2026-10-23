@@ -4,11 +4,13 @@
  * MIT License
  */
 #include <geostudio/native/runtime/engine/Application.h>
+#include <geostudio/native/runtime/engine/ResourceMaintenance.h>
 #include <geostudio/native/render/view/MapManipulator.h>
 #include <geostudio/native/render/vsg/ShaderDefines.h>
 #include <geostudio/native/render/vsg/SkyNode.h>
 #include <geostudio/native/render/entity/TransformSystem.h>
 #include <geostudio/native/drivers/earth/EarthFileImporter.h>
+#include <geostudio/native/render/import/osgb/OSGBPaging.h>
 
 #include <geostudio/native/render/vsg/FrustumGridSystem.h>
 #include <geostudio/native/render/entity/DecalSystem.h>
@@ -536,6 +538,8 @@ Application::realize()
         }
 
         viewer->assignRecordAndSubmitTaskAndPresentation(commandGraphs);
+        // 在首次编译前挂载，沿用 Viewer 的编译管理器与资源回收器。
+        io::prepareOSGBPaging(*viewer);
 
 #if 1
         // Configure a descriptor pool size that's appropriate for terrain
@@ -673,6 +677,7 @@ Application::frame()
 
         // Update the scene graph (see AppUpdateOperation)
         viewer->update();
+        maintainResources(viewer);
 
         // it's possible that an update operation will shut down the viewer:
         if (!viewer->active())
@@ -717,6 +722,7 @@ Application::frame()
 
         // update traversal (see AppUpateOperation)
         viewer->update();
+        maintainResources(viewer);
 
         // it's possible that an update operation will shut down the viewer:
         if (!viewer->active())

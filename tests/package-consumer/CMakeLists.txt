@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 project(GeoStudioNativeConsumer LANGUAGES CXX)
+include("${CMAKE_CURRENT_LIST_DIR}/../../cmake/MsvcIncludes.cmake")
 set(CMAKE_DISABLE_FIND_PACKAGE_imgui ON)
 find_package(GeoStudioNative 0.3 CONFIG REQUIRED)
 if(TARGET imgui::imgui)

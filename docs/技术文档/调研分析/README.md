@@ -2,9 +2,9 @@
 
 本目录解释 OpenSceneGraph（OSG）、osgEarth、VulkanSceneGraph（VSG）、vsgXchange 和 vsgCs 的职责、调用链及与 Rocky 的关系。术语统一见[术语表](../术语.md)，版本与证据边界见[来源与版本](来源与版本.md)。
 
-当前按[方案 v1](梳理方案.md)完成 P0：四库职责总览、VSG 核心运行链、vsgXchange 数据读取链，以及 3D Tiles 的现成实现与缺口。OSG、osgEarth 的 P0 架构概览已经建立，深入实现属于 P1。当前交付为静态源码分析和官方资料梳理，尚未执行新的构建、GPU 场景或数据验收；内容身份及人工验收状态见[主任务 002](../任务/002-渲染基础库架构调研.md)。
+当前按[方案 v1](梳理方案.md)完成 P0：四库职责总览、VSG 核心运行链、vsgXchange 数据读取链，以及 3D Tiles 的现成实现与缺口。OSG、osgEarth 的 P0 架构概览已经建立，深入实现属于 P1。当前交付为静态源码分析和官方资料梳理，尚未执行新的构建、GPU 场景或数据验收；内容身份及人工验收状态见[当前说明](README.md)。
 
-新增 [vsgCs 调研](vsgCs/README.md)，核查 Cesium Native 的接入、3D Tiles/Quantized Mesh/PNTS、Overlay 与 UI/构建边界。[任务 003](../任务/003-vsgCs架构与数据链路调研.md)独立登记本次内容身份和自检，不改写任务 002 的历史结果；目前同样未做构建或数据验收。
+新增 [vsgCs 调研](vsgCs/README.md)，核查 Cesium Native 的接入、3D Tiles/Quantized Mesh/PNTS、Overlay 与 UI/构建边界。[任务 003](vsgCs/README.md)独立登记本次内容身份和自检，不改写任务 002 的历史结果；目前同样未做构建或数据验收。
 
 ## 各库分别解决什么问题
 
