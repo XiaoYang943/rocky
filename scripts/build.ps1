@@ -12,6 +12,9 @@ Invoke-Checked 'cmake' (@('-S', $NativeRoot, '-B', $build) + (Get-DependencyArgu
 Invoke-Checked 'cmake' @('--build', $build, '--target', 'geostudio-runtime', '--parallel', "$Jobs")
 if ($WithTests) {
     Invoke-Checked 'cmake' @('--build', $build, '--target', 'geostudio-globe-tests', 'geostudio-code-tests', 'geostudio-streaming-tests', '--parallel', "$Jobs")
+    if (Select-String -LiteralPath "$build/CMakeCache.txt" -Pattern '^GEOSTUDIO_NATIVE_OSGB:BOOL=ON$' -Quiet) {
+        Invoke-Checked 'cmake' @('--build', $build, '--target', 'geostudio-osgb-probe', '--parallel', "$Jobs")
+    }
     $testArguments = @('--test-dir', $build, '--output-on-failure')
     if ($TestRegex) { $testArguments += @('-R', $TestRegex) }
     Invoke-Checked 'ctest' $testArguments

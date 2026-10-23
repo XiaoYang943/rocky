@@ -173,7 +173,7 @@
     "upstreamPath": "src/all/all.cpp",
     "upstreamSha256": "5c3b777584c8799cc1ea4c70e66149caf64c02cbf7ca4a74e6d562e4bb601ff6",
     "path": "src/render/import/all/all.cpp",
-    "sha256": "506b3300260122e1afe91d8a973356e8dcb5a61f639e29cb5dd180776e674084"
+    "sha256": "8036b792904bbb124fe8f655b7685592208b8569e9477890a65267b41eb89a40"
   },
   {
     "upstreamPath": "src/assimp/Builder.cpp",

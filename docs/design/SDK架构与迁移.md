@@ -1,13 +1,12 @@
 # SDK 架构与迁移
 
-当前 GeoStudioNative 0.3.0，主任务 [NativeSDK-003](任务/003-能力模块重组与代码测试.md)。头源同目录、按能力组织，来源以 provenance 映射保留；没有保留 globe／io／tiles3d 三个顶层源码组件。
+当前 GeoStudioNative 0.3.0，主任务 [NativeSDK-003](SDK架构与迁移.md)。头源同目录、按能力组织，来源以 provenance 映射保留；没有保留 globe／io／tiles3d 三个顶层源码组件。
 
 ## 依赖与职责
 
 ```mermaid
 graph TD
     Host[React / Tauri 宿主] --> Runtime
-    Demo[Demo 的可选 ImGui adapter] --> Runtime
     Runtime --> Render
     Runtime --> RuntimeTiles[RuntimeTiles DLL]
     Render --> Streaming
@@ -49,20 +48,24 @@ SDK package 升至 0.3.0，ABI 标识 62；安装路径 `out/install-capabilitie
 
 ## ImGui 由宿主管理
 
-SDK 的 Application、View、VSGContext、ECSNode 已移除 ImGui context、自动 GUI 安装和 Widget 绘制。纯 Label 状态仍属于 Scene；LabelSystem 的 ImGui 绘制、Widget、RenderImGui 和事件翻译放在 Demo 的 `native/ui`，仅由需要它的宿主链接。Demo 调用 `geostudio::host::installImGui`，不再调用 Application::install(renderer)。
+SDK 的 Application、View、VSGContext 与 ECSNode 不持有 ImGui context，不自动安装 GUI，也不绘制 Widget。纯 Label 状态属于 Scene；GUI 绘制及事件翻译由需要它的宿主适配。SDK package 不查找 imgui，bootstrap 默认不编译它；原宿主适配来源仍保留在 Demo native/ui，但当前 Tauri 产品不编译或消费该目录。
 
-原 vsgCs 默认禁用且无调用的 readRemoteTexture／vsgImGui::Texture 包装已移除；通用 readRemoteImage 保留。历史实现仍可从完整来源差异追溯。SDK package 不查找 imgui，bootstrap 默认也不编译它；需要旧 Demo 时显式 `-WithHostUi` 或 `-Only imgui`。
-
-未来 Tauri＋React 可以继续使用独立进程／Native Window 的现有宿主边界；本轮没有新增 JS 绑定或跨线程渲染 API。保留 Viewer、View、Camera 的共享关系，TilesetAdapter 的 close／pump／retired／shutdown 顺序不变。
+当前 Demo 以 Tauri＋React 为唯一产品入口，ng-viewer.exe 为内部原生引擎，采用独立进程和 Native Window 边界。Viewer、View、Camera 的共享关系及 TilesetAdapter 的 close／pump／retired／shutdown 生命周期保持；没有新增通用 JS 绑定或跨线程渲染 API。
 
 ## 宏、资源和可选能力
 
 自有活动源码、CMake、测试、示例和 GLSL 的 ROCKY_* 改为 GEOSTUDIO_NATIVE_*。公共 static API 使用 GEOSTUDIO_NATIVE_API，RuntimeTiles DLL 使用 GEOSTUDIO_NATIVE_EXPORT，避免导出宏冲突。版本比较宏补上正确括号并加编译断言。资源文件名和数据协议保留原名；外部 VSG／Cesium／第三方宏不强制重命名。
 
-Slughorn 的实际 Adapter 和 SlugSystem 保留源码，默认不编译；其纯算法回归继续执行。MBTiles、Azure、Bing 等仍受原 feature guard 控制，不因文件归类宣称启用新格式。保留来源中的实验代码和旧示例作为参考，不把它们加入默认 SDK 构建。
+Slughorn 的实际 Adapter 和 SlugSystem 保留源码，默认不编译；其纯算法回归继续执行。MBTiles、Azure、Bing 等仍受原 feature guard 控制，不因文件归类宣称启用新格式。实验能力保持原 feature guard；已移除的上游示例通过 provenance 的完整差异与固定来源恢复。
 
 ## 检查与来源
 
 [代码测试](../../tests/README.md)覆盖基础算法、现有渲染相关 CPU 逻辑、Reader、局部资源协议和小型 fixture。架构检查拒绝反向 include、UI 泄漏、私有 header 安装和旧宏。独立 package consumer 检查公开 header、类型注册、Core/Data 单独链接和 GLM 隔离。
 
 [capability-migration.json](../../provenance/capability-migration.json)记录旧路径到新路径；每个来源的 005-capabilities.patch 是对固定原件的完整差异，旧 patches 保留历史。版权和许可内容不改。当前不做 GPU、性能、渲染回归或人工验收，不能将 CPU 通过扩展为这些结论。
+
+## 当前验证边界与后续工作
+
+能力分层、公开头文件、独立安装 consumer 和 CPU 代码回归已有验证。历史 Globe 完整套件的一个 Vertical Datum case 因缺少 PROJ grid 未通过；不能将局部重验解释为完整套件通过。新机器 bootstrap、Debug、跨平台、真实 GPU／窗口、性能与人工验收尚未完成。
+
+宿主适配迁移、发行来源筛选及 SDK examples／tools 的明确删除已完成。源码恢复依据为 provenance 中的固定版本、完整 patch、module-files、迁移映射及 removed-upstream-files.json；不把任务快照或哈希清单当成原件。旧 staging 与安装产物保持原位。GeoJSON 渲染专项、进一步布局、统一构建及存量注释整理按各自实际范围另行评审。

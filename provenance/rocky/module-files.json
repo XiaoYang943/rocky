@@ -21,7 +21,7 @@
     "upstreamPath": "AGENTS.md",
     "upstreamSha256": "f08eb45747201cbfcb9312205de8777bdd2738a947806dbf8ff397e79be17034",
     "path": "AGENTS.md",
-    "sha256": "990904d650bf047ec65633ca793f3cd80bd7e0470c052f2ee007cbc806c9ecee"
+    "sha256": "391a551d1a1d7bd4a494ec22efcd11a70125bb4531c5e41e156d38fed02daa02"
   },
   {
     "upstreamPath": "CMakeLists.txt",
@@ -39,7 +39,7 @@
     "upstreamPath": "README.md",
     "upstreamSha256": "fd0b0bcfad4d4f22e637472f23537d26e400f68372357235120a57decb8bfc42",
     "path": "README.md",
-    "sha256": "555372625d233fb65f4e7a6062f69fe2fa79c7eb3a9fe4bef9c0de5c799bb18a"
+    "sha256": "feb4ef74393559d4bed23eb31208ad5e8d058949724a0fb4c74f4ba4cc7b0990"
   },
   {
     "upstreamPath": "bootstrap-vcpkg.bat",
@@ -1525,7 +1525,7 @@
     "upstreamPath": "src/rocky/vsg/Application.cpp",
     "upstreamSha256": "a223672bab8920484626052ddcddec7d49f764af5cc2b1901831e2b1b8f1655d",
     "path": "src/runtime/engine/Application.cpp",
-    "sha256": "13bdcac3b4abae597de90950657d75383d413070da3ea4e932680d3e01fe6026"
+    "sha256": "56fa4125711601fdac0a42b303fd2b86e5264e710e018a7b64e60732ac5a7e7b"
   },
   {
     "upstreamPath": "src/rocky/vsg/Application.h",
@@ -1699,7 +1699,7 @@
     "upstreamPath": "src/rocky/vsg/VSGContext.cpp",
     "upstreamSha256": "03056e8b1e1302ecb6bd6584b7f9b3e1e20c6028e29eec84c2dfe5ec0e85c67a",
     "path": "src/render/vsg/VSGContext.cpp",
-    "sha256": "3199c49079db1d9046a16aca835fa1b420b1a39d8020bb0a279cc98c62268152"
+    "sha256": "99b7fcc23970163fa0d96915bf762dac18da03185bbe332b15d4ef5344e98eef"
   },
   {
     "upstreamPath": "src/rocky/vsg/VSGContext.h",

@@ -2,7 +2,7 @@
 
 GeoStudio desktop 的原生 GIS SDK，当前 API 版本 **0.3.0**、ABI 标识 **62**。源码来自固定的 Rocky、vsgXchange、vsgCs，按能力归类；主体 namespace 为 `geostudio::native`，Reader 和 Tiles runtime 分别沿用子 namespace `io`、`tiles3d`。VSG、Cesium Native、GDAL、PROJ 等外部依赖保持固定版本与原 namespace。
 
-当前实施范围、授权和验证见 [NativeSDK-004](docs/design/任务/004-宿主适配迁移与发行内容整理.md)。旧任务 001／002 的历史验收不自动覆盖本版本。
+当前实施范围、授权和验证见 [NativeSDK-004](docs/design/SDK架构与迁移.md)。旧任务 001／002 的历史验收不自动覆盖本版本。
 
 ## 能力目录
 
