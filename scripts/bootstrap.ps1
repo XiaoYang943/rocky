@@ -32,12 +32,14 @@ foreach ($step in $steps) {
     if ($step.Name -eq $From) { $started = $true }
     if (-not $started) { continue }
     $source = if ($step.Name -eq 'imgui') { Join-Path $NativeRoot 'cmake/imgui' } else { Get-Source $step.Name }
+    if ($step.Name -eq 'vsg') { Invoke-Checked 'python' @('-X', 'utf8', '-B', "$PSScriptRoot/apply-vsg-patch.py", '--deps', $DepsRoot, '--apply') }
     $build = Join-Path $DepsRoot "build/$($step.Name)"
     Write-Host "Building $($step.Name)"
     $configureArgs = @('-S', $source, '-B', $build) + (Get-DependencyArguments) + $step.Options
     Invoke-Checked 'cmake' $configureArgs
     Invoke-Checked 'cmake' @('--build', $build, '--parallel', "$Jobs")
     Invoke-Checked 'cmake' @('--install', $build)
+    if ($step.Name -eq 'vsg') { Invoke-Checked 'python' @('-X', 'utf8', '-B', "$PSScriptRoot/apply-vsg-patch.py", '--deps', $DepsRoot, '--record-install') }
 }
 if (-not $started) { throw "Unknown -From dependency: $From" }
 Write-Host 'Base dependencies are ready. Run scripts/bootstrap-cesium.ps1, then scripts/build.ps1.'

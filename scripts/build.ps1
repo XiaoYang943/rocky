@@ -1,6 +1,7 @@
 param([int]$Jobs = 6, [switch]$WithTests, [string]$TestRegex = '')
 . "$PSScriptRoot/common.ps1"
 & "$PSScriptRoot/verify-sources.ps1"
+Invoke-Checked 'python' @('-X', 'utf8', '-B', "$PSScriptRoot/apply-vsg-patch.py", '--deps', $DepsRoot)
 Enable-NativeEnvironment
 Enable-RuntimeEnvironment
 $build = Join-Path $NativeRoot '.build/capabilities-r1'
